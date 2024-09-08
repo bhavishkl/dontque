@@ -1,9 +1,8 @@
 'use client'
 
-import { useSession } from "next-auth/react"
-import { redirect } from "next/navigation"
 import Link from 'next/link'
 import Image from 'next/image'
+import Header from '../components/UserLayout/header'
 
 const categories = [
   { name: 'Restaurants', icon: '🍽️' },
@@ -24,28 +23,9 @@ const popularQueues = [
 ]
 
 export default function Home() {
-  const { data: session, status } = useSession()
-
-  if (status === "loading") {
-    return <p>Loading...</p>
-  }
-
-  if (status === "unauthenticated") {
-    redirect('/signin')
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sticky Header */}
-      <header className="sticky top-0 bg-white shadow-sm z-10">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-blue-600">QueueSmart</h1>
-          <nav>
-            <button className="px-4 py-2 text-gray-600 hover:text-gray-800">Login</button>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Sign Up</button>
-          </nav>
-        </div>
-      </header>
+      <Header />
 
       <main>
         {/* Hero Section with Search */}
