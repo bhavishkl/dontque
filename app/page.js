@@ -1,18 +1,34 @@
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button, Card, CardBody, Navbar, NavbarBrand, NavbarContent, NavbarItem } from "@nextui-org/react";
 import { useRouter } from 'next/navigation';
+import { useSession } from "next-auth/react";
 
 export default function LandingPage() {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const router = useRouter();
+  const { data: session, status } = useSession();
+
+  useEffect(() => {
+    if (session) {
+      router.push('/home');
+    }
+  }, [session, router]);
 
   const handleStartFreeTrial = () => {
     router.push('/signin');
   };
+
+  if (status === "loading") {
+    return <div>Loading...</div>;
+  }
+
+  if (session) {
+    return null; // or a loading spinner if you prefer
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">

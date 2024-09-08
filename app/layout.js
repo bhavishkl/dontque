@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "./api/auth/[...nextauth]/route";
 import localFont from "next/font/local";
 import "./globals.css";
+import { Toaster } from 'sonner';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -29,6 +30,7 @@ export default async function RootLayout({ children }) {
         <Providers session={session}>
           {children}
         </Providers>
+        <Toaster position="top-right" />
       </body>
     </html>
   );

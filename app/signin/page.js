@@ -48,7 +48,8 @@ export default function SignIn() {
           user_id: userId,
           email: identityType === 'EMAIL' ? identityValue : null,
           phone_number: identityType === 'MOBILE' ? identityValue : null,
-          name: userName,
+          name: userName || identityValue.split('@')[0], // Use email username if no name provided
+          image: `https://api.dicebear.com/6.x/initials/svg?seed=${identityValue}`, // Generate avatar
           country_code: otplessUser.country_code
         }, { onConflict: 'user_id' })
         .select()
@@ -84,6 +85,15 @@ export default function SignIn() {
 
       console.log('User data saved successfully');
       
+      // Update the session with the new user data
+      await signIn("credentials", {
+        userId,
+        idToken: otplessUser.idToken,
+        name: profileData.name,
+        image: profileData.image,
+        redirect: false,
+      });
+
       router.push('/home');
     } catch (error) {
       console.error('Error saving user data:', error);
