@@ -1,0 +1,90 @@
+-- Users Table (updated)
+CREATE TABLE user_profile (
+    user_id VARCHAR(255) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE,
+    phone_number VARCHAR(20) UNIQUE,
+    image VARCHAR(255),
+    country_code VARCHAR(5),
+    otpless_token VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_user_profile_email ON user_profile(email);
+CREATE INDEX idx_user_profile_phone_number ON user_profile(phone_number);
+
+-- Queues Table (updated)
+CREATE TABLE queues (
+    queue_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    owner_id VARCHAR(255) REFERENCES user_profile(user_id),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    category VARCHAR(50),
+    location VARCHAR(255),
+    max_capacity INTEGER,
+    current_queue INTEGER DEFAULT 0,
+    estimated_wait_time INTEGER,
+    est_time_to_serve INTEGER,
+    avg_wait_time INTEGER,
+    total_served INTEGER DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'active',
+    opening_time TIME,
+    closing_time TIME,
+    image_url VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_queues_owner_id ON queues(owner_id);
+CREATE INDEX idx_queues_category ON queues(category);
+CREATE INDEX idx_queues_status ON queues(status);
+
+-- Queue Entries Table (updated)
+CREATE TABLE queue_entries (
+    entry_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    queue_id UUID REFERENCES queues(queue_id),
+    user_id VARCHAR(255) REFERENCES user_profile(user_id),
+    position INTEGER,
+    estimated_wait_time INTEGER,
+    join_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'waiting',
+    served_time TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX idx_queue_entries_queue_id ON queue_entries(queue_id);
+CREATE INDEX idx_queue_entries_user_id ON queue_entries(user_id);
+CREATE INDEX idx_queue_entries_status ON queue_entries(status);
+
+-- Queue Analytics Table (unchanged)
+CREATE TABLE queue_analytics (
+    analytics_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    queue_id UUID REFERENCES queues(queue_id),
+    date DATE,
+    total_served INTEGER,
+    peak_hour TIME,
+    avg_wait_time INTEGER,
+    customer_satisfaction DECIMAL(3,2)
+);
+
+CREATE INDEX idx_queue_analytics_queue_id_date ON queue_analytics(queue_id, date);
+
+-- User Ratings Table (updated)
+CREATE TABLE user_ratings (
+    rating_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id VARCHAR(255) REFERENCES user_profile(user_id),
+    queue_id UUID REFERENCES queues(queue_id),
+    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_user_ratings_queue_id ON user_ratings(queue_id);
+CREATE INDEX idx_user_ratings_user_id ON user_ratings(user_id);
+
+-- Categories Table (unchanged)
+CREATE TABLE categories (
+    category_id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL,
+    icon VARCHAR(255)
+);

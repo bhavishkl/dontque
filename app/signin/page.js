@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 import Script from 'next/script'
 import { signIn } from 'next-auth/react'
 
+
 export default function SignIn() {
   const router = useRouter()
 
@@ -29,76 +30,112 @@ export default function SignIn() {
       await saveUserData(otplessUser, '');
 
       // Redirect to home page
-      router.push('/home');
+      router.push('/user/home');
     } catch (error) {
       console.error('Error signing in:', error);
       alert('An error occurred. Please try again.');
     }
   };
 
-  const saveUserData = async (otplessUser, userName) => {
-    const { userId, identities, deviceInfo, network, timestamp } = otplessUser;
-    const identity = identities[0];
-    const { identityType, identityValue, channel, methods, verified } = identity;
+ const saveUserData = async (otplessUser, userName) => {
+  const { userId, identities, deviceInfo, network, timestamp, token } = otplessUser;
+  const identity = identities[0];
+  const { identityType, identityValue, channel, methods, verified } = identity;
 
-    try {
-      const { data: profileData, error: profileError } = await supabase
+  try {
+    // First, check if the user already exists
+    const { data: existingUser, error: fetchError } = await supabase
+      .from('user_profile')
+      .select('user_id')
+      .eq(identityType === 'EMAIL' ? 'email' : 'phone_number', identityValue)
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      throw fetchError;
+    }
+
+    let profileData;
+    if (existingUser) {
+      // Update existing user
+      const { data, error: updateError } = await supabase
         .from('user_profile')
-        .upsert({
+        .update({
+          name: userName || (identityType === 'EMAIL' ? identityValue.split('@')[0] : ''),
+          image: `https://api.dicebear.com/6.x/initials/svg?seed=${identityValue}`,
+          country_code: otplessUser.country_code,
+          otpless_token: token
+        })
+        .eq('user_id', existingUser.user_id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+      profileData = data;
+    } else {
+      // Insert new user
+      const { data, error: insertError } = await supabase
+        .from('user_profile')
+        .insert({
           user_id: userId,
           email: identityType === 'EMAIL' ? identityValue : null,
           phone_number: identityType === 'MOBILE' ? identityValue : null,
-          name: userName || identityValue.split('@')[0], // Use email username if no name provided
-          image: `https://api.dicebear.com/6.x/initials/svg?seed=${identityValue}`, // Generate avatar
-          country_code: otplessUser.country_code
-        }, { onConflict: 'user_id' })
+          name: userName || (identityType === 'EMAIL' ? identityValue.split('@')[0] : ''),
+          image: `https://api.dicebear.com/6.x/initials/svg?seed=${identityValue}`,
+          country_code: otplessUser.country_code,
+          otpless_token: token
+        })
         .select()
         .single();
 
-      if (profileError) throw profileError;
-
-      const { error: infoError } = await supabase
-        .from('user_info')
-        .upsert({
-          user_id: userId,
-          identity_type: identityType,
-          identity_value: identityValue,
-          channel,
-          methods,
-          verified,
-          verified_at: new Date(timestamp).toISOString(),
-          is_company_email: identityType === 'EMAIL' ? identityValue.includes('@company.com') : false,
-          ip_address: network.ip,
-          timezone: network.timezone,
-          user_agent: deviceInfo.userAgent,
-          platform: deviceInfo.platform,
-          vendor: deviceInfo.vendor,
-          browser: deviceInfo.browser,
-          connection: deviceInfo.connection,
-          id_token: otplessUser.idToken,
-          auth_time: new Date(timestamp).toISOString()
-        }, { onConflict: 'user_id' })
-        .select()
-        .single();
-
-      if (infoError) throw infoError;
-
-      console.log('User data saved successfully');
-      
-      // Update the session with the new user data
-      await signIn("credentials", {
-        userId,
-        idToken: otplessUser.idToken,
-        name: profileData.name,
-        image: profileData.image,
-        redirect: false,
-      });
-
-      router.push('/home');
-    } catch (error) {
-      console.error('Error saving user data:', error);
+      if (insertError) throw insertError;
+      profileData = data;
     }
-  };
+
+    // Update user_info
+    const { error: infoError } = await supabase
+      .from('user_info')
+      .upsert({
+        user_id: profileData.user_id,
+        identity_type: identityType,
+        identity_value: identityValue,
+        channel,
+        methods,
+        verified,
+        verified_at: new Date(timestamp).toISOString(),
+        is_company_email: identityType === 'EMAIL' ? identityValue.includes('@company.com') : false,
+        ip_address: network.ip,
+        timezone: network.timezone,
+        user_agent: deviceInfo.userAgent,
+        platform: deviceInfo.platform,
+        vendor: deviceInfo.vendor,
+        browser: deviceInfo.browser,
+        connection: deviceInfo.connection,
+        id_token: otplessUser.idToken,
+        auth_time: new Date(timestamp).toISOString()
+      }, { onConflict: 'user_id' })
+      .select()
+      .single();
+
+    if (infoError) throw infoError;
+
+    console.log('User data saved successfully');
+    
+    // Update the session with the new user data
+    await signIn("credentials", {
+      userId: profileData.user_id,
+      idToken: otplessUser.idToken,
+      name: profileData.name,
+      image: profileData.image,
+      redirect: false,
+    });
+
+    router.push('/user/home');
+  } catch (error) {
+    console.error('Error saving user data:', error);
+  }
+};
+  
+  
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
