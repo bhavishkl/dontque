@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation'
 import Header from '../../components/UserLayout/header'
 import { Button, Input, Skeleton, Card, CardBody } from "@nextui-org/react"
 import { categories } from '../../utils/category'
-import { Search, Clock, Users, ChevronRight, Coffee, BookOpen, Dumbbell } from 'lucide-react'
+import { Search, Clock, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function Home() {
   const [popularQueues, setPopularQueues] = useState([]);
@@ -48,6 +49,64 @@ export default function Home() {
   const handleCategoryClick = (category) => {
     setSelectedCategory(category);
     router.push(`/user/queues?category=${category}`);
+  };
+
+  const generateStatsImage = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1080;
+    canvas.height = 1080;
+    const ctx = canvas.getContext('2d');
+
+    // Set background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Add title
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 48px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('My QueueSmart Stats', canvas.width / 2, 100);
+
+    // Add stats
+    ctx.font = 'bold 36px Arial';
+    ctx.fillText(`Total Time Saved: ${userStats.totalTimeSaved} mins`, canvas.width / 2, 250);
+    ctx.fillText(`Queues Joined: ${userStats.queuesJoined}`, canvas.width / 2, 350);
+    ctx.fillText(`Avg. Time Saved per Queue: ${userStats.averageTimeSaved} mins`, canvas.width / 2, 450);
+
+    // Add how time could be used
+    ctx.font = '24px Arial';
+    ctx.fillText(`This time could be used for:`, canvas.width / 2, 600);
+    ctx.fillText(`${Math.floor(userStats.totalTimeSaved / 15)} coffee breaks`, canvas.width / 2, 650);
+    ctx.fillText(`${Math.floor(userStats.totalTimeSaved / 30)} book chapters`, canvas.width / 2, 700);
+    ctx.fillText(`${Math.floor(userStats.totalTimeSaved / 45)} workouts`, canvas.width / 2, 750);
+    ctx.fillText(`${Math.floor(userStats.totalTimeSaved / 60)} hour-long chats`, canvas.width / 2, 800);
+
+    // Add QueueSmart logo or watermark
+    ctx.font = 'italic 24px Arial';
+    ctx.fillText('Powered by QueueSmart', canvas.width / 2, canvas.height - 50);
+
+    return canvas.toDataURL('image/png');
+  };
+
+  const handleShareStats = async () => {
+    const imageUrl = generateStatsImage();
+    const blob = await (await fetch(imageUrl)).blob();
+    const file = new File([blob], 'queue-smart-stats.png', { type: 'image/png' });
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'My QueueSmart Stats',
+          text: 'Check out how much time I\'ve saved using QueueSmart!',
+          files: [file],
+        });
+      } catch (error) {
+        console.error('Error sharing:', error);
+        toast.error('Failed to share stats. Please try again.');
+      }
+    } else {
+      toast.error('Web Share API is not supported in your browser. Please use a different sharing method.');
+    }
   };
 
   return (
@@ -119,7 +178,13 @@ export default function Home() {
         {/* User Stats Section */}
         <section className="py-8 bg-white">
           <div className="container mx-auto px-4">
-            <h3 className="text-xl font-semibold mb-4">Your Queue Smart Stats</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Your Queue Smart Stats</h3>
+              <Button color="primary" onClick={handleShareStats}>
+                Share Stats
+                <Share2 className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
             <Card>
               <CardBody className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
