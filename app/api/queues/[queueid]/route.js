@@ -49,18 +49,73 @@ export async function GET(request, { params }) {
       }
     }
 
+    // Fetch join time of user in front
+    let userInFrontJoinTime = null;
+    if (userQueueEntry) {
+      const { data: frontUser, error: frontUserError } = await supabase
+        .from('queue_entries')
+        .select('join_time')
+        .eq('queue_id', queueid)
+        .lt('join_time', userQueueEntry.join_time)
+        .order('join_time', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (frontUserError && frontUserError.code !== 'PGRST116') {
+        console.error('Error fetching front user:', frontUserError);
+      } else if (frontUser) {
+        userInFrontJoinTime = frontUser.join_time;
+      }
+    }
+
     const responseData = {
       ...queueData,
       userQueueEntry: userQueueEntry ? {
         ...userQueueEntry,
         estimated_wait_time: estimatedWaitTime
-      } : null
+      } : null,
+      userInFrontJoinTime
     };
 
     console.log('Returning queue data:', responseData);
     return NextResponse.json(responseData);
   } catch (error) {
     console.error('Unexpected error in GET function:', error);
+    return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 });
+  }
+}
+
+export async function PATCH(request, { params }) {
+  try {
+    const { queueid } = params;
+    const session = await getServerSession(authOptions);
+
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { status, est_time_to_serve } = body;
+
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (est_time_to_serve) updateData.est_time_to_serve = est_time_to_serve;
+
+    const { data, error } = await supabase
+      .from('queues')
+      .update(updateData)
+      .eq('queue_id', queueid)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating queue:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('Unexpected error in PATCH function:', error);
     return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 });
   }
 }

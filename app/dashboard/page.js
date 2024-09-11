@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Users, Clock, Settings, Plus, Search, MoreVertical, PieChart } from 'lucide-react'
-import { Button, Input, Card, CardBody, CardHeader, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Progress, Chip } from "@nextui-org/react"
+import { Button, Input, Card, CardBody, CardHeader, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Progress, Chip, Skeleton } from "@nextui-org/react"
 import { useSession } from "next-auth/react"
 import { useRouter } from 'next/navigation'
 
@@ -25,7 +25,7 @@ export default function QueueOwnerDashboard() {
 
   const fetchQueuesData = async () => {
     try {
-      const response = await fetch('/api/queues')
+      const response = await fetch('/api/queues/owner')
       if (!response.ok) {
         throw new Error('Failed to fetch queues')
       }
@@ -83,10 +83,6 @@ export default function QueueOwnerDashboard() {
     }
   }
 
-  if (isLoading) {
-    return <div>Loading...</div>
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="sticky top-0 bg-white shadow-sm z-10">
@@ -107,33 +103,43 @@ export default function QueueOwnerDashboard() {
 
       <main className="container mx-auto px-4 py-8">
         <div className="grid gap-6 md:grid-cols-3 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <h3 className="text-sm font-medium">Total Queues</h3>
-              <PieChart className="h-4 w-4 text-gray-400" />
-            </CardHeader>
-            <CardBody>
-              <div className="text-2xl font-bold">{overallStats.totalQueues}</div>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <h3 className="text-sm font-medium">Total Customers in Queue</h3>
-              <Users className="h-4 w-4 text-gray-400" />
-            </CardHeader>
-            <CardBody>
-              <div className="text-2xl font-bold">{overallStats.totalCustomers}</div>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <h3 className="text-sm font-medium">Average Wait Time</h3>
-              <Clock className="h-4 w-4 text-gray-400" />
-            </CardHeader>
-            <CardBody>
-              <div className="text-2xl font-bold">{overallStats.avgWaitTime} min</div>
-            </CardBody>
-          </Card>
+          {isLoading ? (
+            <>
+              <Skeleton className="h-24 rounded-lg" />
+              <Skeleton className="h-24 rounded-lg" />
+              <Skeleton className="h-24 rounded-lg" />
+            </>
+          ) : (
+            <>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <h3 className="text-sm font-medium">Total Queues</h3>
+                  <PieChart className="h-4 w-4 text-gray-400" />
+                </CardHeader>
+                <CardBody>
+                  <div className="text-2xl font-bold">{overallStats.totalQueues}</div>
+                </CardBody>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <h3 className="text-sm font-medium">Total Customers in Queue</h3>
+                  <Users className="h-4 w-4 text-gray-400" />
+                </CardHeader>
+                <CardBody>
+                  <div className="text-2xl font-bold">{overallStats.totalCustomers}</div>
+                </CardBody>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <h3 className="text-sm font-medium">Average Wait Time</h3>
+                  <Clock className="h-4 w-4 text-gray-400" />
+                </CardHeader>
+                <CardBody>
+                  <div className="text-2xl font-bold">{overallStats.avgWaitTime} min</div>
+                </CardBody>
+              </Card>
+            </>
+          )}
         </div>
 
         <div className="mb-4 flex justify-between items-center">
@@ -162,38 +168,51 @@ export default function QueueOwnerDashboard() {
                 <TableColumn>Actions</TableColumn>
               </TableHeader>
               <TableBody>
-                {filteredQueues.map((queue) => (
-                  <TableRow key={queue.queue_id}>
-                    <TableCell>{queue.name}</TableCell>
-                    <TableCell>{queue.current_queue}</TableCell>
-                    <TableCell>{queue.avg_wait_time} min</TableCell>
-                    <TableCell>{queue.total_served}</TableCell>
-                    <TableCell>
-                      <Chip color={queue.status === 'active' ? 'success' : 'warning'}>
-                        {queue.status}
-                      </Chip>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button size="sm" onClick={() => router.push(`/dashboard/manage/${queue.queue_id}`)}>Manage Queue</Button>
-                        <Button size="sm" variant="bordered" onClick={() => handlePauseQueue(queue.queue_id, queue.status)}>
-                          {queue.status === 'active' ? 'Pause' : 'Activate'}
-                        </Button>
-                        <Dropdown>
-                          <DropdownTrigger>
-                            <Button isIconOnly variant="light" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownTrigger>
-                          <DropdownMenu aria-label="More Actions">
-                            <DropdownItem onClick={() => router.push(`/dashboard/edit-queue/${queue.queue_id}`)}>Edit Queue</DropdownItem>
-                            <DropdownItem className="text-danger" color="danger" onClick={() => handleDeleteQueue(queue.queue_id)}>Delete Queue</DropdownItem>
-                          </DropdownMenu>
-                        </Dropdown>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {isLoading ? (
+                  Array(5).fill().map((_, index) => (
+                    <TableRow key={index}>
+                      <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-1/2" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-1/2" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-1/2" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                      <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  filteredQueues.map((queue) => (
+                    <TableRow key={queue.queue_id}>
+                      <TableCell>{queue.name}</TableCell>
+                      <TableCell>{queue.current_queue}</TableCell>
+                      <TableCell>{queue.avg_wait_time} min</TableCell>
+                      <TableCell>{queue.total_served}</TableCell>
+                      <TableCell>
+                        <Chip color={queue.status === 'active' ? 'success' : 'warning'}>
+                          {queue.status}
+                        </Chip>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button size="sm" onClick={() => router.push(`/dashboard/manage/${queue.queue_id}`)}>Manage Queue</Button>
+                          <Button size="sm" variant="bordered" onClick={() => handlePauseQueue(queue.queue_id, queue.status)}>
+                            {queue.status === 'active' ? 'Pause' : 'Activate'}
+                          </Button>
+                          <Dropdown>
+                            <DropdownTrigger>
+                              <Button isIconOnly variant="light" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownTrigger>
+                            <DropdownMenu aria-label="More Actions">
+                              <DropdownItem onClick={() => router.push(`/dashboard/edit-queue/${queue.queue_id}`)}>Edit Queue</DropdownItem>
+                              <DropdownItem className="text-danger" color="danger" onClick={() => handleDeleteQueue(queue.queue_id)}>Delete Queue</DropdownItem>
+                            </DropdownMenu>
+                          </Dropdown>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardBody>

@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, MapPin, Clock, Users, Star, Share2, AlertCircle, Bell } from 'lucide-react'
-import { Button, Card, CardBody, CardHeader, Chip, Progress, Tooltip, Skeleton } from "@nextui-org/react"
+import { ArrowLeft, MapPin, Clock, Users, Star, Share2, Bell, ChevronDown, ChevronUp } from 'lucide-react'
+import { Button, Card, CardBody, CardHeader, Chip, Progress, Skeleton } from "@nextui-org/react"
 import Header from '../../../components/UserLayout/header'
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
@@ -18,13 +18,14 @@ export default function QueueDetailsPage({ params }) {
   const [isLeaving, setIsLeaving] = useState(false)
   const router = useRouter()
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
-const { data: session } = useSession()
+  const { data: session } = useSession()
+  const [showAllInfo, setShowAllInfo] = useState(false)
 
-const toggleNotifications = async () => {
-  // TODO: Implement notification toggle logic
-  setNotificationsEnabled(!notificationsEnabled)
-  toast.success(notificationsEnabled ? 'Notifications disabled' : 'Notifications enabled')
-}
+  const toggleNotifications = async () => {
+    // TODO: Implement notification toggle logic
+    setNotificationsEnabled(!notificationsEnabled)
+    toast.success(notificationsEnabled ? 'Notifications disabled' : 'Notifications enabled')
+  }
 
   useEffect(() => {
     fetchQueueData()
@@ -111,7 +112,7 @@ const toggleNotifications = async () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+      <div className="container mx-auto px-4 py-2 flex justify-between items-center">
   <Link href="/user/queues" className="flex items-center text-blue-600">
     <ArrowLeft className="mr-2" />
     <span className="font-semibold">Back to Queues</span>
@@ -126,7 +127,7 @@ const toggleNotifications = async () => {
   </div>
 </div>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-2">
         <div className="grid gap-8 md:grid-cols-2">
           <div>
             <Skeleton isLoaded={!isLoading} className="rounded-lg mb-6">
@@ -139,34 +140,40 @@ const toggleNotifications = async () => {
                 />
               </div>
             </Skeleton>
-            <Skeleton isLoaded={!isLoading} className="mb-2">
-              <h1 className="text-3xl font-bold">{queueData?.name}</h1>
-            </Skeleton>
             <Skeleton isLoaded={!isLoading} className="mb-4">
-              <div className="flex items-center">
-                <Star className="w-5 h-5 text-yellow-400 mr-1" />
-                <span className="font-medium mr-2">{queueData?.avg_rating || 'NaN'}</span>
-                <span className="text-sm text-gray-500">({queueData?.total_ratings || 0} ratings)</span>
-                <Chip className="ml-4" color="secondary" variant="flat">{queueData?.category}</Chip>
-              </div>
-            </Skeleton>
-            <Skeleton isLoaded={!isLoading} className="mb-4">
-              <p className="text-gray-600">{queueData?.description}</p>
-            </Skeleton>
-            <div className="space-y-2 mb-6">
-              <Skeleton isLoaded={!isLoading}>
-                <div className="flex items-center text-gray-600">
-                  <MapPin className="w-5 h-5 mr-2" />
-                  <span>{queueData?.location}</span>
-                </div>
-              </Skeleton>
-              <Skeleton isLoaded={!isLoading}>
-                <div className="flex items-center text-gray-600">
-                  <Clock className="w-5 h-5 mr-2" />
-                  <span>Open: {queueData?.opening_time} - {queueData?.closing_time}</span>
-                </div>
-              </Skeleton>
-            </div>
+  <h1 className="text-4xl font-bold mb-2">{queueData?.name}</h1>
+</Skeleton>
+<Skeleton isLoaded={!isLoading} className="mb-6">
+  <div className="flex items-center justify-between flex-wrap gap-2">
+    <div className="flex items-center gap-2">
+      <Chip color="secondary" variant="flat">{queueData?.category}</Chip>
+    </div>
+    <div className="flex items-center">
+      <div className="flex items-center bg-yellow-100 rounded-full px-3 py-1">
+        <Star className="w-4 h-4 text-yellow-500 mr-1" />
+        <span className="font-medium text-yellow-700">{queueData?.avg_rating || 'NaN'}</span>
+      </div>
+      <span className="text-sm text-gray-500 ml-2">({queueData?.total_ratings || 0} ratings)</span>
+    </div>
+  </div>
+</Skeleton>
+<Skeleton isLoaded={!isLoading} className="mb-6">
+  <p className="text-gray-600 text-lg">{queueData?.description}</p>
+</Skeleton>
+<div className="space-y-4 mb-8">
+  <Skeleton isLoaded={!isLoading}>
+    <div className="flex items-center text-gray-700 bg-gray-100 rounded-lg p-3">
+      <MapPin className="w-5 h-5 mr-3 text-gray-500" />
+      <span className="font-medium">{queueData?.location}</span>
+    </div>
+  </Skeleton>
+  <Skeleton isLoaded={!isLoading}>
+    <div className="flex items-center text-gray-700 bg-gray-100 rounded-lg p-3">
+      <Clock className="w-5 h-5 mr-3 text-gray-500" />
+      <span className="font-medium">Open: {queueData?.opening_time} - {queueData?.closing_time}</span>
+    </div>
+  </Skeleton>
+</div>
           </div>
           <div>
           {isLoading ? (
@@ -192,20 +199,25 @@ const toggleNotifications = async () => {
       </CardBody>
     </Card>
     <Card className="mb-6">
-      <CardHeader>
-        <h2 className="text-2xl font-bold">Estimated Wait Time</h2>
-      </CardHeader>
-      <CardBody>
-        <div className="space-y-4">
-          <div className="text-5xl font-bold text-center">
-            {queueData.userQueueEntry.estimated_wait_time} minutes
-          </div>
-          <p className="text-center text-muted-foreground">
-            Approximately {queueData.userQueueEntry.estimated_wait_time} minutes remaining
-          </p>
+  <CardHeader>
+    <h2 className="text-2xl font-bold">Estimated Wait Time</h2>
+  </CardHeader>
+  <CardBody>
+    <div className="space-y-4">
+      <div className="text-5xl font-bold text-center">
+        {queueData.userQueueEntry.estimated_wait_time} minutes
+      </div>
+      <p className="text-center text-muted-foreground">
+        Approximately {queueData.userQueueEntry.estimated_wait_time} minutes remaining
+      </p>
+      {queueData.userInFrontJoinTime && (
+        <div className="text-sm text-center text-muted-foreground">
+          User in front joined at: {new Date(queueData.userInFrontJoinTime).toLocaleTimeString()}
         </div>
-      </CardBody>
-    </Card>
+      )}
+    </div>
+  </CardBody>
+</Card>
     <Button 
       color="danger" 
       variant="flat" 
@@ -220,10 +232,33 @@ const toggleNotifications = async () => {
       <ul className="list-disc pl-5 space-y-1">
         <li>Stay nearby and be ready to arrive when it's your turn</li>
         <li>Keep an eye on your notifications for updates on your position</li>
-        <li>If you need to leave, use the 'Leave Queue' button above</li>
+        <li>Remember that these times are estimates and may vary depending on actual service times and any changes in the queue</li>
         <li>If you leave the queue, any payment made will not be refunded</li>
         <li>Leaving the queue will forfeit any progress you've made in your position</li>
+        {showAllInfo ? (
+          <>
+            <li>Your estimated wait time is calculated based on the average service time and the number of people ahead of you. It may change as the queue progresses</li>
+            <li>Your position in the queue represents your place in line. Position 1 means you're next to be served</li>
+            <li>The service start time is when we expect you to reach the front of the queue and begin receiving service. This is different from the estimated wait time, which is how long until your service starts</li>
+          <li>If you need to leave, use the 'Leave Queue' button above</li>
+          </>
+        ) : null}
       </ul>
+      <Button
+        variant="light"
+        onClick={() => setShowAllInfo(!showAllInfo)}
+        className="mt-2 w-full flex items-center justify-center"
+      >
+        {showAllInfo ? (
+          <>
+            Show Less <ChevronUp className="ml-2 h-4 w-4" />
+          </>
+        ) : (
+          <>
+            Show More <ChevronDown className="ml-2 h-4 w-4" />
+          </>
+        )}
+      </Button>
     </div>
   </>
 ) : (

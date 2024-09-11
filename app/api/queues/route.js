@@ -19,7 +19,8 @@ export async function GET(request) {
       category,
       current_queue,
       avg_wait_time,
-      image_url
+      image_url,
+      est_time_to_serve
     `)
     .eq('status', 'active')
     .order('current_queue', { ascending: false })
@@ -39,7 +40,13 @@ export async function GET(request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json(data);
+  // Calculate total estimated wait time for each queue
+  const queuesWithTotalWaitTime = data.map(queue => ({
+    ...queue,
+    total_est_wait_time: queue.current_queue * queue.est_time_to_serve
+  }));
+
+  return NextResponse.json(queuesWithTotalWaitTime);
 }
 
 export async function POST(request) {

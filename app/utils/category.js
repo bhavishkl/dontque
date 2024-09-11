@@ -1,0 +1,17 @@
+export const categories = [
+  { name: 'All', icon: '🌐' },
+  { name: 'Restaurants', icon: '🍽️' },
+  { name: 'Retail', icon: '🛍️' },
+  { name: 'Healthcare', icon: '🏥' },
+  { name: 'Government', icon: '🏛️' },
+  { name: 'Entertainment', icon: '🎭' },
+  { name: 'Education', icon: '🎓' },
+  { name: 'Banking', icon: '🏦' },
+  { name: 'Fitness', icon: '💪' },
+  { name: 'Technology', icon: '💻' },
+  { name: 'Travel', icon: '✈️' },
+  { name: 'Automotive', icon: '🚗' },
+  { name: 'Real Estate', icon: '🏠' },
+  { name: 'Sports', icon: '⚽' },
+  { name: 'Beauty', icon: '💄' },
+];
