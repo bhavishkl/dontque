@@ -76,16 +76,52 @@ export default function QueueManagementPage({ params }) {
   }
 
   const handleServed = async (entryId) => {
-    // TODO: Implement serve functionality
-    console.log('Serve functionality not implemented yet');
-    toast.info('Serve functionality coming soon');
-  }
-
-  const handleNoShow = async (userId) => {
-    // TODO: Implement no-show functionality
-    console.log('No-show functionality not implemented yet');
-    toast.info('No-show functionality coming soon');
-  }
+    try {
+      const response = await fetch(`/api/queues/${params.queueId}/customers/${entryId}/serve`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to mark customer as served');
+      }
+      const data = await response.json();
+      toast.success('Customer served successfully');
+      // Update the local state with the new queue data
+      setQueueData(prevData => ({
+        ...prevData,
+        current_queue: data.current_queue,
+        total_served: data.total_served
+      }));
+      // Remove the served customer from the list
+      setCustomersInQueue(prevCustomers => prevCustomers.filter(customer => customer.entry_id !== entryId));
+    } catch (error) {
+      console.error('Error serving customer:', error);
+      toast.error(error.message || 'Failed to serve customer');
+    }
+  };
+  
+  const handleNoShow = async (entryId) => {
+    try {
+      const response = await fetch(`/api/queues/${params.queueId}/customers/${entryId}/no-show`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to mark customer as no-show');
+      }
+      const data = await response.json();
+      toast.success('Customer marked as no-show');
+      // Update the local state with the new queue data
+      setQueueData(prevData => ({
+        ...prevData,
+        current_queue: data.current_queue
+      }));
+      // Remove the no-show customer from the list
+      setCustomersInQueue(prevCustomers => prevCustomers.filter(customer => customer.entry_id !== entryId));
+    } catch (error) {
+      console.error('Error marking customer as no-show:', error);
+      toast.error('Failed to mark customer as no-show');
+    }
+  };
 
   const handleAddCustomer = async () => {
     try {

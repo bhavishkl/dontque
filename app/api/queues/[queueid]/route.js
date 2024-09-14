@@ -26,28 +26,38 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: queueError.message }, { status: 500 });
     }
 
-    console.log('Fetching user queue entry for user ID:', session.user.id);
-    const { data: userQueueEntry, error: userQueueEntryError } = await supabase
-      .from('queue_entries')
-      .select('*')
-      .eq('queue_id', queueid)
-      .eq('user_id', session.user.id)
-      .single();
+    console.log('Fetching queue entries for queue ID:', queueid);
+const { data: queueEntries, error: queueEntriesError } = await supabase
+  .from('queue_entries')
+  .select('*')
+  .eq('queue_id', queueid)
+  .order('join_time', { ascending: true });
 
-    if (userQueueEntryError && userQueueEntryError.code !== 'PGRST116') {
-      console.error('Error fetching user queue entry:', userQueueEntryError);
-      console.log('User is not in the queue');
-    }
+if (queueEntriesError) {
+  console.error('Error fetching queue entries:', queueEntriesError);
+  return NextResponse.json({ error: queueEntriesError.message }, { status: 500 });
+}
+
+let userQueueEntry = null;
+let userPosition = null;
+
+queueEntries.forEach((entry, index) => {
+  if (entry.user_id === session.user.id) {
+    userQueueEntry = entry;
+    userPosition = index + 1;
+  }
+});
+
+if (userQueueEntry) {
+  userQueueEntry.position = userPosition;
+}
 
     // Calculate estimated wait time
-    let estimatedWaitTime = null;
-    if (userQueueEntry && queueData.est_time_to_serve) {
-      if (userQueueEntry.position === 1) {
-        estimatedWaitTime = 0;
-      } else {
-        estimatedWaitTime = (userQueueEntry.position - 1) * queueData.est_time_to_serve;
-      }
-    }
+    // Calculate estimated wait time
+let estimatedWaitTime = null;
+if (userQueueEntry && queueData.est_time_to_serve) {
+    estimatedWaitTime = (userPosition - 1) * queueData.est_time_to_serve;
+}
 
     // Fetch join time of user in front
     let userInFrontJoinTime = null;
@@ -74,7 +84,7 @@ export async function GET(request, { params }) {
         ...userQueueEntry,
         estimated_wait_time: estimatedWaitTime
       } : null,
-      userInFrontJoinTime
+      userInFrontJoinTime: userPosition > 1 ? queueEntries[userPosition - 2].join_time : null
     };
 
     console.log('Returning queue data:', responseData);

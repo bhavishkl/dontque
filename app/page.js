@@ -6,17 +6,23 @@ import Image from 'next/image';
 import { Button, Card, CardBody, Navbar, NavbarBrand, NavbarContent, NavbarItem } from "@nextui-org/react";
 import { useRouter } from 'next/navigation';
 import { useSession } from "next-auth/react";
+import { useUserInfo } from './hooks/useUserName';
 
 export default function LandingPage() {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { role } = useUserInfo(session?.user?.id);
 
   useEffect(() => {
     if (session) {
-      router.push('/user/home');
+      if (role === 'business') {
+        router.push('/dashboard');
+      } else {
+        router.push('/user/home');
+      }
     }
-  }, [session, router]);
+  }, [session, router, role]);
 
   const handleStartFreeTrial = () => {
     router.push('/signin');

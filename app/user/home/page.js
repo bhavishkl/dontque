@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import Header from '../../components/UserLayout/header'
+import { useSession } from 'next-auth/react'
 import { Button, Input, Skeleton, Card, CardBody } from "@nextui-org/react"
 import { categories } from '../../utils/category'
 import { Search, Clock, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2 } from 'lucide-react'
@@ -16,6 +16,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const { data: session } = useSession();
 
   // Dummy data for user stats
   const [userStats, setUserStats] = useState({
@@ -56,35 +57,77 @@ export default function Home() {
     canvas.width = 1080;
     canvas.height = 1080;
     const ctx = canvas.getContext('2d');
-
-    // Set background
-    ctx.fillStyle = '#ffffff';
+  
+    // Create gradient background
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    gradient.addColorStop(0, '#ffffff');
+    gradient.addColorStop(1, '#f0f0f0');
+    ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Add title
-    ctx.fillStyle = '#000000';
-    ctx.font = 'bold 48px Arial';
+  
+    // Set common text styles
     ctx.textAlign = 'center';
-    ctx.fillText('My QueueSmart Stats', canvas.width / 2, 100);
-
+    ctx.fillStyle = '#000000';
+  
+    // Add title
+    ctx.font = 'bold 48px Arial';
+    ctx.fillText(`${session.user.name}'s QueueSmart Stats`, canvas.width / 2, 80);
+  
     // Add stats
+    const drawStat = (value, label, x) => {
+      ctx.font = 'bold 72px Arial';
+      ctx.fillStyle = '#0066cc';
+      ctx.fillText(value, x, 200);
+      ctx.font = '24px Arial';
+      ctx.fillStyle = '#666666';
+      ctx.fillText(label, x, 240);
+    };
+  
+    drawStat(`${userStats.totalTimeSaved} mins`, 'Total Time Saved', canvas.width / 4);
+    drawStat(userStats.queuesJoined, 'Queues Joined', canvas.width / 2);
+    drawStat(`${userStats.averageTimeSaved} mins`, 'Avg. Time Saved per Queue', 3 * canvas.width / 4);
+  
+    // Add "How you could use your saved time" section
+    ctx.fillStyle = '#000000';
     ctx.font = 'bold 36px Arial';
-    ctx.fillText(`Total Time Saved: ${userStats.totalTimeSaved} mins`, canvas.width / 2, 250);
-    ctx.fillText(`Queues Joined: ${userStats.queuesJoined}`, canvas.width / 2, 350);
-    ctx.fillText(`Avg. Time Saved per Queue: ${userStats.averageTimeSaved} mins`, canvas.width / 2, 450);
-
-    // Add how time could be used
-    ctx.font = '24px Arial';
-    ctx.fillText(`This time could be used for:`, canvas.width / 2, 600);
-    ctx.fillText(`${Math.floor(userStats.totalTimeSaved / 15)} coffee breaks`, canvas.width / 2, 650);
-    ctx.fillText(`${Math.floor(userStats.totalTimeSaved / 30)} book chapters`, canvas.width / 2, 700);
-    ctx.fillText(`${Math.floor(userStats.totalTimeSaved / 45)} workouts`, canvas.width / 2, 750);
-    ctx.fillText(`${Math.floor(userStats.totalTimeSaved / 60)} hour-long chats`, canvas.width / 2, 800);
-
+    ctx.fillText('How you could use your saved time:', canvas.width / 2, 320);
+  
+    const activities = [
+      { icon: '☕', text: `Enjoy ${Math.floor(userStats.totalTimeSaved / 15)} coffee breaks` },
+      { icon: '📚', text: `Read ${Math.floor(userStats.totalTimeSaved / 30)} book chapters` },
+      { icon: '🏋️', text: `Complete ${Math.floor(userStats.totalTimeSaved / 45)} workouts` },
+      { icon: '🗣️', text: `Have ${Math.floor(userStats.totalTimeSaved / 60)} hour-long chats` }
+    ];
+  
+    activities.forEach((activity, index) => {
+      const x = (index % 2 === 0 ? canvas.width / 4 : 3 * canvas.width / 4);
+      const y = 420 + Math.floor(index / 2) * 160;
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x - 200, y - 60, 400, 120);
+      ctx.strokeStyle = '#dddddd';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x - 200, y - 60, 400, 120);
+  
+      ctx.font = '48px Arial';
+      ctx.fillStyle = '#000000';
+      ctx.fillText(activity.icon, x, y - 10);
+      ctx.font = '24px Arial';
+      ctx.fillText(activity.text, x, y + 40);
+    });
+  
+    // Add link
+    ctx.fillStyle = '#0066cc';
+    ctx.font = 'bold 36px Arial';
+    ctx.fillText('Try QueueSmart:', canvas.width / 2, canvas.height - 100);
+    ctx.font = 'bold 48px Arial';
+    ctx.fillText('dontq.vercel.app', canvas.width / 2, canvas.height - 50);
+  
     // Add QueueSmart logo or watermark
     ctx.font = 'italic 24px Arial';
-    ctx.fillText('Powered by QueueSmart', canvas.width / 2, canvas.height - 50);
-
+    ctx.fillStyle = '#999999';
+    ctx.fillText('Powered by QueueSmart', canvas.width / 2, canvas.height - 20);
+  
     return canvas.toDataURL('image/png');
   };
 
@@ -97,7 +140,8 @@ export default function Home() {
       try {
         await navigator.share({
           title: 'My QueueSmart Stats',
-          text: 'Check out how much time I\'ve saved using QueueSmart!',
+          text: 'Check out how much time I\'ve saved using QueueSmart! Try it yourself at https://dontq.vercel.app',
+          url: 'https://dontq.vercel.app',
           files: [file],
         });
       } catch (error) {
@@ -111,7 +155,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
 
       <main>
         {/* Hero Section with Search */}

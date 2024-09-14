@@ -28,7 +28,7 @@ export async function POST(request, { params }) {
       // Fetch the current queue data
       const { data: queueData, error: fetchError } = await supabase
         .from('queues')
-        .select('current_queue')
+        .select('current_queue, est_time_to_serve')
         .eq('queue_id', queueid)
         .single();
 
@@ -36,21 +36,31 @@ export async function POST(request, { params }) {
         console.error('Error fetching queue data:', fetchError);
         return NextResponse.json({ error: fetchError.message }, { status: 500 });
       }
-      // Update the current queue count, ensuring it doesn't go below zero
+
+      // Calculate new queue count and total estimated time
       const newQueueCount = Math.max(0, queueData.current_queue - 1);
-      const { error: updateError } = await supabase
+      const newTotalEstimatedTime = newQueueCount * queueData.est_time_to_serve;
+
+      // Update the queue with new count and total estimated time
+      const { data: updatedQueue, error: updateError } = await supabase
         .from('queues')
-        .update({ current_queue: newQueueCount })
-        .eq('queue_id', queueid);
+        .update({ 
+          current_queue: newQueueCount,
+          total_estimated_time: newTotalEstimatedTime
+        })
+        .eq('queue_id', queueid)
+        .select('current_queue, total_estimated_time')
+        .single();
 
       if (updateError) {
-        console.error('Error updating queue count:', updateError);
+        console.error('Error updating queue:', updateError);
         return NextResponse.json({ error: updateError.message }, { status: 500 });
       }
 
       return NextResponse.json({ 
         message: 'Successfully left the queue',
-        current_queue: queueData.current_queue - 1
+        current_queue: updatedQueue.current_queue,
+        total_estimated_time: updatedQueue.total_estimated_time
       });
     } catch (error) {
       console.error('Unexpected error in Supabase operations:', error);

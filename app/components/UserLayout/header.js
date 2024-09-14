@@ -1,18 +1,22 @@
+'use client'
+
 import Link from 'next/link'
 import { useSession, signOut } from "next-auth/react"
-import { Bell, X, Home, Settings, LogOut, User, Users, PieChart } from 'lucide-react'
+import { Bell, X, Home, Settings, LogOut, User, Users, PieChart, HelpCircle } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
-import { useUserName } from '../../hooks/useUserName'
+import { useUserInfo } from '../../hooks/useUserName'
 import { supabase } from '../../lib/supabase'
+import { usePathname } from 'next/navigation'
 
 const DynamicHeader = dynamic(() => import('./DynamicHeader'), { ssr: false })
 
 const Header = () => {
+  const pathname = usePathname()
   const { data: session } = useSession()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const sidebarRef = useRef(null)
-  const userName = useUserName(session?.user?.id)
+  const { name: userName, role } = useUserInfo(session?.user?.id)
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
 
@@ -33,6 +37,9 @@ const Header = () => {
     localStorage.removeItem(`userName_${session?.user?.id}`)
     await signOut({ redirect: true, callbackUrl: '/' })
   }
+
+  if (pathname === '/') return null // Don't render on the landing page
+
 
   return (
     <>
@@ -76,35 +83,50 @@ const Header = () => {
                   <User size={48} className="text-gray-600" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-800">{userName || session.user?.name || 'Guest'}</h2>
-                <p className="text-sm text-gray-500 mt-1">{session.user?.email || 'No email'}</p>
               </div>
               <div className="h-px bg-gray-200 my-4"></div>
               <nav className="mt-6 space-y-2">
-  <Link href="/user/home" className="flex items-center p-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors duration-200">
-    <Home size={20} className="mr-3" />
-    Home
-  </Link>
-  <Link href="/user/queues" className="flex items-center p-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors duration-200">
-    <Users size={20} className="mr-3" />
-    Queues
-  </Link>
-  <Link href="/user/dashboard" className="flex items-center p-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors duration-200">
-    <PieChart size={20} className="mr-3" />
-    Dashboard
-  </Link>
-  <Link href="/user/settings" className="flex items-center p-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors duration-200">
-    <Settings size={20} className="mr-3" />
-    Settings
-  </Link>
-  <div className="h-px bg-gray-200 my-2"></div>
-  <button 
-    onClick={handleLogout}
-    className="flex items-center p-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 w-full"
-  >
-    <LogOut size={20} className="mr-3" />
-    Logout
-  </button>
-</nav>
+                <Link href="/user/home" className="flex items-center p-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors duration-200">
+                  <Home size={20} className="mr-3" />
+                  Home
+                </Link>
+                <Link href="/user/queues" className="flex items-center p-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors duration-200">
+                  <Users size={20} className="mr-3" />
+                  Queues
+                </Link>
+                {role === 'business' && (
+                  <>
+                    <Link href="/dashboard" className="flex items-center p-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors duration-200">
+                      <PieChart size={20} className="mr-3" />
+                      Business Dashboard
+                    </Link>
+                    <Link href="/business/profile" className="flex items-center p-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors duration-200">
+                      <User size={20} className="mr-3" />
+                      Business Profile
+                    </Link>
+                    <Link href="/business/support" className="flex items-center p-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors duration-200">
+                      <HelpCircle size={20} className="mr-3" />
+                      Support
+                    </Link>
+                  </>
+                )}
+                <Link href="/user/dashboard" className="flex items-center p-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors duration-200">
+                  <PieChart size={20} className="mr-3" />
+                  User Dashboard
+                </Link>
+                <Link href="/user/settings" className="flex items-center p-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors duration-200">
+                  <Settings size={20} className="mr-3" />
+                  Settings
+                </Link>
+                <div className="h-px bg-gray-200 my-2"></div>
+                <button 
+                  onClick={handleLogout}
+                  className="flex items-center p-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 w-full"
+                >
+                  <LogOut size={20} className="mr-3" />
+                  Logout
+                </button>
+              </nav>
             </div>
           </div>
         </div>

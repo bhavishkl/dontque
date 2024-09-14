@@ -34,6 +34,7 @@ CREATE TABLE queues (
     image_url VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    service_start_time TIME,
 );
 
 CREATE INDEX idx_queues_owner_id ON queues(owner_id);
@@ -49,13 +50,14 @@ CREATE TABLE queue_entries (
     estimated_wait_time INTEGER,
     join_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     status VARCHAR(20) DEFAULT 'waiting',
-    served_time TIMESTAMP WITH TIME ZONE
+    served_time TIMESTAMP WITH TIME ZONE,
+    expected_at TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_queue_entries_queue_id ON queue_entries(queue_id);
 CREATE INDEX idx_queue_entries_user_id ON queue_entries(user_id);
 CREATE INDEX idx_queue_entries_status ON queue_entries(status);
-
+CREATE INDEX idx_queue_entries_sort_time ON queue_entries(sort_time);
 -- Queue Analytics Table (unchanged)
 CREATE TABLE queue_analytics (
     analytics_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

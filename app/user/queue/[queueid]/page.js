@@ -6,9 +6,36 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, MapPin, Clock, Users, Star, Share2, Bell, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button, Card, CardBody, CardHeader, Chip, Progress, Skeleton } from "@nextui-org/react"
-import Header from '../../../components/UserLayout/header'
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
+
+const calculateExpectedTurnTime = (queueData) => {
+  const now = new Date();
+  
+  if (!queueData.service_start_time) {
+    return { formattedTime: "Service start time not available", expectedTurnTime: null };
+  }
+
+  const [serviceHours, serviceMinutes] = queueData.service_start_time.split(':').map(Number);
+  
+  let serviceStartTime = new Date(now);
+  serviceStartTime.setHours(serviceHours, serviceMinutes, 0, 0);
+
+  let expectedTurnTime;
+  if (serviceStartTime < now) {
+    // If service start time has passed, add estimated wait time to current time
+    expectedTurnTime = new Date(now.getTime() + queueData.userQueueEntry.estimated_wait_time * 60000);
+  } else {
+    // If service start time is in the future, add estimated wait time to service start time
+    expectedTurnTime = new Date(serviceStartTime.getTime() + queueData.userQueueEntry.estimated_wait_time * 60000);
+  }
+
+  const formattedTime = expectedTurnTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return { 
+    formattedTime: `Your turn is expected at ${formattedTime}`,
+    expectedTurnTime: expectedTurnTime
+  };
+};
 
 export default function QueueDetailsPage({ params }) {
   const [queueData, setQueueData] = useState(null)
@@ -20,6 +47,8 @@ export default function QueueDetailsPage({ params }) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
   const { data: session } = useSession()
   const [showAllInfo, setShowAllInfo] = useState(false)
+  const [countdown, setCountdown] = useState('');
+  const [expectedTurnTime, setExpectedTurnTime] = useState(null);
 
   const toggleNotifications = async () => {
     // TODO: Implement notification toggle logic
@@ -28,25 +57,50 @@ export default function QueueDetailsPage({ params }) {
   }
 
   useEffect(() => {
-    fetchQueueData()
-  }, [params.queueid])
+    if (queueData?.userQueueEntry) {
+      const { expectedTurnTime, formattedTime } = calculateExpectedTurnTime(queueData);
+      setExpectedTurnTime(expectedTurnTime);
+  
+      const timer = setInterval(() => {
+        const now = new Date().getTime();
+        const distance = expectedTurnTime.getTime() - now;
+  
+        if (distance < 0) {
+          clearInterval(timer);
+          setCountdown("It's your turn!");
+        } else {
+          const hours = Math.floor(distance / (1000 * 60 * 60));
+          const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+  
+          setCountdown(`${hours}h ${minutes}m ${seconds}s`);
+        }
+      }, 1000);
+  
+      return () => clearInterval(timer);
+    }
+  }, [queueData]);
 
   const fetchQueueData = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      const response = await fetch(`/api/queues/${params.queueid}`)
+      const response = await fetch(`/api/queues/${params.queueid}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch queue data')
+        throw new Error('Failed to fetch queue data');
       }
-      const data = await response.json()
-      setQueueData(data)
+      const data = await response.json();
+      setQueueData(data);
     } catch (err) {
-      setError(err.message)
-      toast.error('Failed to fetch queue data')
+      setError(err.message);
+      toast.error('Failed to fetch queue data');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
+  
+  useEffect(() => {
+    fetchQueueData();
+  }, [params.queueid]);
 
   const handleJoinQueue = async () => {
     setIsJoining(true)
@@ -111,7 +165,6 @@ export default function QueueDetailsPage({ params }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <div className="container mx-auto px-4 py-2 flex justify-between items-center">
   <Link href="/user/queues" className="flex items-center text-blue-600">
     <ArrowLeft className="mr-2" />
@@ -208,11 +261,11 @@ export default function QueueDetailsPage({ params }) {
         {queueData.userQueueEntry.estimated_wait_time} minutes
       </div>
       <p className="text-center text-muted-foreground">
-        Approximately {queueData.userQueueEntry.estimated_wait_time} minutes remaining
-      </p>
-      {queueData.userInFrontJoinTime && (
-        <div className="text-sm text-center text-muted-foreground">
-          User in front joined at: {new Date(queueData.userInFrontJoinTime).toLocaleTimeString()}
+  {expectedTurnTime ? `Your turn is expected at ${expectedTurnTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : "Service start time not available"}
+</p>
+      {countdown && (
+        <div className="text-2xl font-bold text-center text-primary">
+          {countdown}
         </div>
       )}
     </div>

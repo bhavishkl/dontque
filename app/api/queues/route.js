@@ -57,7 +57,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { name, description, category, location, max_capacity, opening_time, closing_time, est_time_to_serve } = await request.json();
+    const { name, description, category, location, max_capacity, opening_time, closing_time, est_time_to_serve, service_start_time } = await request.json();
 
     const { data, error } = await supabase
       .from('queues')
@@ -71,6 +71,7 @@ export async function POST(request) {
         opening_time,
         closing_time,
         est_time_to_serve: parseInt(est_time_to_serve),
+        service_start_time,
         status: 'active'
       })
       .select()

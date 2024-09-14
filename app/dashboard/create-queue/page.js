@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, Input, Textarea, Select, SelectItem } from "@nextui-org/react"
 import { toast } from 'sonner'
+import TimePicker from '../../components/UserLayout/TimePicker'
 
 const categories = [
   'Restaurants',
@@ -28,13 +29,22 @@ export default function CreateQueuePage() {
     opening_time: '',
     closing_time: '',
     est_time_to_serve: '',
+    service_start_time: '',
   })
 
   const handleChange = (e) => {
     const { name, value } = e.target
+    let formattedValue = value
+  
+    if (name === 'opening_time' || name === 'closing_time' || name === 'service_start_time') {
+      const [time, period] = value.split(' ')
+      const [hours, minutes] = time.split(':')
+      formattedValue = `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:00`
+    }
+  
     setFormData(prevData => ({
       ...prevData,
-      [name]: value
+      [name]: formattedValue
     }))
   }
 
@@ -141,24 +151,26 @@ export default function CreateQueuePage() {
             disabled={isLoading}
           />
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            type="time"
-            label="Opening Time"
-            name="opening_time"
-            value={formData.opening_time}
-            onChange={handleChange}
-            disabled={isLoading}
-          />
-          <Input
-            type="time"
-            label="Closing Time"
-            name="closing_time"
-            value={formData.closing_time}
-            onChange={handleChange}
-            disabled={isLoading}
-          />
-        </div>
+        <div className="grid grid-cols-3 gap-4">
+  <TimePicker
+    label="Opening Time"
+    value={formData.opening_time}
+    onChange={(newTime) => handleChange({ target: { name: 'opening_time', value: newTime } })}
+    className="w-full"
+  />
+  <TimePicker
+    label="Closing Time"
+    value={formData.closing_time}
+    onChange={(newTime) => handleChange({ target: { name: 'closing_time', value: newTime } })}
+    className="w-full"
+  />
+  <TimePicker
+    label="Service Start Time"
+    value={formData.service_start_time}
+    onChange={(newTime) => handleChange({ target: { name: 'service_start_time', value: newTime } })}
+    className="w-full"
+  />
+</div>
         <Button type="submit" color="primary" className="w-full" isLoading={isLoading}>
           {isLoading ? 'Creating Queue...' : 'Create Queue'}
         </Button>

@@ -1,28 +1,28 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-export function useUserName(userId) {
-  const [userName, setUserName] = useState('')
+export function useUserInfo(userId) {
+  const [userInfo, setUserInfo] = useState({ name: '', role: '' })
 
   useEffect(() => {
-    async function fetchUserName() {
+    async function fetchUserInfo() {
       if (userId) {
         const { data, error } = await supabase
           .from('user_profile')
-          .select('name')
+          .select('name, role')
           .eq('user_id', userId)
           .single()
 
         if (error) {
-          console.error('Error fetching user name:', error)
+          console.error('Error fetching user info:', error)
         } else if (data) {
-          setUserName(data.name)
+          setUserInfo({ name: data.name, role: data.role })
         }
       }
     }
 
-    fetchUserName()
+    fetchUserInfo()
   }, [userId])
 
-  return userName
+  return userInfo
 }

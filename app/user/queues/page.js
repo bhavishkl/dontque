@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import Image from 'next/image'
-import Header from '../../components/UserLayout/header'
 import { Search, Clock, Users, MapPin, Star, Bookmark, Share2 } from 'lucide-react'
 import { Input, Select, SelectItem, Card, CardBody, Button, Chip, Progress, Skeleton } from "@nextui-org/react"
 
@@ -97,7 +96,6 @@ export default function QueueListPage() {
 
   return (
     <div className="min-h-screen bg-neutral-100">
-      <Header />
 
       <main className="container mx-auto px-4 py-8">
         {/* Search and Filters */}

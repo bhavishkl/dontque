@@ -14,10 +14,10 @@ export async function POST(request, { params }) {
 
   const { queueid } = params;
 
-  // First, get the current queue information
+  // Get the current queue information
   const { data: queueData, error: queueError } = await supabase
     .from('queues')
-    .select('current_queue, max_capacity, avg_wait_time')
+    .select('current_queue, max_capacity, avg_wait_time, est_time_to_serve')
     .eq('queue_id', queueid)
     .single();
 
@@ -45,30 +45,27 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Update the current queue count
-  const { error: updateError } = await supabase
+  // Update the current queue count and total estimated time
+  const newQueueCount = queueData.current_queue + 1;
+  const newTotalEstimatedTime = newQueueCount * queueData.est_time_to_serve;
+
+  const { data: updatedQueue, error: updateError } = await supabase
     .from('queues')
-    .update({ current_queue: queueData.current_queue + 1 })
-    .eq('queue_id', queueid);
+    .update({ 
+      current_queue: newQueueCount,
+      total_estimated_time: newTotalEstimatedTime
+    })
+    .eq('queue_id', queueid)
+    .select('current_queue, total_estimated_time')
+    .single();
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  // After successfully joining the queue and updating the queue count
-  const { data: updatedQueueData, error: updatedQueueError } = await supabase
-    .from('queues')
-    .select('*')
-    .eq('queue_id', queueid)
-    .single();
-
-  if (updatedQueueError) {
-    return NextResponse.json({ error: updatedQueueError.message }, { status: 500 });
-  }
-
   return NextResponse.json({
-    ...updatedQueueData,
-    userPosition: queueData.current_queue + 1,
-    estWaitTime: (queueData.current_queue + 1) * queueData.avg_wait_time
+    ...updatedQueue,
+    userPosition: newQueueCount,
+    estWaitTime: newQueueCount * queueData.avg_wait_time
   });
 }

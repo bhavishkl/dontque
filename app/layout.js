@@ -4,6 +4,7 @@ import { authOptions } from "./api/auth/[...nextauth]/route";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Toaster } from 'sonner';
+import Header from './components/UserLayout/header';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -28,6 +29,7 @@ export default async function RootLayout({ children }) {
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Providers session={session}>
+          <Header />
           {children}
         </Providers>
         <Toaster position="top-right" />
