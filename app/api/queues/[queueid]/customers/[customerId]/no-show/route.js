@@ -21,10 +21,10 @@ export async function POST(request, { params }) {
 
     if (deleteError) throw deleteError;
 
-    // Update the queue's current count and total estimated time
+    // Update the queue's current count, total served, and total estimated time
     const { data: queueData, error: queueError } = await supabase
       .from('queues')
-      .select('current_queue, est_time_to_serve')
+      .select('current_queue, total_served, est_time_to_serve')
       .eq('queue_id', queueId)
       .single();
 
@@ -40,18 +40,79 @@ export async function POST(request, { params }) {
         total_estimated_time: newTotalEstimatedTime
       })
       .eq('queue_id', queueId)
-      .select('current_queue, total_estimated_time')
+      .select('current_queue, total_served, total_estimated_time')
       .single();
 
     if (updateError) throw updateError;
 
+    // Fetch remaining queue entries
+    const { data: queueEntries, error: entriesError } = await supabase
+      .from('queue_entries')
+      .select('*')
+      .eq('queue_id', queueId)
+      .order('join_time', { ascending: true });
+
+    if (entriesError) throw entriesError;
+
+    // Check if there's a 5th person in the queue
+    if (queueEntries.length >= 5) {
+      const fifthPerson = queueEntries[4];
+      await notifyCustomer(fifthPerson.user_id);
+    }
+
     return NextResponse.json({ 
       message: 'Customer marked as no-show and removed from queue',
       current_queue: updatedQueue.current_queue,
+      total_served: updatedQueue.total_served,
       total_estimated_time: updatedQueue.total_estimated_time
     });
   } catch (error) {
     console.error('Error marking customer as no-show:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+async function notifyCustomer(userId) {
+  try {
+    const { data: userData, error: userError } = await supabase
+      .from('user_profile')
+      .select('phone_number')
+      .eq('user_id', userId)
+      .single();
+
+    if (userError) throw userError;
+
+    if (userData && userData.phone_number) {
+      await sendWhatsAppNotification(userData.phone_number);
+    }
+  } catch (error) {
+    console.error('Error notifying customer:', error);
+  }
+}
+
+async function sendWhatsAppNotification(phoneNumber) {
+  try {
+    const options = {
+      method: 'POST',
+      headers: {
+        clientId: process.env.OTPLESS_CLIENT_ID,
+        clientSecret: process.env.OTPLESS_CLIENT_SECRET,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        sendTo: phoneNumber,
+        channel: "WHATSAPP",
+        message: "Your position in the queue is now 5. Please be prepared!"
+      })
+    };
+
+    const response = await fetch('https://marketing.otpless.app/v1/api/send', options);
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error('Failed to send WhatsApp notification');
+    }
+  } catch (error) {
+    console.error('Error sending WhatsApp notification:', error);
   }
 }

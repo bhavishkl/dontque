@@ -36,7 +36,6 @@ export default function SignIn() {
       alert('An error occurred. Please try again.');
     }
   };
-
  const saveUserData = async (otplessUser, userName) => {
   const { userId, identities, deviceInfo, network, timestamp, token } = otplessUser;
   const identity = identities[0];
@@ -46,7 +45,7 @@ export default function SignIn() {
     // First, check if the user already exists
     const { data: existingUser, error: fetchError } = await supabase
       .from('user_profile')
-      .select('user_id')
+      .select('user_id, name')
       .eq(identityType === 'EMAIL' ? 'email' : 'phone_number', identityValue)
       .single();
 
@@ -56,11 +55,10 @@ export default function SignIn() {
 
     let profileData;
     if (existingUser) {
-      // Update existing user
+      // Update existing user, but don't change the name
       const { data, error: updateError } = await supabase
         .from('user_profile')
         .update({
-          name: userName || (identityType === 'EMAIL' ? identityValue.split('@')[0] : ''),
           image: `https://api.dicebear.com/6.x/initials/svg?seed=${identityValue}`,
           country_code: otplessUser.country_code,
           otpless_token: token
@@ -71,6 +69,7 @@ export default function SignIn() {
 
       if (updateError) throw updateError;
       profileData = data;
+      profileData.name = existingUser.name; // Preserve the existing name
     } else {
       // Insert new user
       const { data, error: insertError } = await supabase
@@ -110,7 +109,6 @@ export default function SignIn() {
         vendor: deviceInfo.vendor,
         browser: deviceInfo.browser,
         connection: deviceInfo.connection,
-        id_token: otplessUser.idToken,
         auth_time: new Date(timestamp).toISOString()
       }, { onConflict: 'user_id' })
       .select()
@@ -123,7 +121,6 @@ export default function SignIn() {
     // Update the session with the new user data
     await signIn("credentials", {
       userId: profileData.user_id,
-      idToken: otplessUser.idToken,
       name: profileData.name,
       image: profileData.image,
       redirect: false,
@@ -134,8 +131,6 @@ export default function SignIn() {
     console.error('Error saving user data:', error);
   }
 };
-  
-  
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">

@@ -8,6 +8,9 @@ import { ArrowLeft, MapPin, Clock, Users, Star, Share2, Bell, ChevronDown, Chevr
 import { Button, Card, CardBody, CardHeader, Chip, Progress, Skeleton } from "@nextui-org/react"
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
 const calculateExpectedTurnTime = (queueData) => {
   const now = new Date();
@@ -90,6 +93,10 @@ export default function QueueDetailsPage({ params }) {
       }
       const data = await response.json();
       setQueueData(data);
+      if (data.userQueueEntry) {
+        const { expectedTurnTime, formattedTime } = calculateExpectedTurnTime(data);
+        setExpectedTurnTime(expectedTurnTime);
+      }
     } catch (err) {
       setError(err.message);
       toast.error('Failed to fetch queue data');
@@ -100,6 +107,23 @@ export default function QueueDetailsPage({ params }) {
   
   useEffect(() => {
     fetchQueueData();
+  
+    const subscription = supabase
+      .channel(`queue_${params.queueid}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'queue_entries',
+        filter: `queue_id=eq.${params.queueid}`
+      }, (payload) => {
+        console.log('Change received!', payload);
+        fetchQueueData();
+      })
+      .subscribe();
+  
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [params.queueid]);
 
   const handleJoinQueue = async () => {

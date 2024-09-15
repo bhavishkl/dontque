@@ -1,53 +1,72 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { ArrowLeft, Users, Clock, TrendingUp, Settings, Download, Repeat, Star } from 'lucide-react'
 import { Button, Card, CardBody, CardHeader, Select, SelectItem, Tabs, Tab } from "@nextui-org/react"
 
-// Mock data for the queue analytics
-const queueData = {
-  name: 'Central Perk Coffee',
-  currentQueue: 15,
-  averageWaitTime: 20,
-  totalServed: 150,
-  peakHour: '12PM',
-  repeatCustomers: 30,
-  customerSatisfaction: 4.2,
-  hourlyData: [
-    { hour: '9AM', customers: 10, avgWaitTime: 15 },
-    { hour: '10AM', customers: 25, avgWaitTime: 18 },
-    { hour: '11AM', customers: 35, avgWaitTime: 22 },
-    { hour: '12PM', customers: 40, avgWaitTime: 25 },
-    { hour: '1PM', customers: 30, avgWaitTime: 20 },
-    { hour: '2PM', customers: 20, avgWaitTime: 15 },
-    { hour: '3PM', customers: 15, avgWaitTime: 12 },
-    { hour: '4PM', customers: 10, avgWaitTime: 10 },
-  ],
-  customerTypes: [
-    { name: 'New', value: 70 },
-    { name: 'Returning', value: 30 },
-  ],
-  weeklyTrend: [
-    { day: 'Mon', customers: 120 },
-    { day: 'Tue', customers: 135 },
-    { day: 'Wed', customers: 140 },
-    { day: 'Thu', customers: 150 },
-    { day: 'Fri', customers: 180 },
-    { day: 'Sat', customers: 200 },
-    { day: 'Sun', customers: 170 },
-  ],
-}
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
-
 export default function QueueAnalyticsPage() {
   const [timeRange, setTimeRange] = useState('today')
+  const [queueData, setQueueData] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
+
+  const fetchAnalyticsData = async (range) => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/analytics?range=${range}&queueId=${params.queueId}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch analytics data')
+      }
+      const data = await response.json()
+      setQueueData(data)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchAnalyticsData(timeRange)
+  }, [timeRange])
+
+  const handleExport = async () => {
+    try {
+      const response = await fetch(`/api/analytics?range=${timeRange}&queueId=${params.queueId}`, {
+        method: 'POST',
+      })
+      if (!response.ok) {
+        throw new Error('Failed to export data')
+      }
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.style.display = 'none'
+      a.href = url
+      a.download = `analytics_${timeRange}.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Error exporting data:', err)
+      toast.error('Failed to export data')
+    }
+  }
+  
+  if (isLoading) {
+    return <div>Loading analytics data...</div>
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="sticky top-0 bg-white shadow-sm z-10">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/queue-owner/dashboard" className="flex items-center text-blue-600">
@@ -65,14 +84,18 @@ export default function QueueAnalyticsPage() {
         <div className="mb-6 flex justify-between items-center">
           <Select 
             value={timeRange} 
-            onChange={(e) => setTimeRange(e.target.value)}
+            onChange={(e) => {
+              setTimeRange(e.target.value)
+              fetchAnalyticsData(e.target.value)
+            }}
             className="w-[180px]"
           >
             <SelectItem value="today">Today</SelectItem>
             <SelectItem value="week">This Week</SelectItem>
             <SelectItem value="month">This Month</SelectItem>
+            <SelectItem value="year">This Year</SelectItem>
           </Select>
-          <Button startContent={<Download />}>
+          <Button startContent={<Download />} onClick={handleExport}>
             Export Data
           </Button>
         </div>

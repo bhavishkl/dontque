@@ -5,9 +5,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { Button, Input, Skeleton, Card, CardBody } from "@nextui-org/react"
+import { Button, Input, Skeleton, Card, CardBody, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@nextui-org/react"
 import { categories } from '../../utils/category'
-import { Search, Clock, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2 } from 'lucide-react'
+import { Search, Clock, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function Home() {
@@ -15,6 +15,9 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
+  const [userId, setUserId] = useState('');
+  const [queueId, setQueueId] = useState('');
   const router = useRouter();
   const { data: session } = useSession();
 
@@ -26,22 +29,32 @@ export default function Home() {
   });
 
   useEffect(() => {
-    fetchPopularQueues();
-  }, [selectedCategory]);
-
-  const fetchPopularQueues = async () => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const categoryParam = searchParams.get('category');
+    const searchParam = searchParams.get('search');
+  
+    if (categoryParam) setSelectedCategory(categoryParam);
+    if (searchParam) setSearchQuery(searchParam);
+  
+    fetchPopularQueues(categoryParam || 'All', searchParam || '');
+  }, []);
+  
+  const fetchPopularQueues = async (category = selectedCategory, search = searchQuery) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/queues?category=${selectedCategory}&limit=6`);
+      const response = await fetch(`/api/queues?category=${category}&search=${search}&limit=6`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch popular queues');
+      }
       const data = await response.json();
       setPopularQueues(data);
     } catch (error) {
       console.error('Error fetching popular queues:', error);
+      toast.error('Failed to load popular queues');
     } finally {
       setIsLoading(false);
     }
   };
-
   const handleSearch = (e) => {
     e.preventDefault();
     router.push(`/user/queues?search=${searchQuery}&category=${selectedCategory}`);
@@ -50,6 +63,15 @@ export default function Home() {
   const handleCategoryClick = (category) => {
     setSelectedCategory(category);
     router.push(`/user/queues?category=${category}`);
+  };
+
+  const handleAddMember = (e) => {
+    e.preventDefault();
+    // Here you would typically make an API call to add the member
+    console.log(`Adding user ${userId} to queue ${queueId}`);
+    setIsAddMemberModalOpen(false);
+    setUserId('');
+    setQueueId('');
   };
 
   const generateStatsImage = () => {
@@ -152,28 +174,34 @@ export default function Home() {
       toast.error('Web Share API is not supported in your browser. Please use a different sharing method.');
     }
   };
-
   return (
     <div className="min-h-screen bg-gray-50">
-
       <main>
         {/* Hero Section with Search */}
-        <section className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-6 sm:py-12">
+        <section className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-4 sm:py-8">
           <div className="container mx-auto px-4">
             <div className="flex flex-col md:flex-row items-center justify-between">
-              <div className="md:w-1/2 mb-4 md:mb-0">
-                <h1 className="text-2xl md:text-4xl font-bold mb-1 sm:mb-2">Skip the Wait, Join Smart</h1>
-                <p className="text-base sm:text-lg mb-2 sm:mb-4">Find and join queues near you instantly.</p>
+              <div className="md:w-1/2 mb-3 md:mb-0">
+                <h1 className="text-2xl md:text-4xl font-bold mb-1">Skip the Wait, Join Smart</h1>
+                <p className="text-base sm:text-lg">Find and join queues near you instantly.</p>
               </div>
               <div className="md:w-1/2">
                 <form onSubmit={handleSearch} className="flex items-center">
+                  <Button
+                    isIconOnly
+                    aria-label="Add Member"
+                    className="mr-2"
+                    onClick={() => setIsAddMemberModalOpen(true)}
+                  >
+                    <Plus className="h-5 w-5" />
+                  </Button>
                   <div className="relative w-full">
                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                       <Search className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
                       type="search"
-                      className="w-full p-4 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full p-3 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Search queues or locations..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -182,7 +210,7 @@ export default function Home() {
                   </div>
                   <button
                     type="submit"
-                    className="ml-2 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-4"
+                    className="ml-2 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-3"
                     disabled={isLoading}
                   >
                     {isLoading ? 'Searching...' : 'Search'}
@@ -195,13 +223,13 @@ export default function Home() {
 
         {/* Categories */}
         <section className="py-4 sm:py-8">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-4 overflow-hidden">
             <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-4">Categories</h3>
-            <div className="overflow-x-auto custom-scrollbar">
-              <div className="flex gap-2 sm:gap-3 pb-2 sm:pb-4" style={{ width: 'max-content' }}>
-              {categories.map((category) => (
+            <div className="relative">
+              <div className="animate-scroll flex gap-2 sm:gap-3 pb-2 sm:pb-4" style={{ width: 'max-content' }}>
+              {[...categories, ...categories].map((category, index) => (
   <button
-    key={category.name}
+    key={`${category.name}-${index}`}
     className={`inline-flex items-center px-2 sm:px-3 py-1 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors duration-200 ease-in-out whitespace-nowrap ${
       selectedCategory === category.name
         ? 'bg-blue-600 text-white'
@@ -219,57 +247,46 @@ export default function Home() {
         </section>
 
         {/* User Stats Section */}
-        <section className="py-8 bg-white">
+        <section className="py-6 bg-white">
           <div className="container mx-auto px-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">Your Queue Smart Stats</h3>
-              <Button color="primary" onClick={handleShareStats}>
-                Share Stats
-                <Share2 className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
             <Card>
-              <CardBody className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                  <div className="text-center">
-                    <p className="text-4xl font-bold text-primary">{userStats.totalTimeSaved} mins</p>
-                    <p className="text-sm text-default-500">Total Time Saved</p>
+              <CardBody className="p-4 lg:p-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+                  <div className="flex space-x-4 mb-4 md:mb-0 lg:space-x-6">
+                    <div className="text-center">
+                      <p className="text-2xl lg:text-3xl font-bold text-primary">{userStats.totalTimeSaved} mins</p>
+                      <p className="text-xs lg:text-sm text-muted-foreground">Total Time Saved</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl lg:text-3xl font-bold text-primary">{userStats.queuesJoined}</p>
+                      <p className="text-xs lg:text-sm text-muted-foreground">Queues Joined</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl lg:text-3xl font-bold text-primary">{userStats.averageTimeSaved} mins</p>
+                      <p className="text-xs lg:text-sm text-muted-foreground">Avg. Time Saved</p>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-4xl font-bold text-primary">{userStats.queuesJoined}</p>
-                    <p className="text-sm text-default-500">Queues Joined</p>
+                  <div className="w-full md:w-auto">
+                    <p className="text-sm lg:text-base font-semibold mb-2">How you could use saved time:</p>
+                    <div className="grid grid-cols-2 gap-2 lg:gap-3">
+                      <div className="flex items-center">
+                        <Coffee className="h-4 w-4 lg:h-5 lg:w-5 text-primary mr-2" />
+                        <span className="text-xs lg:text-sm">{Math.floor(userStats.totalTimeSaved / 15)} coffee breaks</span>
+                      </div>
+                      <div className="flex items-center">
+                        <BookOpen className="h-4 w-4 lg:h-5 lg:w-5 text-primary mr-2" />
+                        <span className="text-xs lg:text-sm">{Math.floor(userStats.totalTimeSaved / 30)} book chapters</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Dumbbell className="h-4 w-4 lg:h-5 lg:w-5 text-primary mr-2" />
+                        <span className="text-xs lg:text-sm">{Math.floor(userStats.totalTimeSaved / 45)} workouts</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Users className="h-4 w-4 lg:h-5 lg:w-5 text-primary mr-2" />
+                        <span className="text-xs lg:text-sm">{Math.floor(userStats.totalTimeSaved / 60)} hour-long chats</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-4xl font-bold text-primary">{userStats.averageTimeSaved} mins</p>
-                    <p className="text-sm text-default-500">Avg. Time Saved per Queue</p>
-                  </div>
-                </div>
-                <h4 className="text-lg font-semibold mb-4">How you could use your saved time:</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Card>
-                    <CardBody className="p-4 flex items-center">
-                      <Coffee className="h-8 w-8 text-primary mr-2" />
-                      <span className="text-sm">Enjoy {Math.floor(userStats.totalTimeSaved / 15)} coffee breaks</span>
-                    </CardBody>
-                  </Card>
-                  <Card>
-                    <CardBody className="p-4 flex items-center">
-                      <BookOpen className="h-8 w-8 text-primary mr-2" />
-                      <span className="text-sm">Read {Math.floor(userStats.totalTimeSaved / 30)} book chapters</span>
-                    </CardBody>
-                  </Card>
-                  <Card>
-                    <CardBody className="p-4 flex items-center">
-                      <Dumbbell className="h-8 w-8 text-primary mr-2" />
-                      <span className="text-sm">Complete {Math.floor(userStats.totalTimeSaved / 45)} workouts</span>
-                    </CardBody>
-                  </Card>
-                  <Card>
-                    <CardBody className="p-4 flex items-center">
-                      <Users className="h-8 w-8 text-primary mr-2" />
-                      <span className="text-sm">Have {Math.floor(userStats.totalTimeSaved / 60)} hour-long chats</span>
-                    </CardBody>
-                  </Card>
                 </div>
               </CardBody>
             </Card>
@@ -303,7 +320,13 @@ export default function Home() {
                   ))
                 ) : (
                   popularQueues.map((queue) => (
-                    <div key={queue.queue_id} className="bg-white rounded-lg shadow-md overflow-hidden" style={{ width: '250px', maxWidth: '100%' }}>
+                    <div key={queue.queue_id} className="bg-white rounded-lg shadow-md overflow-hidden relative" style={{ width: '250px', maxWidth: '100%' }}>
+                      <div className="absolute top-2 right-2 bg-white rounded-full px-2 py-1 text-xs font-semibold flex items-center z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-400 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        {queue.avg_rating ? queue.avg_rating.toFixed(1) : '4'}
+                      </div>
                       <Image
                         src={queue.image_url || 'https://via.placeholder.com/400x200'}
                         alt={queue.name}
@@ -335,6 +358,35 @@ export default function Home() {
           </div>
         </section>
       </main>
+      <Modal isOpen={isAddMemberModalOpen} onClose={() => setIsAddMemberModalOpen(false)}>
+  <ModalContent>
+    <form onSubmit={handleAddMember}>
+      <ModalHeader>Add Member to Queue</ModalHeader>
+      <ModalBody>
+        <Input
+          label="User ID"
+          value={userId}
+          onChange={(e) => setUserId(e.target.value)}
+          required
+        />
+        <Input
+          label="Queue ID"
+          value={queueId}
+          onChange={(e) => setQueueId(e.target.value)}
+          required
+        />
+      </ModalBody>
+      <ModalFooter>
+        <Button color="danger" variant="light" onClick={() => setIsAddMemberModalOpen(false)}>
+          Cancel
+        </Button>
+        <Button color="primary" type="submit">
+          Add Member
+        </Button>
+      </ModalFooter>
+    </form>
+  </ModalContent>
+</Modal>
     </div>
   )
 }

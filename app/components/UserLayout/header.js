@@ -8,6 +8,7 @@ import dynamic from 'next/dynamic'
 import { useUserInfo } from '../../hooks/useUserName'
 import { supabase } from '../../lib/supabase'
 import { usePathname } from 'next/navigation'
+import { Avatar } from "@nextui-org/react"
 
 const DynamicHeader = dynamic(() => import('./DynamicHeader'), { ssr: false })
 
@@ -16,8 +17,8 @@ const Header = () => {
   const { data: session } = useSession()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const sidebarRef = useRef(null)
-  const { name: userName, role } = useUserInfo(session?.user?.id)
-
+  const { name: userName, role, image: userImage } = useUserInfo(session?.user?.id)
+  
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
 
   useEffect(() => {
@@ -56,11 +57,14 @@ const Header = () => {
                   <Bell size={24} />
                 </button>
                 <div className="flex items-center space-x-2 cursor-pointer" onClick={toggleSidebar}>
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                    <User size={24} className="text-gray-600" />
-                  </div>
-                  <span className="text-gray-700 hidden sm:inline">{userName || 'Set Name'}</span>
-                </div>
+  <Avatar
+    src={userImage || ''}
+    name={userName || 'User'}
+    size="sm"
+    className="w-10 h-10"
+  />
+  <span className="text-gray-700 hidden sm:inline">{userName || 'Set Name'}</span>
+</div>
               </>
             )}
           </nav>

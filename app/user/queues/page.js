@@ -7,6 +7,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Search, Clock, Users, MapPin, Star, Bookmark, Share2 } from 'lucide-react'
 import { Input, Select, SelectItem, Card, CardBody, Button, Chip, Progress, Skeleton } from "@nextui-org/react"
+import debounce from 'lodash/debounce';
 
 const categories = [
   'All',
@@ -33,33 +34,39 @@ export default function QueueListPage() {
     const searchParams = new URLSearchParams(window.location.search);
     const categoryParam = searchParams.get('category');
     const searchParam = searchParams.get('search');
-
+  
     if (categoryParam) setSelectedCategory(categoryParam);
     if (searchParam) setSearch(searchParam);
-
-    fetchQueues(categoryParam, searchParam);
+  
+    fetchQueues(categoryParam || 'All', searchParam || '');
   }, []);
-
-  const fetchQueues = async (category = selectedCategory, searchQuery = search) => {
-    setIsLoading(true)
+  
+  const fetchQueues = async (category, searchQuery) => {
+    setIsLoading(true);
     try {
-      const response = await fetch(`/api/queues?category=${category}&search=${searchQuery}`)
+      const response = await fetch(`/api/queues?category=${category}&search=${searchQuery}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch queues')
+        throw new Error('Failed to fetch queues');
       }
-      const data = await response.json()
-      setQueues(data)
+      const data = await response.json();
+      setQueues(data);
     } catch (err) {
-      setError(err.message)
-      toast.error('Failed to fetch queues')
+      setError(err.message);
+      toast.error('Failed to fetch queues');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
-
+  };
+  
   useEffect(() => {
-    fetchQueues()
-  }, [selectedCategory, search])
+    const debouncedFetch = debounce(() => {
+      fetchQueues(selectedCategory, search);
+    }, 300);
+  
+    debouncedFetch();
+  
+    return () => debouncedFetch.cancel();
+  }, [selectedCategory, search]);
 
   const handleViewQueue = (queueId) => {
     router.push(`/user/queue/${queueId}`);
@@ -100,36 +107,36 @@ export default function QueueListPage() {
       <main className="container mx-auto px-4 py-8">
         {/* Search and Filters */}
         <div className="mb-8 space-y-4">
-          <Input
-            type="search"
-            placeholder="Search for queues or locations..."
-            startContent={<Search className="text-neutral-400" />}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            classNames={{
-              base: "bg-white",
-              input: "text-black",
-              inputWrapper: "border border-gray-300",
-            }}
-          />
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1">
-              <Select
-                placeholder="Select category"
-                selectedKeys={[selectedCategory]}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                classNames={{
-                  trigger: "bg-white border border-gray-300",
-                  value: "text-black",
-                }}
-              >
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </Select>
-            </div>
+        <Input
+  type="search"
+  placeholder="Search for queues or locations..."
+  startContent={<Search className="text-neutral-400" />}
+  value={search}
+  onChange={(e) => setSearch(e.target.value)}
+  classNames={{
+    base: "bg-white",
+    input: "text-black",
+    inputWrapper: "border border-gray-300",
+  }}
+/>
+<div className="flex flex-wrap gap-4">
+  <div className="flex-1">
+    <Select
+      placeholder="Select category"
+      selectedKeys={[selectedCategory]}
+      onChange={(e) => setSelectedCategory(e.target.value)}
+      classNames={{
+        trigger: "bg-white border border-gray-300",
+        value: "text-black",
+      }}
+    >
+      {categories.map((category) => (
+        <SelectItem key={category} value={category}>
+          {category}
+        </SelectItem>
+      ))}
+    </Select>
+  </div>
             <div className="flex-1">
               <Select
                 placeholder="Sort by"
