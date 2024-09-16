@@ -30,9 +30,13 @@ export default async function RootLayout({ children }) {
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Providers session={session}>
-          <Header />
-          {children}
-          <BottomBar />
+          <div className="flex flex-col min-h-screen">
+            <Header />
+            <main className="flex-1 pb-16 sm:pb-0">
+              {children}
+            </main>
+            <BottomBar />
+          </div>
         </Providers>
         <Toaster position="top-right" />
       </body>
