@@ -29,19 +29,28 @@ export default function QueueListPage() {
   const router = useRouter()
 
   const { data: queues, isLoading, isError, mutate } = useApi(`/api/queues?category=${selectedCategory}&search=${search}`)
-
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const categoryParam = searchParams.get('category');
     const searchParam = searchParams.get('search');
   
     if (categoryParam) setSelectedCategory(categoryParam);
-    if (searchParam) setSearch(searchParam);
-  }, []);
+    if (searchParam) {
+      setSearch(searchParam);
+      // Check if the search is a numeric short ID
+      if (/^\d+$/.test(searchParam)) {
+        // If it's a numeric short ID, navigate to the queue details page
+        router.push(`/user/queue/${searchParam}`);
+      }
+    }
+  }, [router]);
   
   useEffect(() => {
     const debouncedMutate = debounce(() => {
-      mutate();
+      // Only mutate if the search is not a numeric short ID
+      if (!/^\d+$/.test(search)) {
+        mutate();
+      }
     }, 300);
   
     debouncedMutate();
