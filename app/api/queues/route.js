@@ -59,6 +59,9 @@ export async function POST(request) {
 
     const { name, description, category, location, max_capacity, opening_time, closing_time, est_time_to_serve, service_start_time } = await request.json();
 
+    // Generate a unique queue ID
+    const queueId = 'Q' + Math.random().toString(36).substr(2, 6).toUpperCase();
+
     const { data, error } = await supabase
       .from('queues')
       .insert({
@@ -72,7 +75,8 @@ export async function POST(request) {
         closing_time,
         est_time_to_serve: parseInt(est_time_to_serve),
         service_start_time,
-        status: 'active'
+        status: 'active',
+        queue_id_short: queueId  // New field to store the short queue ID
       })
       .select()
       .single();

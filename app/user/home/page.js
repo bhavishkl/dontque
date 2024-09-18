@@ -7,72 +7,57 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { Button, Input, Skeleton, Card, CardBody, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@nextui-org/react"
 import { categories } from '../../utils/category'
-import { Search, Clock, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, Plus } from 'lucide-react'
+import { Search, Clock, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, Plus, Copy, Share } from 'lucide-react'
 import { toast } from 'sonner'
+import { useApi } from '../../hooks/useApi'
 
 export default function Home() {
-  const [popularQueues, setPopularQueues] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
-  const [userId, setUserId] = useState('');
-  const [queueId, setQueueId] = useState('');
-  const router = useRouter();
-  const { data: session } = useSession();
+  const [selectedCategory, setSelectedCategory] = useState('All')
+  const [searchQuery, setSearchQuery] = useState('')
+  const { data: popularQueues, isLoading, isError, mutate } = useApi(`/api/queues?category=${selectedCategory}&search=${searchQuery}&limit=6`)
+  const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
+  const [userId, setUserId] = useState('')
+  const [queueId, setQueueId] = useState('')
+  const router = useRouter()
+  const { data: session } = useSession()
 
   // Dummy data for user stats
   const [userStats, setUserStats] = useState({
     totalTimeSaved: 180,
     queuesJoined: 15,
     averageTimeSaved: 12
-  });
+  })
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const categoryParam = searchParams.get('category');
-    const searchParam = searchParams.get('search');
+    const searchParams = new URLSearchParams(window.location.search)
+    const categoryParam = searchParams.get('category')
+    const searchParam = searchParams.get('search')
   
-    if (categoryParam) setSelectedCategory(categoryParam);
-    if (searchParam) setSearchQuery(searchParam);
+    if (categoryParam) setSelectedCategory(categoryParam)
+    if (searchParam) setSearchQuery(searchParam)
   
-    fetchPopularQueues(categoryParam || 'All', searchParam || '');
-  }, []);
+    mutate()
+  }, [])
   
-  const fetchPopularQueues = async (category = selectedCategory, search = searchQuery) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/queues?category=${category}&search=${search}&limit=6`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch popular queues');
-      }
-      const data = await response.json();
-      setPopularQueues(data);
-    } catch (error) {
-      console.error('Error fetching popular queues:', error);
-      toast.error('Failed to load popular queues');
-    } finally {
-      setIsLoading(false);
-    }
-  };
   const handleSearch = (e) => {
-    e.preventDefault();
-    router.push(`/user/queues?search=${searchQuery}&category=${selectedCategory}`);
-  };
+    e.preventDefault()
+    router.push(`/user/queues?search=${searchQuery}&category=${selectedCategory}`)
+  }
   
   const handleCategoryClick = (category) => {
-    setSelectedCategory(category);
-    router.push(`/user/queues?category=${category}`);
-  };
+    setSelectedCategory(category)
+    mutate()
+    router.push(`/user/queues?category=${category}`)
+  }
 
   const handleAddMember = (e) => {
-    e.preventDefault();
+    e.preventDefault()
     // Here you would typically make an API call to add the member
-    console.log(`Adding user ${userId} to queue ${queueId}`);
-    setIsAddMemberModalOpen(false);
-    setUserId('');
-    setQueueId('');
-  };
+    console.log(`Adding user ${userId} to queue ${queueId}`)
+    setIsAddMemberModalOpen(false)
+    setUserId('')
+    setQueueId('')
+  }
 
   const generateStatsImage = () => {
     const canvas = document.createElement('canvas');
@@ -175,10 +160,10 @@ export default function Home() {
     }
   };
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen dark:bg-gray-900 dark:text-gray-100">
       <main>
         {/* Hero Section with Search */}
-        <section className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-4 sm:py-8">
+        <section className="bg-gradient-to-r from-blue-600 to-indigo-700 dark:from-blue-800 dark:to-indigo-900 text-white py-4 sm:py-8">
           <div className="container mx-auto px-4">
             <div className="flex flex-col md:flex-row items-center justify-between">
               <div className="md:w-1/2 mb-3 md:mb-0">
@@ -201,7 +186,7 @@ export default function Home() {
                     </div>
                     <input
                       type="search"
-                      className="w-full p-3 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full p-3 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                       placeholder="Search queues or locations..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -210,7 +195,7 @@ export default function Home() {
                   </div>
                   <button
                     type="submit"
-                    className="ml-2 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-3"
+                    className="ml-2 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-3 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
                     disabled={isLoading}
                   >
                     {isLoading ? 'Searching...' : 'Search'}
@@ -222,7 +207,7 @@ export default function Home() {
         </section>
 
         {/* Categories */}
-        <section className="py-4 sm:py-8">
+        <section className="py-4 sm:py-8 dark:bg-gray-800">
           <div className="container mx-auto px-4 overflow-hidden">
             <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-4">Categories</h3>
             <div className="relative">
@@ -230,10 +215,10 @@ export default function Home() {
               {[...categories, ...categories].map((category, index) => (
   <button
     key={`${category.name}-${index}`}
-    className={`inline-flex items-center px-2 sm:px-3 py-1 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors duration-200 ease-in-out whitespace-nowrap ${
+    className={`inline-flex items-center px-2 sm:px-3 py-1 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors duration-200 ease-in-out whitespace-nowrap ${
       selectedCategory === category.name
         ? 'bg-blue-600 text-white'
-        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+        : 'bg-gray-100 text-black hover:bg-gray-200 dark:bg-[#111827] dark:text-white dark:hover:bg-gray-700'
     }`}
     onClick={() => handleCategoryClick(category.name)}
   >
@@ -247,42 +232,42 @@ export default function Home() {
         </section>
 
         {/* User Stats Section */}
-        <section className="py-6 bg-white">
+        <section className="py-6 bg-white dark:bg-gray-800">
           <div className="container mx-auto px-4">
-            <Card>
+            <Card className="dark:bg-gray-700 dark:text-gray-100">
               <CardBody className="p-4 lg:p-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
                   <div className="flex space-x-4 mb-4 md:mb-0 lg:space-x-6">
                     <div className="text-center">
-                      <p className="text-2xl lg:text-3xl font-bold text-primary">{userStats.totalTimeSaved} mins</p>
-                      <p className="text-xs lg:text-sm text-muted-foreground">Total Time Saved</p>
+                      <p className="text-2xl lg:text-3xl font-bold text-primary dark:text-blue-400">{userStats.totalTimeSaved} mins</p>
+                      <p className="text-xs lg:text-sm text-muted-foreground dark:text-gray-400">Total Time Saved</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl lg:text-3xl font-bold text-primary">{userStats.queuesJoined}</p>
-                      <p className="text-xs lg:text-sm text-muted-foreground">Queues Joined</p>
+                      <p className="text-2xl lg:text-3xl font-bold text-primary dark:text-blue-400">{userStats.queuesJoined}</p>
+                      <p className="text-xs lg:text-sm text-muted-foreground dark:text-gray-400">Queues Joined</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl lg:text-3xl font-bold text-primary">{userStats.averageTimeSaved} mins</p>
-                      <p className="text-xs lg:text-sm text-muted-foreground">Avg. Time Saved</p>
+                      <p className="text-2xl lg:text-3xl font-bold text-primary dark:text-blue-400">{userStats.averageTimeSaved} mins</p>
+                      <p className="text-xs lg:text-sm text-muted-foreground dark:text-gray-400">Avg. Time Saved</p>
                     </div>
                   </div>
                   <div className="w-full md:w-auto">
                     <p className="text-sm lg:text-base font-semibold mb-2">How you could use saved time:</p>
                     <div className="grid grid-cols-2 gap-2 lg:gap-3">
                       <div className="flex items-center">
-                        <Coffee className="h-4 w-4 lg:h-5 lg:w-5 text-primary mr-2" />
+                        <Coffee className="h-4 w-4 lg:h-5 lg:w-5 text-primary dark:text-blue-400 mr-2" />
                         <span className="text-xs lg:text-sm">{Math.floor(userStats.totalTimeSaved / 15)} coffee breaks</span>
                       </div>
                       <div className="flex items-center">
-                        <BookOpen className="h-4 w-4 lg:h-5 lg:w-5 text-primary mr-2" />
+                        <BookOpen className="h-4 w-4 lg:h-5 lg:w-5 text-primary dark:text-blue-400 mr-2" />
                         <span className="text-xs lg:text-sm">{Math.floor(userStats.totalTimeSaved / 30)} book chapters</span>
                       </div>
                       <div className="flex items-center">
-                        <Dumbbell className="h-4 w-4 lg:h-5 lg:w-5 text-primary mr-2" />
+                        <Dumbbell className="h-4 w-4 lg:h-5 lg:w-5 text-primary dark:text-blue-400 mr-2" />
                         <span className="text-xs lg:text-sm">{Math.floor(userStats.totalTimeSaved / 45)} workouts</span>
                       </div>
                       <div className="flex items-center">
-                        <Users className="h-4 w-4 lg:h-5 lg:w-5 text-primary mr-2" />
+                        <Users className="h-4 w-4 lg:h-5 lg:w-5 text-primary dark:text-blue-400 mr-2" />
                         <span className="text-xs lg:text-sm">{Math.floor(userStats.totalTimeSaved / 60)} hour-long chats</span>
                       </div>
                     </div>
@@ -294,11 +279,11 @@ export default function Home() {
         </section>
 
         {/* Popular Queues */}
-        <section className="py-4 sm:py-8">
+        <section className="py-4 sm:py-8 bg-gray-50 dark:bg-gray-900">
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-2 sm:mb-4">
               <h3 className="text-lg sm:text-xl font-semibold">Popular Queues</h3>
-              <Link href="/user/queues" className="inline-flex items-center px-3 sm:px-4 py-1 sm:py-2 rounded-full text-xs sm:text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors duration-200 ease-in-out">
+              <Link href="/user/queues" className="inline-flex items-center px-3 sm:px-4 py-1 sm:py-2 rounded-full text-xs sm:text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-800 dark:text-blue-100 dark:hover:bg-blue-700 transition-colors duration-200 ease-in-out">
                 View all
                 <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
               </Link>
@@ -308,7 +293,7 @@ export default function Home() {
                 {isLoading ? (
                   // Skeleton loading state
                   Array(6).fill().map((_, index) => (
-                    <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden" style={{ width: '250px', maxWidth: '100%' }}>
+                    <div key={index} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden" style={{ width: '250px', maxWidth: '100%' }}>
                       <Skeleton className="w-full h-32 sm:h-40" />
                       <div className="p-2 sm:p-4">
                         <Skeleton className="w-3/4 h-4 sm:h-6 mb-1 sm:mb-2" />
@@ -320,8 +305,8 @@ export default function Home() {
                   ))
                 ) : (
                   popularQueues.map((queue) => (
-                    <div key={queue.queue_id} className="bg-white rounded-lg shadow-md overflow-hidden relative" style={{ width: '250px', maxWidth: '100%' }}>
-                      <div className="absolute top-2 right-2 bg-white rounded-full px-2 py-1 text-xs font-semibold flex items-center z-10">
+                    <div key={queue.queue_id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden relative" style={{ width: '250px', maxWidth: '100%' }}>
+                      <div className="absolute top-2 right-2 bg-white dark:bg-gray-700 rounded-full px-2 py-1 text-xs font-semibold flex items-center z-10">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-400 mr-1" viewBox="0 0 20 20" fill="currentColor">
                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                         </svg>
@@ -336,16 +321,16 @@ export default function Home() {
                       />
                       <div className="p-2 sm:p-4">
                         <h4 className="font-semibold mb-1 sm:mb-2 text-sm sm:text-base">{queue.name}</h4>
-                        <div className="flex items-center text-xs sm:text-sm text-gray-600 mb-1">
+                        <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">
                           <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                           <span>{queue.total_est_wait_time} mins wait</span>
                         </div>
-                        <div className="flex items-center text-xs sm:text-sm text-gray-600 mb-2 sm:mb-3">
+                        <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-3">
                           <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                           <span>{queue.current_queue} people in queue</span>
                         </div>
                         <Link href={`/user/queue/${queue.queue_id}`}>
-                          <Button className="w-full bg-gray-800 text-white py-1 sm:py-2 text-xs sm:text-sm rounded-md hover:bg-gray-700">
+                          <Button className="w-full bg-gray-800 text-white dark:bg-gray-700 dark:text-gray-100 py-1 sm:py-2 text-xs sm:text-sm rounded-md hover:bg-gray-700 dark:hover:bg-gray-600">
                             View Queue
                           </Button>
                         </Link>

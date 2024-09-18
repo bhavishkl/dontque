@@ -6,7 +6,6 @@ import { supabase } from '../lib/supabase'
 import Script from 'next/script'
 import { signIn } from 'next-auth/react'
 
-
 export default function SignIn() {
   const router = useRouter()
 
@@ -36,101 +35,127 @@ export default function SignIn() {
       alert('An error occurred. Please try again.');
     }
   };
- const saveUserData = async (otplessUser, userName) => {
-  const { userId, identities, deviceInfo, network, timestamp, token } = otplessUser;
-  const identity = identities[0];
-  const { identityType, identityValue, channel, methods, verified } = identity;
 
-  try {
-    // First, check if the user already exists
-    const { data: existingUser, error: fetchError } = await supabase
-      .from('user_profile')
-      .select('user_id, name')
-      .eq(identityType === 'EMAIL' ? 'email' : 'phone_number', identityValue)
-      .single();
+  const saveUserData = async (otplessUser, userName) => {
+    const { userId, identities, deviceInfo, network, timestamp, token } = otplessUser;
+    const identity = identities[0];
+    const { identityType, identityValue, channel, methods, verified } = identity;
 
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      throw fetchError;
-    }
-
-    let profileData;
-    if (existingUser) {
-      // Update existing user, but don't change the name
-      const { data, error: updateError } = await supabase
+    try {
+      // First, check if the user already exists
+      const { data: existingUser, error: fetchError } = await supabase
         .from('user_profile')
-        .update({
-          image: `https://api.dicebear.com/6.x/initials/svg?seed=${identityValue}`,
-          country_code: otplessUser.country_code,
-          otpless_token: token
-        })
-        .eq('user_id', existingUser.user_id)
+        .select('user_id, name, short_id')
+        .eq(identityType === 'EMAIL' ? 'email' : 'phone_number', identityValue)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        throw fetchError;
+      }
+
+      let profileData;
+      if (existingUser) {
+        // Update existing user, but don't change the name or short_id
+        const { data, error: updateError } = await supabase
+          .from('user_profile')
+          .update({
+            image: `https://api.dicebear.com/6.x/initials/svg?seed=${identityValue}`,
+            country_code: otplessUser.country_code,
+            otpless_token: token
+          })
+          .eq('user_id', existingUser.user_id)
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+        profileData = data;
+        profileData.name = existingUser.name; // Preserve the existing name
+        profileData.short_id = existingUser.short_id; // Preserve the existing short_id
+      } else {
+        // Generate a unique short ID
+        const shortId = await generateUniqueShortId();
+
+        // Insert new user
+        const { data, error: insertError } = await supabase
+          .from('user_profile')
+          .insert({
+            user_id: userId,
+            email: identityType === 'EMAIL' ? identityValue : null,
+            phone_number: identityType === 'MOBILE' ? identityValue : null,
+            name: userName || (identityType === 'EMAIL' ? identityValue.split('@')[0] : ''),
+            image: `https://api.dicebear.com/6.x/initials/svg?seed=${identityValue}`,
+            country_code: otplessUser.country_code,
+            otpless_token: token,
+            short_id: shortId
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        profileData = data;
+      }
+
+      // Update user_info
+      const { error: infoError } = await supabase
+        .from('user_info')
+        .upsert({
+          user_id: profileData.user_id,
+          identity_type: identityType,
+          identity_value: identityValue,
+          channel,
+          methods,
+          verified,
+          verified_at: new Date(timestamp).toISOString(),
+          is_company_email: identityType === 'EMAIL' ? identityValue.includes('@company.com') : false,
+          ip_address: network.ip,
+          timezone: network.timezone,
+          user_agent: deviceInfo.userAgent,
+          platform: deviceInfo.platform,
+          vendor: deviceInfo.vendor,
+          browser: deviceInfo.browser,
+          connection: deviceInfo.connection,
+          auth_time: new Date(timestamp).toISOString()
+        }, { onConflict: 'user_id' })
         .select()
         .single();
 
-      if (updateError) throw updateError;
-      profileData = data;
-      profileData.name = existingUser.name; // Preserve the existing name
-    } else {
-      // Insert new user
-      const { data, error: insertError } = await supabase
-        .from('user_profile')
-        .insert({
-          user_id: userId,
-          email: identityType === 'EMAIL' ? identityValue : null,
-          phone_number: identityType === 'MOBILE' ? identityValue : null,
-          name: userName || (identityType === 'EMAIL' ? identityValue.split('@')[0] : ''),
-          image: `https://api.dicebear.com/6.x/initials/svg?seed=${identityValue}`,
-          country_code: otplessUser.country_code,
-          otpless_token: token
-        })
-        .select()
-        .single();
+      if (infoError) throw infoError;
 
-      if (insertError) throw insertError;
-      profileData = data;
+      console.log('User data saved successfully');
+      
+      // Update the session with the new user data
+      await signIn("credentials", {
+        userId: profileData.user_id,
+        name: profileData.name,
+        image: profileData.image,
+        shortId: profileData.short_id,
+        redirect: false,
+      });
+
+      router.push('/user/home');
+    } catch (error) {
+      console.error('Error saving user data:', error);
     }
+  };
 
-    // Update user_info
-    const { error: infoError } = await supabase
-      .from('user_info')
-      .upsert({
-        user_id: profileData.user_id,
-        identity_type: identityType,
-        identity_value: identityValue,
-        channel,
-        methods,
-        verified,
-        verified_at: new Date(timestamp).toISOString(),
-        is_company_email: identityType === 'EMAIL' ? identityValue.includes('@company.com') : false,
-        ip_address: network.ip,
-        timezone: network.timezone,
-        user_agent: deviceInfo.userAgent,
-        platform: deviceInfo.platform,
-        vendor: deviceInfo.vendor,
-        browser: deviceInfo.browser,
-        connection: deviceInfo.connection,
-        auth_time: new Date(timestamp).toISOString()
-      }, { onConflict: 'user_id' })
-      .select()
-      .single();
+  const generateUniqueShortId = async () => {
+    while (true) {
+      const shortId = Math.floor(100000 + Math.random() * 900000).toString();
+      const { data, error } = await supabase
+        .from('user_profile')
+        .select('short_id')
+        .eq('short_id', shortId);
 
-    if (infoError) throw infoError;
+      if (error) {
+        console.error('Error checking short ID:', error);
+        throw error;
+      }
 
-    console.log('User data saved successfully');
-    
-    // Update the session with the new user data
-    await signIn("credentials", {
-      userId: profileData.user_id,
-      name: profileData.name,
-      image: profileData.image,
-      redirect: false,
-    });
-
-    router.push('/user/home');
-  } catch (error) {
-    console.error('Error saving user data:', error);
-  }
-};
+      if (data.length === 0) {
+        return shortId;
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">

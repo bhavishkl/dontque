@@ -3,6 +3,53 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
+async function archiveQueueEntry(queueId, entryId) {
+  try {
+    // Fetch the queue entry to be archived
+    const { data: entryData, error: fetchError } = await supabase
+      .from('queue_entries')
+      .select('*')
+      .match({ queue_id: queueId, entry_id: entryId })
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching queue entry:', fetchError);
+      return false;
+    }
+
+    if (!entryData) {
+      console.error('No queue entry found to archive');
+      return false;
+    }
+
+    // Calculate actual wait time
+    const actualWaitTime = Math.floor((new Date() - new Date(entryData.join_time)) / 60000);
+
+    // Insert into queue_entries_archive
+    const { error: insertError } = await supabase
+      .from('queue_entries_archive')
+      .insert({
+        queue_id: entryData.queue_id,
+        user_id: entryData.user_id,
+        status: 'no-show',
+        wait_time: entryData.estimated_wait_time,
+        actual_wait_time: actualWaitTime,
+        join_time: entryData.join_time,
+        leave_time: new Date().toISOString(),
+      });
+
+    if (insertError) {
+      console.error('Error inserting into archive:', insertError);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Unexpected error in archiving queue entry:', error);
+    return false;
+  }
+}
+
 export async function POST(request, { params }) {
   const { queueid: queueId, customerId } = params;
 
@@ -12,6 +59,12 @@ export async function POST(request, { params }) {
   }
 
   try {
+    // Archive the queue entry before deleting
+    const archiveSuccess = await archiveQueueEntry(queueId, customerId);
+    if (!archiveSuccess) {
+      console.warn('Failed to archive queue entry, but proceeding with no-show operation');
+    }
+
     // Delete the customer from the queue
     const { error: deleteError } = await supabase
       .from('queue_entries')

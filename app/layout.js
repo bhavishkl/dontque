@@ -6,6 +6,8 @@ import "./globals.css";
 import { Toaster } from 'sonner';
 import Header from './components/UserLayout/header';
 import BottomBar from './components/UserLayout/bottombar';
+import { ThemeProvider } from 'next-themes';
+import Script from 'next/script';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -23,22 +25,29 @@ export const metadata = {
   description: "Revolutionizing queue management",
 };
 
+
 export default async function RootLayout({ children }) {
   const session = await getServerSession(authOptions);
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <Providers session={session}>
-          <div className="flex flex-col min-h-screen">
-            <Header />
-            <main className="flex-1 pb-16 sm:pb-0">
-              {children}
-            </main>
-            <BottomBar />
-          </div>
-        </Providers>
-        <Toaster position="top-right" />
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <Providers session={session}>
+            <div className="flex flex-col min-h-screen">
+              <Header />
+              <main className="flex-1 pb-16 sm:pb-0">
+                {children}
+              </main>
+              <BottomBar />
+            </div>
+          </Providers>
+          <Toaster position="top-right" />
+        </ThemeProvider>
+        <Script
+          src="https://checkout.razorpay.com/v1/checkout.js"
+          strategy="lazyOnload"
+        />
       </body>
     </html>
   );

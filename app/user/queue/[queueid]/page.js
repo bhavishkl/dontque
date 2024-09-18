@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, MapPin, Clock, Users, Star, Share2, Bell, ChevronDown, ChevronUp } from 'lucide-react'
-import { Button, Card, CardBody, CardHeader, Chip, Progress, Skeleton } from "@nextui-org/react"
+import { ArrowLeft, MapPin, Clock, Users, Star, Share2, Bell, ChevronDown, ChevronUp, UserPlus } from 'lucide-react'
+import { Button, Card, CardBody, CardHeader, Chip, Progress, Skeleton, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input } from "@nextui-org/react"
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
 import { createClient } from '@supabase/supabase-js'
+import AddKnownUserModal from '@/app/components/UniComp/AddKnownUserModal';
+import { useApi } from '@/app/hooks/useApi'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
@@ -26,10 +28,8 @@ const calculateExpectedTurnTime = (queueData) => {
 
   let expectedTurnTime;
   if (serviceStartTime < now) {
-    // If service start time has passed, add estimated wait time to current time
     expectedTurnTime = new Date(now.getTime() + queueData.userQueueEntry.estimated_wait_time * 60000);
   } else {
-    // If service start time is in the future, add estimated wait time to service start time
     expectedTurnTime = new Date(serviceStartTime.getTime() + queueData.userQueueEntry.estimated_wait_time * 60000);
   }
 
@@ -41,9 +41,7 @@ const calculateExpectedTurnTime = (queueData) => {
 };
 
 export default function QueueDetailsPage({ params }) {
-  const [queueData, setQueueData] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const { data: queueData, isLoading, isError, mutate } = useApi(`/api/queues/${params.queueid}`)
   const [isJoining, setIsJoining] = useState(false)
   const [isLeaving, setIsLeaving] = useState(false)
   const router = useRouter()
@@ -54,10 +52,14 @@ export default function QueueDetailsPage({ params }) {
   const [expectedTurnTime, setExpectedTurnTime] = useState(null);
 
   const toggleNotifications = async () => {
-    // TODO: Implement notification toggle logic
     setNotificationsEnabled(!notificationsEnabled)
     toast.success(notificationsEnabled ? 'Notifications disabled' : 'Notifications enabled')
   }
+
+  const handleAddKnownSuccess = async () => {
+    await mutate()
+    toast.success('Known user added to the queue successfully');
+  };
 
   useEffect(() => {
     if (queueData?.userQueueEntry) {
@@ -83,31 +85,8 @@ export default function QueueDetailsPage({ params }) {
       return () => clearInterval(timer);
     }
   }, [queueData]);
-
-  const fetchQueueData = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/queues/${params.queueid}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch queue data');
-      }
-      const data = await response.json();
-      setQueueData(data);
-      if (data.userQueueEntry) {
-        const { expectedTurnTime, formattedTime } = calculateExpectedTurnTime(data);
-        setExpectedTurnTime(expectedTurnTime);
-      }
-    } catch (err) {
-      setError(err.message);
-      toast.error('Failed to fetch queue data');
-    } finally {
-      setIsLoading(false);
-    }
-  };
   
   useEffect(() => {
-    fetchQueueData();
-  
     const subscription = supabase
       .channel(`queue_${params.queueid}`)
       .on('postgres_changes', { 
@@ -116,56 +95,113 @@ export default function QueueDetailsPage({ params }) {
         table: 'queue_entries',
         filter: `queue_id=eq.${params.queueid}`
       }, (payload) => {
-        console.log('Change received!', payload);
-        fetchQueueData();
+        console.log('Change received:', payload);
+        if (payload.eventType === 'INSERT') {
+          toast.info('New customer joined the queue');
+        } else if (payload.eventType === 'DELETE') {
+          toast.info('A customer left the queue');
+        }
+        mutate();
       })
       .subscribe();
   
     return () => {
       subscription.unsubscribe();
     };
-  }, [params.queueid]);
+  }, [params.queueid, mutate]);
 
   const handleJoinQueue = async () => {
-    setIsJoining(true)
+    setIsJoining(true);
     try {
-      const response = await fetch(`/api/queues/${params.queueid}/join`, {
+      console.log('Creating Razorpay order...');
+      const receipt = `queue_${params.queueid.substring(0, 34)}`;
+      const orderResponse = await fetch('/api/create-razorpay-order', {
         method: 'POST',
-      })
-      if (!response.ok) {
-        throw new Error('Failed to join queue')
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: 10, // 10 INR
+          currency: 'INR',
+          receipt: receipt,
+          notes: { queueId: params.queueid }
+        }),
+      });
+  
+      const orderData = await orderResponse.json();
+  
+      if (!orderResponse.ok) {
+        console.error('Failed to create Razorpay order:', orderData);
+        throw new Error(orderData.error || 'Failed to create Razorpay order');
       }
-      toast.success('Successfully joined the queue')
-      // Refresh queue data after joining
-      await fetchQueueData()
+  
+      console.log('Razorpay order created:', orderData);
+  
+      // Initialize Razorpay payment
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: 'QueueSmart',
+        description: 'Queue Joining Fee',
+        order_id: orderData.id,
+        handler: async function (response) {
+          console.log('Payment successful:', response);
+          // Handle successful payment
+          const joinResponse = await fetch(`/api/queues/${params.queueid}/join`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+            }),
+          });
+  
+          if (!joinResponse.ok) {
+            throw new Error('Failed to join queue');
+          }
+  
+          toast.success('Successfully joined the queue');
+          await fetchQueueData();
+        },
+        prefill: {
+          name: session?.user?.name,
+          email: session?.user?.email,
+        },
+        theme: {
+          color: '#3B82F6',
+        },
+      };
+  
+      console.log('Initializing Razorpay payment with options:', { ...options, key: '(hidden)' });
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
     } catch (err) {
-      setError(err.message)
-      toast.error('Failed to join queue')
+      console.error('Error joining queue:', err);
+      toast.error(err.message || 'Failed to join queue');
     } finally {
-      setIsJoining(false)
+      setIsJoining(false);
     }
-  }
-
-  if (error) {
-    return <div>Error: {error}</div>
-  }
+  };
 
   const handleLeaveQueue = async () => {
-    setIsLeaving(true)
+    setIsLeaving(true);
     try {
       const response = await fetch(`/api/queues/${params.queueid}/leave`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
       });
+  
       if (!response.ok) {
         throw new Error('Failed to leave queue');
       }
-      toast.success('Successfully left the queue')
-      // Refresh queue data after leaving
+  
+      toast.success('Successfully left the queue');
       await fetchQueueData();
     } catch (err) {
-      toast.error('Failed to leave queue')
+      console.error('Error leaving queue:', err);
+      toast.error(err.message || 'Failed to leave queue');
     } finally {
-      setIsLeaving(false)
+      setIsLeaving(false);
     }
   };
 
@@ -187,16 +223,18 @@ export default function QueueDetailsPage({ params }) {
     }
   }
 
+  
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto px-4 py-2 flex justify-between items-center">
-        <Link href="/user/queues" className="flex items-center text-blue-600">
+        <Link href="/user/queues" className="flex items-center text-blue-600 dark:text-blue-400">
           <ArrowLeft className="mr-2" />
           <span className="font-semibold">Back to Queues</span>
         </Link>
         <div className="flex space-x-2">
           <Button isIconOnly variant="light" aria-label="Notify Me" onClick={toggleNotifications}>
-            <Bell className={`h-4 w-4 ${notificationsEnabled ? 'text-blue-600' : ''}`} />
+            <Bell className={`h-4 w-4 ${notificationsEnabled ? 'text-blue-600 dark:text-blue-400' : ''}`} />
           </Button>
           <Button isIconOnly variant="light" aria-label="Share" onClick={handleShare}>
             <Share2 className="h-4 w-4" />
@@ -215,7 +253,7 @@ export default function QueueDetailsPage({ params }) {
             <>
               {/* Queue Entry Section */}
               <div>
-                <Card className="bg-black text-primary-foreground mb-6">
+                <Card className="bg-black text-primary-foreground mb-6 dark:bg-gray-800">
                   <CardHeader>
                     <h2 className="text-2xl font-bold">Your Position</h2>
                   </CardHeader>
@@ -230,7 +268,7 @@ export default function QueueDetailsPage({ params }) {
                     />
                   </CardBody>
                 </Card>
-                <Card className="mb-6">
+                <Card className="mb-6 dark:bg-gray-800 dark:text-gray-200">
                   <CardHeader>
                     <h2 className="text-2xl font-bold">Estimated Wait Time</h2>
                   </CardHeader>
@@ -239,11 +277,11 @@ export default function QueueDetailsPage({ params }) {
                       <div className="text-5xl font-bold text-center">
                         {queueData.userQueueEntry.estimated_wait_time} minutes
                       </div>
-                      <p className="text-center text-muted-foreground">
+                      <p className="text-center text-muted-foreground dark:text-gray-400">
                         {expectedTurnTime ? `Your turn is expected at ${expectedTurnTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : "Service start time not available"}
                       </p>
                       {countdown && (
-                        <div className="text-2xl font-bold text-center text-primary">
+                        <div className="text-2xl font-bold text-center text-primary dark:text-blue-400">
                           {countdown}
                         </div>
                       )}
@@ -259,7 +297,8 @@ export default function QueueDetailsPage({ params }) {
                 >
                   {isLeaving ? 'Leaving Queue...' : 'Leave Queue'}
                 </Button>
-                <div className="mt-4 text-sm text-gray-500">
+                <AddKnownUserModal queueId={params.queueid} onSuccess={handleAddKnownSuccess} />
+                <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
                   <h3 className="font-semibold mb-2">While you're in the queue:</h3>
                   <ul className="list-disc pl-5 space-y-1">
                     <li>Stay nearby and be ready to arrive when it's your turn</li>
@@ -307,7 +346,7 @@ export default function QueueDetailsPage({ params }) {
                   </div>
                 </Skeleton>
                 <Skeleton isLoaded={!isLoading} className="mb-4">
-                  <h1 className="text-4xl font-bold mb-2">{queueData?.name}</h1>
+                  <h1 className="text-4xl font-bold mb-2 dark:text-white">{queueData?.name}</h1>
                 </Skeleton>
                 <Skeleton isLoaded={!isLoading} className="mb-6">
                   <div className="flex items-center justify-between flex-wrap gap-2">
@@ -315,27 +354,27 @@ export default function QueueDetailsPage({ params }) {
                       <Chip color="secondary" variant="flat">{queueData?.category}</Chip>
                     </div>
                     <div className="flex items-center">
-                      <div className="flex items-center bg-yellow-100 rounded-full px-3 py-1">
+                      <div className="flex items-center bg-yellow-100 dark:bg-yellow-900 rounded-full px-3 py-1">
                         <Star className="w-4 h-4 text-yellow-500 mr-1" />
-                        <span className="font-medium text-yellow-700">{queueData?.avg_rating || 'NaN'}</span>
+                        <span className="font-medium text-yellow-700 dark:text-yellow-300">{queueData?.avg_rating || 'NaN'}</span>
                       </div>
-                      <span className="text-sm text-gray-500 ml-2">({queueData?.total_ratings || 0} ratings)</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">({queueData?.total_ratings || 0} ratings)</span>
                     </div>
                   </div>
                 </Skeleton>
                 <Skeleton isLoaded={!isLoading} className="mb-6">
-                  <p className="text-gray-600 text-lg">{queueData?.description}</p>
+                  <p className="text-gray-600 dark:text-gray-300 text-lg">{queueData?.description}</p>
                 </Skeleton>
                 <div className="space-y-4 mb-8">
                   <Skeleton isLoaded={!isLoading}>
-                    <div className="flex items-center text-gray-700 bg-gray-100 rounded-lg p-3">
-                      <MapPin className="w-5 h-5 mr-3 text-gray-500" />
+                    <div className="flex items-center text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
+                      <MapPin className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
                       <span className="font-medium">{queueData?.location}</span>
                     </div>
                   </Skeleton>
                   <Skeleton isLoaded={!isLoading}>
-                    <div className="flex items-center text-gray-700 bg-gray-100 rounded-lg p-3">
-                      <Clock className="w-5 h-5 mr-3 text-gray-500" />
+                    <div className="flex items-center text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
+                      <Clock className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
                       <span className="font-medium">Open: {queueData?.opening_time} - {queueData?.closing_time}</span>
                     </div>
                   </Skeleton>
@@ -357,7 +396,7 @@ export default function QueueDetailsPage({ params }) {
                   </div>
                 </Skeleton>
                 <Skeleton isLoaded={!isLoading} className="mb-4">
-                  <h1 className="text-4xl font-bold mb-2">{queueData?.name}</h1>
+                  <h1 className="text-4xl font-bold mb-2 dark:text-white">{queueData?.name}</h1>
                 </Skeleton>
                 <Skeleton isLoaded={!isLoading} className="mb-6">
                   <div className="flex items-center justify-between flex-wrap gap-2">
@@ -365,27 +404,27 @@ export default function QueueDetailsPage({ params }) {
                       <Chip color="secondary" variant="flat">{queueData?.category}</Chip>
                     </div>
                     <div className="flex items-center">
-                      <div className="flex items-center bg-yellow-100 rounded-full px-3 py-1">
+                      <div className="flex items-center bg-yellow-100 dark:bg-yellow-900 rounded-full px-3 py-1">
                         <Star className="w-4 h-4 text-yellow-500 mr-1" />
-                        <span className="font-medium text-yellow-700">{queueData?.avg_rating || 'NaN'}</span>
+                        <span className="font-medium text-yellow-700 dark:text-yellow-300">{queueData?.avg_rating || 'NaN'}</span>
                       </div>
-                      <span className="text-sm text-gray-500 ml-2">({queueData?.total_ratings || 0} ratings)</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">({queueData?.total_ratings || 0} ratings)</span>
                     </div>
                   </div>
                 </Skeleton>
                 <Skeleton isLoaded={!isLoading} className="mb-6">
-                  <p className="text-gray-600 text-lg">{queueData?.description}</p>
+                  <p className="text-gray-600 dark:text-gray-300 text-lg">{queueData?.description}</p>
                 </Skeleton>
                 <div className="space-y-4 mb-8">
                   <Skeleton isLoaded={!isLoading}>
-                    <div className="flex items-center text-gray-700 bg-gray-100 rounded-lg p-3">
-                      <MapPin className="w-5 h-5 mr-3 text-gray-500" />
+                    <div className="flex items-center text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
+                      <MapPin className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
                       <span className="font-medium">{queueData?.location}</span>
                     </div>
                   </Skeleton>
                   <Skeleton isLoaded={!isLoading}>
-                    <div className="flex items-center text-gray-700 bg-gray-100 rounded-lg p-3">
-                      <Clock className="w-5 h-5 mr-3 text-gray-500" />
+                    <div className="flex items-center text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
+                      <Clock className="w-5 h-5 mr-3 text-gray-500 dark:text-gray-400" />
                       <span className="font-medium">Open: {queueData?.opening_time} - {queueData?.closing_time}</span>
                     </div>
                   </Skeleton>
@@ -394,7 +433,7 @@ export default function QueueDetailsPage({ params }) {
               
               {/* Join Queue Section */}
               <div>
-                <Card className="mb-6">
+                <Card className="mb-6 dark:bg-gray-800 dark:text-gray-200">
                   <CardHeader>
                     <h2 className="text-xl font-semibold">Current Queue Status</h2>
                   </CardHeader>
@@ -409,14 +448,14 @@ export default function QueueDetailsPage({ params }) {
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
-                          <Users className="w-5 h-5 mr-2 text-blue-600" />
+                          <Users className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
                           <span>People in queue</span>
                         </div>
                         <span className="font-semibold">{queueData.current_queue}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
-                          <Clock className="w-5 h-5 mr-2 text-blue-600" />
+                          <Clock className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
                           <span>Estimated wait time</span>
                         </div>
                         <span className="font-semibold">{queueData.avg_wait_time} minutes</span>
@@ -425,7 +464,7 @@ export default function QueueDetailsPage({ params }) {
                   </CardBody>
                 </Card>
                 
-                <Card>
+                <Card className="dark:bg-gray-800 dark:text-gray-200">
                   <CardHeader>
                     <h2 className="text-xl font-semibold">Join the Queue</h2>
                   </CardHeader>
@@ -439,8 +478,9 @@ export default function QueueDetailsPage({ params }) {
                     >
                       {isJoining ? 'Joining Queue...' : 'Join Queue'}
                     </Button>
+                    <AddKnownUserModal queueId={params.queueid} onSuccess={handleAddKnownSuccess} />
                     
-                    <div className="mt-4 text-sm text-gray-500">
+                    <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
                       <h3 className="font-semibold mb-2">Before you join:</h3>
                       <ul className="list-disc pl-5 space-y-1">
                         <li>Make sure you're ready to arrive when it's your turn</li>

@@ -1,4 +1,4 @@
--- Users Table (updated)
+-- Users Table (rewritten)
 CREATE TABLE user_profile (
     user_id VARCHAR(255) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -8,13 +8,31 @@ CREATE TABLE user_profile (
     country_code VARCHAR(5),
     otpless_token VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    short_id VARCHAR(6) UNIQUE
 );
 
 CREATE INDEX idx_user_profile_email ON user_profile(email);
 CREATE INDEX idx_user_profile_phone_number ON user_profile(phone_number);
+CREATE INDEX idx_user_profile_short_id ON user_profile(short_id);
 
--- Queues Table (updated)
+CREATE TABLE queue_entries_archive (
+  id SERIAL PRIMARY KEY,
+  queue_id UUID NOT NULL,
+  user_id UUID NOT NULL,
+  status VARCHAR(20) NOT NULL,
+  wait_time INTEGER,
+  actual_wait_time INTEGER,
+  join_time TIMESTAMP NOT NULL,
+  serve_time TIMESTAMP,
+  leave_time TIMESTAMP,
+  rating INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  left_position INTEGER,
+  added_by VARCHAR(255)
+);
+-- Queues Table (rewritten)
 CREATE TABLE queues (
     queue_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     owner_id VARCHAR(255) REFERENCES user_profile(user_id),
@@ -33,15 +51,16 @@ CREATE TABLE queues (
     closing_time TIME,
     image_url VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     service_start_time TIME,
+    added_by VARCHAR(255)
 );
 
 CREATE INDEX idx_queues_owner_id ON queues(owner_id);
 CREATE INDEX idx_queues_category ON queues(category);
 CREATE INDEX idx_queues_status ON queues(status);
 
--- Queue Entries Table (updated)
+-- Queue Entries Table (rewritten)
 CREATE TABLE queue_entries (
     entry_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     queue_id UUID REFERENCES queues(queue_id),

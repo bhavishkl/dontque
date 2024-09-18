@@ -8,6 +8,7 @@ import Image from 'next/image'
 import { Search, Clock, Users, MapPin, Star, Bookmark, Share2 } from 'lucide-react'
 import { Input, Select, SelectItem, Card, CardBody, Button, Chip, Progress, Skeleton } from "@nextui-org/react"
 import debounce from 'lodash/debounce';
+import { useApi } from '../../hooks/useApi'
 
 const categories = [
   'All',
@@ -24,11 +25,10 @@ const categories = [
 export default function QueueListPage() {
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [sortBy, setSortBy] = useState('wait')
-  const [queues, setQueues] = useState([])
   const [search, setSearch] = useState('')
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState(null)
   const router = useRouter()
+
+  const { data: queues, isLoading, isError, mutate } = useApi(`/api/queues?category=${selectedCategory}&search=${search}`)
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -37,36 +37,17 @@ export default function QueueListPage() {
   
     if (categoryParam) setSelectedCategory(categoryParam);
     if (searchParam) setSearch(searchParam);
-  
-    fetchQueues(categoryParam || 'All', searchParam || '');
   }, []);
   
-  const fetchQueues = async (category, searchQuery) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/queues?category=${category}&search=${searchQuery}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch queues');
-      }
-      const data = await response.json();
-      setQueues(data);
-    } catch (err) {
-      setError(err.message);
-      toast.error('Failed to fetch queues');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
   useEffect(() => {
-    const debouncedFetch = debounce(() => {
-      fetchQueues(selectedCategory, search);
+    const debouncedMutate = debounce(() => {
+      mutate();
     }, 300);
   
-    debouncedFetch();
+    debouncedMutate();
   
-    return () => debouncedFetch.cancel();
-  }, [selectedCategory, search]);
+    return () => debouncedMutate.cancel();
+  }, [selectedCategory, search, mutate]);
 
   const handleViewQueue = (queueId) => {
     router.push(`/user/queue/${queueId}`);
@@ -91,18 +72,19 @@ export default function QueueListPage() {
   }
   
   const filteredQueues = queues
-    .sort((a, b) => {
-      if (sortBy === 'wait') {
-        return a.avg_wait_time - b.avg_wait_time
-      } else if (sortBy === 'distance') {
-        // Assuming distance is added to the queue object in the future
-        return a.distance - b.distance
-      }
-      return 0
-    })
+    ? queues.sort((a, b) => {
+        if (sortBy === 'wait') {
+          return a.avg_wait_time - b.avg_wait_time
+        } else if (sortBy === 'distance') {
+          // Assuming distance is added to the queue object in the future
+          return a.distance - b.distance
+        }
+        return 0
+      })
+    : []
 
   return (
-    <div className="min-h-screen bg-neutral-100">
+    <div className="min-h-screen dark:bg-neutral-900 dark:text-white">
 
       <main className="container mx-auto px-4 py-8">
         {/* Search and Filters */}
@@ -114,9 +96,9 @@ export default function QueueListPage() {
   value={search}
   onChange={(e) => setSearch(e.target.value)}
   classNames={{
-    base: "bg-white",
-    input: "text-black",
-    inputWrapper: "border border-gray-300",
+    base: "dark:bg-neutral-800",
+    input: "dark:text-white",
+    inputWrapper: "border dark:border-neutral-700",
   }}
 />
 <div className="flex flex-wrap gap-4">
@@ -126,8 +108,8 @@ export default function QueueListPage() {
       selectedKeys={[selectedCategory]}
       onChange={(e) => setSelectedCategory(e.target.value)}
       classNames={{
-        trigger: "bg-white border border-gray-300",
-        value: "text-black",
+        trigger: "dark:bg-neutral-800 dark:border-neutral-700",
+        value: "dark:text-white",
       }}
     >
       {categories.map((category) => (
@@ -143,8 +125,8 @@ export default function QueueListPage() {
                 selectedKeys={[sortBy]}
                 onChange={(e) => setSortBy(e.target.value)}
                 classNames={{
-                  trigger: "bg-white border border-gray-300",
-                  value: "text-black",
+                  trigger: "bg-white dark:bg-neutral-800 border dark:border-neutral-700",
+                  value: "text-black dark:text-white",
                 }}
               >
                 <SelectItem key="wait" value="wait">Sort by Wait Time</SelectItem>
@@ -159,33 +141,33 @@ export default function QueueListPage() {
           {isLoading ? (
             // Skeleton loading state
             Array(5).fill().map((_, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow duration-300">
+              <Card key={index} className="hover:shadow-lg transition-shadow duration-300 dark:bg-neutral-800">
                 <CardBody>
                   <div className="flex flex-col md:flex-row">
                     <div className="w-full md:w-1/3 lg:w-1/4">
-                      <Skeleton className="rounded-lg w-full h-48 md:h-full" />
+                      <Skeleton className="rounded-lg w-full h-48 md:h-full dark:bg-neutral-700" />
                     </div>
                     <div className="w-full md:w-2/3 lg:w-3/4 p-6 flex flex-col justify-between">
                       <div>
                         <div className="flex justify-between items-start mb-2">
-                          <Skeleton className="h-6 w-1/3" />
-                          <Skeleton className="h-4 w-16" />
+                          <Skeleton className="h-6 w-1/3 dark:bg-neutral-700" />
+                          <Skeleton className="h-4 w-16 dark:bg-neutral-700" />
                         </div>
                         <div className="flex flex-wrap gap-4 mb-4">
-                          <Skeleton className="h-4 w-24" />
-                          <Skeleton className="h-4 w-24" />
-                          <Skeleton className="h-4 w-24" />
+                          <Skeleton className="h-4 w-24 dark:bg-neutral-700" />
+                          <Skeleton className="h-4 w-24 dark:bg-neutral-700" />
+                          <Skeleton className="h-4 w-24 dark:bg-neutral-700" />
                         </div>
                         <div className="mb-4">
-                          <Skeleton className="h-2 w-full mb-1" />
-                          <Skeleton className="h-2 w-full" />
+                          <Skeleton className="h-2 w-full mb-1 dark:bg-neutral-700" />
+                          <Skeleton className="h-2 w-full dark:bg-neutral-700" />
                         </div>
                       </div>
                       <div className="flex items-center justify-between">
-                        <Skeleton className="h-10 w-24" />
+                        <Skeleton className="h-10 w-24 dark:bg-neutral-700" />
                         <div className="flex space-x-2">
-                          <Skeleton className="h-10 w-10 rounded-full" />
-                          <Skeleton className="h-10 w-10 rounded-full" />
+                          <Skeleton className="h-10 w-10 rounded-full dark:bg-neutral-700" />
+                          <Skeleton className="h-10 w-10 rounded-full dark:bg-neutral-700" />
                         </div>
                       </div>
                     </div>
@@ -195,7 +177,7 @@ export default function QueueListPage() {
             ))
           ) : (
             filteredQueues.map((queue) => (
-              <Card key={queue.queue_id} className="hover:shadow-lg transition-shadow duration-300">
+              <Card key={queue.queue_id} className="hover:shadow-lg transition-shadow duration-300 dark:bg-neutral-800">
                 <CardBody>
                   <div className="flex flex-col md:flex-row">
                     <div className="w-full md:w-1/3 lg:w-1/4 relative">
@@ -220,15 +202,15 @@ export default function QueueListPage() {
                           </div>
                         </div>
                         <div className="flex flex-wrap gap-4 text-sm mb-4">
-                          <div className="flex items-center text-neutral-600">
+                          <div className="flex items-center text-neutral-600 dark:text-neutral-400">
                             <Clock className="h-4 w-4 mr-1" />
                             <span>{queue.avg_wait_time} mins wait</span>
                           </div>
-                          <div className="flex items-center text-neutral-600">
+                          <div className="flex items-center text-neutral-600 dark:text-neutral-400">
                             <Users className="h-4 w-4 mr-1" />
                             <span>{queue.current_queue} in queue</span>
                           </div>
-                          <div className="flex items-center text-neutral-600">
+                          <div className="flex items-center text-neutral-600 dark:text-neutral-400">
                             <MapPin className="h-4 w-4 mr-1" />
                             <span>{queue.distance || 'N/A'} away</span>
                           </div>
