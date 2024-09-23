@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, MapPin, Clock, Users, ClipboardCopy, Star, Share2, Bell, ChevronDown, ChevronUp, UserPlus } from 'lucide-react'
+import { ArrowLeft, MapPin, Clock, Users, ClipboardCopy, Star, Share2, Bell, Heart, ChevronDown, ChevronUp, UserPlus } from 'lucide-react'
 import { Button, Card, CardBody, CardHeader, Chip, Progress, Skeleton, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input } from "@nextui-org/react"
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
@@ -207,20 +207,30 @@ export default function QueueDetailsPage({ params }) {
   };
 
   const handleShare = async () => {
+    if (!queueData || !queueData.name || !queueData.short_id) {
+      toast.error('Queue data is not available for sharing');
+      return;
+    }
+  
+    console.log('Queue Name:', queueData.name);
+    console.log('Queue Short ID:', queueData.short_id);
+  
+    const shareData = {
+      title: queueData.name,
+      text: `Check out this queue: ${queueData.name} (ID: ${queueData.short_id})`,
+      url: window.location.href,
+    };
+  
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: queueData?.name,
-          text: `Check out this queue: ${queueData?.name}`,
-          url: window.location.href,
-        })
+        await navigator.share(shareData);
       } catch (error) {
-        console.error('Error sharing:', error)
+        console.error('Error sharing:', error);
       }
     } else {
       // Fallback for browsers that don't support Web Share API
-      await navigator.clipboard.writeText(window.location.href)
-      toast.success('Queue link copied to clipboard')
+      await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+      toast.success('Queue link copied to clipboard');
     }
   }
   const scrollToTop = () => {
@@ -300,14 +310,6 @@ export default function QueueDetailsPage({ params }) {
           <ArrowLeft className="mr-2" />
           <span className="font-semibold">Back to Queues</span>
         </Link>
-        <div className="flex space-x-2">
-          <Button isIconOnly variant="light" aria-label="Notify Me" onClick={toggleNotifications}>
-            <Bell className={`h-4 w-4 ${notificationsEnabled ? 'text-blue-600 dark:text-blue-400' : ''}`} />
-          </Button>
-          <Button isIconOnly variant="light" aria-label="Share" onClick={handleShare}>
-            <Share2 className="h-4 w-4" />
-          </Button>
-        </div>
       </div>
 
       <main className="container mx-auto px-4 py-2">
@@ -485,10 +487,30 @@ export default function QueueDetailsPage({ params }) {
                         {queueData?.location}
                       </p>
                     </div>
+                    <div className="absolute top-4 right-4 bg-yellow-500 dark:bg-yellow-700 rounded-full px-3 py-1 flex items-center">
+                      <Star className="w-4 h-4 text-white mr-1" />
+                      <span className="font-medium text-white">{queueData?.avg_rating || '5'}</span>
+                    </div>
+                    <div className="absolute bottom-4 right-4 flex gap-2">
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        className="bg-white bg-opacity-20"
+                      >
+                        <Heart className="h-4 w-4 text-white" />
+                      </Button>
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        className="bg-white bg-opacity-20"
+                        onClick={handleShare}
+                      >
+                        <Share2 className="h-4 w-4 text-white" />
+                      </Button>
+                    </div>
                   </div>
-                </Skeleton>
-                <Skeleton isLoaded={!isLoading} className="mb-4">
-                  <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{queueData?.description}</p>
                 </Skeleton>
                 <div className="space-y-4">
                   <Skeleton isLoaded={!isLoading} className="mb-4">
@@ -497,11 +519,6 @@ export default function QueueDetailsPage({ params }) {
                         <Chip color="secondary" variant="flat" className="text-sm">{queueData?.category}</Chip>
                       </div>
                       <div className="flex flex-col items-end gap-2">
-                        <div className="flex items-center bg-yellow-100 dark:bg-yellow-900 rounded-full px-3 py-1">
-                          <Star className="w-4 h-4 text-yellow-500 mr-1" />
-                          <span className="font-medium text-yellow-700 dark:text-yellow-300">{queueData?.avg_rating || 'NaN'}</span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">({queueData?.total_ratings || 0})</span>
-                        </div>
                         {queueData?.short_id && (
                           <Chip
                             variant="flat"
@@ -524,6 +541,9 @@ export default function QueueDetailsPage({ params }) {
                         )}
                       </div>
                     </div>
+                  </Skeleton>
+                  <Skeleton isLoaded={!isLoading} className="mb-4">
+                    <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{queueData?.description}</p>
                   </Skeleton>
                   <Skeleton isLoaded={!isLoading}>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-sm bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
