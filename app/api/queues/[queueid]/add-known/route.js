@@ -19,8 +19,8 @@ export async function POST(request, { params }) {
     // Fetch the user by short_id
     const { data: userData, error: userError } = await supabase
       .from('user_profile')
-      .select('user_id')
-      .eq('short_id', shortId)
+      .select('user_id, name')
+      .eq('user_short_id', shortId)
       .single();
 
     if (userError || !userData) {
@@ -87,7 +87,34 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ message: 'User added to queue successfully', entry: newEntry });
+    // Update the known_users in the user_profile of the session user
+    const { data: profileData, error: profileError } = await supabase
+      .from('user_profile')
+      .select('known_users')
+      .eq('user_id', session.user.id)
+      .single();
+
+    if (profileError) {
+      console.error('Error fetching user profile:', profileError);
+    } else {
+      const knownUsers = profileData.known_users || [];
+      const updatedKnownUsers = [...knownUsers, { shortId, name: userData.name }];
+
+      const { error: updateProfileError } = await supabase
+        .from('user_profile')
+        .update({ known_users: updatedKnownUsers })
+        .eq('user_id', session.user.id);
+
+      if (updateProfileError) {
+        console.error('Error updating known users:', updateProfileError);
+      }
+    }
+
+    return NextResponse.json({ 
+      message: 'User added to queue successfully', 
+      entry: newEntry,
+      name: userData.name
+    });
   } catch (error) {
     console.error('Error adding known user to queue:', error);
     return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 });

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -10,6 +10,7 @@ import { categories } from '../../utils/category'
 import { Search, Clock, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, Plus, Copy, Share } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApi } from '../../hooks/useApi'
+import debounce from 'lodash/debounce'
 
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState('All')
@@ -28,6 +29,11 @@ export default function Home() {
     averageTimeSaved: 12
   })
 
+  const debouncedMutate = useMemo(
+    () => debounce(() => mutate(), 300),
+    [mutate]
+  );
+
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search)
     const categoryParam = searchParams.get('category')
@@ -36,12 +42,27 @@ export default function Home() {
     if (categoryParam) setSelectedCategory(categoryParam)
     if (searchParam) setSearchQuery(searchParam)
   
-    mutate()
-  }, [])
+    debouncedMutate()
+  }, [selectedCategory, searchQuery, debouncedMutate])
   
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault()
-    router.push(`/user/queues?search=${searchQuery}&category=${selectedCategory}`)
+    if (/^\d{6}$/.test(searchQuery)) {
+      try {
+        const response = await fetch(`/api/queues/short/${searchQuery}`)
+        if (response.ok) {
+          const data = await response.json()
+          router.push(`/user/queue/${data.queue_id}`)
+        } else {
+          toast.error('Queue not found')
+        }
+      } catch (error) {
+        console.error('Error fetching queue:', error)
+        toast.error('An error occurred while searching for the queue')
+      }
+    } else {
+      router.push(`/user/queues?search=${searchQuery}&category=${selectedCategory}`)
+    }
   }
   
   const handleCategoryClick = (category) => {
@@ -59,6 +80,7 @@ export default function Home() {
     setQueueId('')
   }
 
+  
   const generateStatsImage = () => {
     const canvas = document.createElement('canvas');
     canvas.width = 1080;
@@ -172,14 +194,6 @@ export default function Home() {
               </div>
               <div className="md:w-1/2">
                 <form onSubmit={handleSearch} className="flex items-center">
-                  <Button
-                    isIconOnly
-                    aria-label="Add Member"
-                    className="mr-2"
-                    onClick={() => setIsAddMemberModalOpen(true)}
-                  >
-                    <Plus className="h-5 w-5" />
-                  </Button>
                   <div className="relative w-full">
                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                       <Search className="h-5 w-5 text-gray-400" />
@@ -208,24 +222,24 @@ export default function Home() {
 
         {/* Categories */}
         <section className="py-4 sm:py-8 dark:bg-gray-800">
-          <div className="container mx-auto px-4 overflow-hidden">
+          <div className="container mx-auto px-4 overflow-x-auto custom-scrollbar">
             <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-4">Categories</h3>
             <div className="relative">
-              <div className="animate-scroll flex gap-2 sm:gap-3 pb-2 sm:pb-4" style={{ width: 'max-content' }}>
-              {[...categories, ...categories].map((category, index) => (
-  <button
-    key={`${category.name}-${index}`}
-    className={`inline-flex items-center px-2 sm:px-3 py-1 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors duration-200 ease-in-out whitespace-nowrap ${
-      selectedCategory === category.name
-        ? 'bg-blue-600 text-white'
-        : 'bg-gray-100 text-black hover:bg-gray-200 dark:bg-[#111827] dark:text-white dark:hover:bg-gray-700'
-    }`}
-    onClick={() => handleCategoryClick(category.name)}
-  >
-    <span className="mr-1 sm:mr-2 text-lg sm:text-xl">{category.icon}</span>
-    {category.name}
-  </button>
-))}
+              <div className="flex gap-2 sm:gap-3 pb-2 sm:pb-4" style={{ width: 'max-content' }}>
+              {categories.map((category) => (
+                <button
+                  key={category.name}
+                  className={`inline-flex items-center px-2 sm:px-3 py-1 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors duration-200 ease-in-out whitespace-nowrap ${
+                    selectedCategory === category.name
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-black hover:bg-gray-200 dark:bg-[#111827] dark:text-white dark:hover:bg-gray-700'
+                  }`}
+                  onClick={() => handleCategoryClick(category.name)}
+                >
+                  <span className="mr-1 sm:mr-2 text-lg sm:text-xl">{category.icon}</span>
+                  {category.name}
+                </button>
+              ))}
               </div>
             </div>
           </div>

@@ -80,8 +80,11 @@ if (userQueueEntry && queueData.est_time_to_serve) {
 
     const responseData = {
       ...queueData,
+      queueEntries,
+      short_id: queueData.short_id,
       userQueueEntry: userQueueEntry ? {
         ...userQueueEntry,
+        position: userPosition,
         estimated_wait_time: estimatedWaitTime
       } : null,
       userInFrontJoinTime: userPosition > 1 ? queueEntries[userPosition - 2].join_time : null

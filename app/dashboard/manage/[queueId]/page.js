@@ -18,6 +18,7 @@ export default function QueueManagementPage({ params }) {
   const router = useRouter()
   const [isToggling, setIsToggling] = useState(false)
   const [activeTab, setActiveTab] = useState('stats')
+  const [loadingActions, setLoadingActions] = useState({})
 
   const { data: queueData, isLoading, isError, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage`)
 
@@ -58,7 +59,7 @@ export default function QueueManagementPage({ params }) {
   const handleToggleQueue = async () => {
     setIsToggling(true)
     try {
-      const newStatus = queueData.status === 'active' ? 'paused' : 'active'
+      const newStatus = queueData.queueData.status === 'active' ? 'paused' : 'active'
       const response = await fetch(`/api/queues/${params.queueId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -67,7 +68,7 @@ export default function QueueManagementPage({ params }) {
       if (!response.ok) {
         throw new Error('Failed to update queue status')
       }
-      setQueueData(prevData => ({ ...prevData, status: newStatus }))
+      await refetchQueueData()
       toast.success(`Queue ${newStatus === 'active' ? 'activated' : 'paused'}`)
     } catch (error) {
       console.error('Error updating queue status:', error)
@@ -88,8 +89,8 @@ export default function QueueManagementPage({ params }) {
         throw new Error('Failed to update service time')
       }
       const updatedQueue = await response.json()
-      setQueueData(prevData => ({ ...prevData, est_time_to_serve: updatedQueue.est_time_to_serve }))
-      toast.success('Service time updated successfully')
+      refetchQueueData()
+      toast.success(`Service time updated to ${serviceTime} minutes`)
     } catch (error) {
       console.error('Error updating service time:', error)
       toast.error('Failed to update service time')
@@ -97,6 +98,7 @@ export default function QueueManagementPage({ params }) {
   }
 
   const handleServed = async (entryId) => {
+    setLoadingActions(prev => ({ ...prev, [entryId]: { serve: true } }))
     try {
       const response = await fetch(`/api/queues/${params.queueId}/customers/${entryId}/serve`, {
         method: 'POST',
@@ -107,21 +109,18 @@ export default function QueueManagementPage({ params }) {
       }
       const data = await response.json();
       toast.success('Customer served successfully');
-      // Update the local state with the new queue data
-      setQueueData(prevData => ({
-        ...prevData,
-        current_queue: data.current_queue,
-        total_served: data.total_served
-      }));
-      // Remove the served customer from the list
+      refetchQueueData();
       setCustomersInQueue(prevCustomers => prevCustomers.filter(customer => customer.entry_id !== entryId));
     } catch (error) {
       console.error('Error serving customer:', error);
       toast.error(error.message || 'Failed to serve customer');
+    } finally {
+      setLoadingActions(prev => ({ ...prev, [entryId]: { ...prev[entryId], serve: false } }))
     }
   };
   
   const handleNoShow = async (entryId) => {
+    setLoadingActions(prev => ({ ...prev, [entryId]: { noShow: true } }))
     try {
       const response = await fetch(`/api/queues/${params.queueId}/customers/${entryId}/no-show`, {
         method: 'POST',
@@ -131,22 +130,18 @@ export default function QueueManagementPage({ params }) {
       }
       const data = await response.json();
       toast.success('Customer marked as no-show');
-      // Update the local state with the new queue data
-      setQueueData(prevData => ({
-        ...prevData,
-        current_queue: data.current_queue
-      }));
-      // Remove the no-show customer from the list
+      refetchQueueData();
       setCustomersInQueue(prevCustomers => prevCustomers.filter(customer => customer.entry_id !== entryId));
     } catch (error) {
       console.error('Error marking customer as no-show:', error);
       toast.error('Failed to mark customer as no-show');
+    } finally {
+      setLoadingActions(prev => ({ ...prev, [entryId]: { ...prev[entryId], noShow: false } }))
     }
   };
 
   const handleAddKnownSuccess = async () => {
-    // Refresh the queue data after adding a known user
-    await fetchQueueData();
+    await refetchQueueData();
   };
 
   return (
@@ -158,7 +153,7 @@ export default function QueueManagementPage({ params }) {
             <span className="font-semibold">Back to Dashboard</span>
           </Link>
           <h1 className="text-2xl font-bold dark:text-white">
-            {isLoading ? <Skeleton className="w-40 h-8" /> : queueData?.name || 'Error'}
+            {isLoading ? <Skeleton className="w-40 h-8" /> : queueData?.queueData?.name || 'Error'}
           </h1>
           <Button variant="bordered" startContent={<Settings />}>
             Queue Settings
@@ -183,17 +178,17 @@ export default function QueueManagementPage({ params }) {
         <CardBody>
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
-              <Chip color={queueData.status === 'active' ? "success" : "default"}>
-                {queueData.status === 'active' ? "Active" : "Paused"}
+              <Chip color={queueData.queueData.status === 'active' ? "success" : "default"}>
+                {queueData.queueData.status === 'active' ? "Active" : "Paused"}
               </Chip>
               <div className="flex items-center space-x-2">
                 <Switch
-                  checked={queueData.status === 'active'}
+                  checked={queueData.queueData.status === 'active'}
                   onChange={handleToggleQueue}
                   isDisabled={isToggling}
                 />
                 <span className="dark:text-gray-300">
-                  {isToggling ? "Updating..." : (queueData.status === 'active' ? "Pause Queue" : "Activate Queue")}
+                  {isToggling ? "Updating..." : (queueData.queueData.status === 'active' ? "Pause Queue" : "Activate Queue")}
                 </span>
               </div>
             </div>
@@ -236,11 +231,23 @@ export default function QueueManagementPage({ params }) {
                       <TableCell>{customer.formattedJoinTime}</TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
-                          <Button size="sm" color="success" variant="flat" onClick={() => handleServed(customer.entry_id)}>
+                          <Button 
+                            size="sm" 
+                            color="success" 
+                            variant="flat" 
+                            onClick={() => handleServed(customer.entry_id)}
+                            isLoading={loadingActions[customer.entry_id]?.serve}
+                          >
                             <Check className="mr-1 h-4 w-4" />
                             Served
                           </Button>
-                          <Button size="sm" color="danger" variant="flat" onClick={() => handleNoShow(customer.entry_id)}>
+                          <Button 
+                            size="sm" 
+                            color="danger" 
+                            variant="flat" 
+                            onClick={() => handleNoShow(customer.entry_id)}
+                            isLoading={loadingActions[customer.entry_id]?.noShow}
+                          >
                             <X className="mr-1 h-4 w-4" />
                             No Show
                           </Button>

@@ -57,14 +57,15 @@ const AddKnownUserModal = ({ queueId, onSuccess }) => {
     <>
       <Button 
         onClick={onOpen} 
-        color="secondary" 
+        color="success" 
+        variant="flat"
         startContent={<UserPlus className="w-4 h-4" />}
       >
         Add User 
       </Button>
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalContent>
-          <ModalHeader>Add Known User to Queue</ModalHeader>
+          <ModalHeader>Add User to Queue</ModalHeader>
           <ModalBody>
             <Input
               label="Known User's Short ID"

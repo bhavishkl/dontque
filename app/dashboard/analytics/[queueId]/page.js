@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { ArrowLeft, Users, Clock, TrendingUp, Settings, Download, Repeat, Star } from 'lucide-react'
-import { Button, Card, CardBody, CardHeader, Select, SelectItem, Tabs, Tab } from "@nextui-org/react"
+import { Button, Card, CardBody, CardHeader, Select, SelectItem, Tabs, Tab, Skeleton } from "@nextui-org/react"
 import { useApi } from '@/app/hooks/useApi'
 
 export default function QueueAnalyticsPage({ params }) {
@@ -37,12 +37,97 @@ export default function QueueAnalyticsPage({ params }) {
     }
   }
   
-  if (isLoading) {
-    return <div>Loading analytics data...</div>
-  }
+  
 
   if (isError) {
     return <div>Error: {isError}</div>
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <header className="sticky top-0 bg-white dark:bg-gray-800 shadow-sm z-10">
+          <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div className="w-32 h-6">
+              <Skeleton className="rounded-lg" />
+            </div>
+            <div className="w-48 h-8">
+              <Skeleton className="rounded-lg" />
+            </div>
+            <div className="w-24 h-10">
+              <Skeleton className="rounded-lg" />
+            </div>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-4 py-8">
+          <div className="mb-6 flex justify-between items-center">
+            <div className="w-44 h-10">
+              <Skeleton className="rounded-lg" />
+            </div>
+            <div className="w-36 h-10">
+              <Skeleton className="rounded-lg" />
+            </div>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3 mb-6">
+            {[...Array(3)].map((_, index) => (
+              <Card key={index}>
+                <CardBody>
+                  <Skeleton className="rounded-lg w-full h-24" />
+                </CardBody>
+              </Card>
+            ))}
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 mb-6">
+            {[...Array(2)].map((_, index) => (
+              <Card key={index}>
+                <CardHeader>
+                  <Skeleton className="rounded-lg w-48 h-6" />
+                </CardHeader>
+                <CardBody>
+                  <Skeleton className="rounded-lg w-full h-[300px]" />
+                </CardBody>
+              </Card>
+            ))}
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3 mb-6">
+            {[...Array(3)].map((_, index) => (
+              <Card key={index}>
+                <CardBody>
+                  <Skeleton className="rounded-lg w-full h-24" />
+                </CardBody>
+              </Card>
+            ))}
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 mb-6">
+            {[...Array(2)].map((_, index) => (
+              <Card key={index}>
+                <CardHeader>
+                  <Skeleton className="rounded-lg w-48 h-6" />
+                </CardHeader>
+                <CardBody>
+                  <Skeleton className="rounded-lg w-full h-[300px]" />
+                </CardBody>
+              </Card>
+            ))}
+          </div>
+
+          <Skeleton className="rounded-lg w-full h-12 mb-4" />
+          <Card>
+            <CardHeader>
+              <Skeleton className="rounded-lg w-64 h-6" />
+            </CardHeader>
+            <CardBody>
+              <Skeleton className="rounded-lg w-full h-32" />
+            </CardBody>
+          </Card>
+        </main>
+      </div>
+    )
   }
 
   return (

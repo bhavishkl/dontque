@@ -11,6 +11,10 @@ const BottomBar = () => {
     const { data: session } = useSession();
     const { name: userName } = useUserInfo(session?.user?.id);
   
+    if (pathname === '/' || pathname === '/signin') {
+        return null;
+    }
+
     const navItems = [
         { icon: Home, label: 'Home', href: '/user/home' },
         { icon: Search, label: 'Explore', href: '/user/queues' },

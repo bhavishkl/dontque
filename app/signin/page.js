@@ -45,7 +45,7 @@ export default function SignIn() {
       // First, check if the user already exists
       const { data: existingUser, error: fetchError } = await supabase
         .from('user_profile')
-        .select('user_id, name, short_id')
+        .select('user_id, name')
         .eq(identityType === 'EMAIL' ? 'email' : 'phone_number', identityValue)
         .single();
 
@@ -55,7 +55,7 @@ export default function SignIn() {
 
       let profileData;
       if (existingUser) {
-        // Update existing user, but don't change the name or short_id
+        // Update existing user, but don't change the name
         const { data, error: updateError } = await supabase
           .from('user_profile')
           .update({
@@ -70,11 +70,7 @@ export default function SignIn() {
         if (updateError) throw updateError;
         profileData = data;
         profileData.name = existingUser.name; // Preserve the existing name
-        profileData.short_id = existingUser.short_id; // Preserve the existing short_id
       } else {
-        // Generate a unique short ID
-        const shortId = await generateUniqueShortId();
-
         // Insert new user
         const { data, error: insertError } = await supabase
           .from('user_profile')
@@ -85,8 +81,7 @@ export default function SignIn() {
             name: userName || (identityType === 'EMAIL' ? identityValue.split('@')[0] : ''),
             image: `https://api.dicebear.com/6.x/initials/svg?seed=${identityValue}`,
             country_code: otplessUser.country_code,
-            otpless_token: token,
-            short_id: shortId
+            otpless_token: token
           })
           .select()
           .single();
@@ -128,32 +123,12 @@ export default function SignIn() {
         userId: profileData.user_id,
         name: profileData.name,
         image: profileData.image,
-        shortId: profileData.short_id,
         redirect: false,
       });
 
       router.push('/user/home');
     } catch (error) {
       console.error('Error saving user data:', error);
-    }
-  };
-
-  const generateUniqueShortId = async () => {
-    while (true) {
-      const shortId = Math.floor(100000 + Math.random() * 900000).toString();
-      const { data, error } = await supabase
-        .from('user_profile')
-        .select('short_id')
-        .eq('short_id', shortId);
-
-      if (error) {
-        console.error('Error checking short ID:', error);
-        throw error;
-      }
-
-      if (data.length === 0) {
-        return shortId;
-      }
     }
   };
 

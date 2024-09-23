@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Users, Clock, Settings, Plus, Search, MoreVertical, PieChart } from 'lucide-react'
@@ -8,16 +8,25 @@ import { Button, Input, Card, CardBody, CardHeader, Dropdown, DropdownTrigger, D
 import { useSession } from "next-auth/react"
 import { useRouter } from 'next/navigation'
 import { useApi } from '../hooks/useApi'
+import { useUserInfo } from '../hooks/useUserName'
 
 export default function QueueOwnerDashboard() {
   const [searchTerm, setSearchTerm] = useState('')
   const { data: session } = useSession()
   const router = useRouter()
+  const { role } = useUserInfo(session?.user?.id)
 
   const { data: queuesData, isLoading, isError, mutate: refetchQueuesData } = useApi('/api/queues/owner')
 
-  if (!session) {
-    router.push('/login')
+  useEffect(() => {
+    if (!session) {
+      router.push('/login')
+    } else if (role === 'user') {
+      router.push('/user/home')
+    }
+  }, [session, role, router])
+
+  if (!session || role === 'user') {
     return null
   }
 

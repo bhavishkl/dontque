@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Search, Clock, Users, MapPin, Star, Bookmark, Share2 } from 'lucide-react'
 import { Input, Select, SelectItem, Card, CardBody, Button, Chip, Progress, Skeleton } from "@nextui-org/react"
-import debounce from 'lodash/debounce';
+import debounce from 'lodash/debounce'
 import { useApi } from '../../hooks/useApi'
 
 const categories = [
@@ -28,35 +28,29 @@ export default function QueueListPage() {
   const [search, setSearch] = useState('')
   const router = useRouter()
 
-  const { data: queues, isLoading, isError, mutate } = useApi(`/api/queues?category=${selectedCategory}&search=${search}`)
+  const debouncedSearch = useMemo(
+    () => debounce((value) => setSearch(value), 300),
+    []
+  )
+
+  const { data: queues, isLoading, isError } = useApi(
+    `/api/queues?category=${selectedCategory}&search=${search}&sortBy=${sortBy}`
+  )
+
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const categoryParam = searchParams.get('category');
-    const searchParam = searchParams.get('search');
-  
-    if (categoryParam) setSelectedCategory(categoryParam);
-    if (searchParam) {
-      setSearch(searchParam);
-      // Check if the search is a numeric short ID
-      if (/^\d+$/.test(searchParam)) {
-        // If it's a numeric short ID, navigate to the queue details page
-        router.push(`/user/queue/${searchParam}`);
-      }
-    }
-  }, [router]);
-  
-  useEffect(() => {
-    const debouncedMutate = debounce(() => {
-      // Only mutate if the search is not a numeric short ID
-      if (!/^\d+$/.test(search)) {
-        mutate();
-      }
-    }, 300);
-  
-    debouncedMutate();
-  
-    return () => debouncedMutate.cancel();
-  }, [selectedCategory, search, mutate]);
+    const searchParams = new URLSearchParams(window.location.search)
+    const categoryParam = searchParams.get('category')
+    const searchParam = searchParams.get('search')
+    const sortParam = searchParams.get('sortBy')
+
+    if (categoryParam) setSelectedCategory(categoryParam)
+    if (searchParam) setSearch(searchParam)
+    if (sortParam) setSortBy(sortParam)
+  }, [])
+
+  const handleSearchChange = (e) => {
+    debouncedSearch(e.target.value)
+  }
 
   const handleViewQueue = (queueId) => {
     router.push(`/user/queue/${queueId}`);
