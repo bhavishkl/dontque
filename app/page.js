@@ -1,44 +1,18 @@
-'use client'
-
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button, Card, CardBody, Navbar, NavbarBrand, NavbarContent, NavbarItem } from "@nextui-org/react";
-import { useRouter } from 'next/navigation';
-import { useSession } from "next-auth/react";
-import { useUserInfo } from './hooks/useUserName';
+import LandingPageClient from './components/LandingPageClient';
+import PerformanceMetrics from './components/PerformanceMetrics';
 
-export default function LandingPage() {
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const router = useRouter();
-  const { data: session, status } = useSession();
-  const { role } = useUserInfo(session?.user?.id);
+async function fetchStaticData() {
+  // Fetch any static data here if needed
+  return {};
+}
 
-  useEffect(() => {
-    if (session) {
-      if (role === 'business') {
-        router.push('/dashboard');
-      } else {
-        router.push('/user/home');
-      }
-    }
-  }, [session, router, role]);
-
-  const handleStartFreeTrial = () => {
-    router.push('/signin');
-  };
-
-  if (status === "loading") {
-    return <div>Loading...</div>;
-  }
-
-  if (session) {
-    return null; // or a loading spinner if you prefer
-  }
-
+export default async function LandingPage() {
+  const staticData = await fetchStaticData();
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-100 to-white">
-      {/* Header */}
       <Navbar className="bg-white/90 backdrop-blur-sm shadow-sm">
         <NavbarBrand>
           <Link href="/" className="text-2xl font-bold text-black">QueueSmart</Link>
@@ -62,7 +36,7 @@ export default function LandingPage() {
         </NavbarContent>
         <NavbarContent justify="end">
           <NavbarItem>
-            <Button color="default" onClick={handleStartFreeTrial}>Get Started</Button>
+            <LandingPageClient />
           </NavbarItem>
         </NavbarContent>
       </Navbar>
@@ -78,12 +52,7 @@ export default function LandingPage() {
               Streamline your waiting lines, enhance customer satisfaction, and boost efficiency with QueueSmart's cutting-edge AI-powered solution.
             </p>
             <div className="flex justify-center space-x-4">
-              <Button size="lg" color="default" onClick={handleStartFreeTrial}>
-                Start Free Trial
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 ml-2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                </svg>
-              </Button>
+              <LandingPageClient />
               <Button size="lg" variant="bordered">
                 Watch Demo
               </Button>
@@ -159,14 +128,6 @@ export default function LandingPage() {
                   objectFit="cover"
                   className="rounded-lg shadow-lg"
                 />
-                {!isVideoPlaying && (
-                  <Button 
-                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
-                    onClick={() => setIsVideoPlaying(true)}
-                  >
-                    Play Demo
-                  </Button>
-                )}
               </div>
             </div>
           </div>
@@ -261,12 +222,7 @@ export default function LandingPage() {
           <div className="container mx-auto px-4 text-center">
             <h2 className="text-4xl font-bold mb-4">Ready to Revolutionize Your Queue Management?</h2>
             <p className="text-xl mb-8">Join thousands of businesses already using QueueSmart to transform their operations.</p>
-            <Button size="lg" color="default" onClick={handleStartFreeTrial}>
-              Get Started Now
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 ml-2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
-            </Button>
+            <LandingPageClient />
           </div>
         </section>
       </main>
@@ -300,6 +256,7 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+      <PerformanceMetrics />
     </div>
   );
 }
