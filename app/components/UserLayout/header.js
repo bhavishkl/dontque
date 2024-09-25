@@ -93,35 +93,35 @@ const Header = () => {
               </div>
               <div className="h-px bg-gray-200 dark:bg-gray-700 my-4"></div>
               <nav className="flex-grow overflow-y-auto">
-                <Link href="/user/home" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200">
+                <Link href="/user/home" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200" onClick={toggleSidebar}>
                   <Home size={20} className="mr-3" />
                   Home
                 </Link>
-                <Link href="/user/queues" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200">
+                <Link href="/user/queues" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200" onClick={toggleSidebar}>
                   <Users size={20} className="mr-3" />
                   Queues
                 </Link>
                 {role === 'business' && (
                   <>
-                    <Link href="/dashboard" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200">
+                    <Link href="/dashboard" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200" onClick={toggleSidebar}>
                       <PieChart size={20} className="mr-3" />
                       Business Dashboard
                     </Link>
-                    <Link href="/business/profile" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200">
+                    <Link href="/business/profile" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200" onClick={toggleSidebar}>
                       <User size={20} className="mr-3" />
                       Business Profile
                     </Link>
-                    <Link href="/business/support" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200">
+                    <Link href="/business/support" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200" onClick={toggleSidebar}>
                       <HelpCircle size={20} className="mr-3" />
                       Support
                     </Link>
                   </>
                 )}
-                <Link href="/user/dashboard" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200">
+                <Link href="/user/dashboard" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200" onClick={toggleSidebar}>
                   <PieChart size={20} className="mr-3" />
                   User Dashboard
                 </Link>
-                <Link href="/user/settings" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200">
+                <Link href="/user/settings" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200" onClick={toggleSidebar}>
                   <Settings size={20} className="mr-3" />
                   Settings
                 </Link>

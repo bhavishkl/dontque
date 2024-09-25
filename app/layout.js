@@ -8,6 +8,7 @@ import Header from './components/UserLayout/header';
 import BottomBar from './components/UserLayout/bottombar';
 import { ThemeProvider } from 'next-themes';
 import Script from 'next/script';
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -48,6 +49,7 @@ export default async function RootLayout({ children }) {
           src="https://checkout.razorpay.com/v1/checkout.js"
           strategy="lazyOnload"
         />
+        <SpeedInsights />
       </body>
     </html>
   );

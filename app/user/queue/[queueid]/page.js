@@ -262,16 +262,9 @@ export default function QueueDetailsPage({ params }) {
                   <Skeleton className="w-48 h-8 rounded-lg" />
                 </CardHeader>
                 <CardBody>
-                  <Skeleton className="w-full h-40 rounded-lg" />
-                </CardBody>
-              </Card>
-              
-              <Card className="mb-6">
-                <CardHeader>
-                  <Skeleton className="w-48 h-8 rounded-lg" />
-                </CardHeader>
-                <CardBody>
-                  <Skeleton className="w-full h-40 rounded-lg" />
+                  <Skeleton className="w-full h-60 rounded-lg" />
+                  <Skeleton className="w-full h-6 mt-4 rounded-lg" />
+                  <Skeleton className="w-3/4 h-6 mt-2 rounded-lg" />
                 </CardBody>
               </Card>
             </div>
@@ -282,18 +275,9 @@ export default function QueueDetailsPage({ params }) {
                   <Skeleton className="w-48 h-8 rounded-lg" />
                 </CardHeader>
                 <CardBody>
-                  <Skeleton className="w-full h-40 rounded-lg" />
-                </CardBody>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <Skeleton className="w-48 h-8 rounded-lg" />
-                </CardHeader>
-                <CardBody>
-                  <Skeleton className="w-full h-10 rounded-lg mb-4" />
-                  <Skeleton className="w-full h-10 rounded-lg mb-4" />
-                  <Skeleton className="w-full h-20 rounded-lg" />
+                  <Skeleton className="w-full h-60 rounded-lg" />
+                  <Skeleton className="w-full h-6 mt-4 rounded-lg" />
+                  <Skeleton className="w-3/4 h-6 mt-2 rounded-lg" />
                 </CardBody>
               </Card>
             </div>
@@ -404,7 +388,7 @@ export default function QueueDetailsPage({ params }) {
               </div>
               
               {/* Queue Info Section */}
-              <div className="space-y-4">
+              <div className="space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
                 <Skeleton isLoaded={!isLoading} className="rounded-lg mb-4">
                   <div className="relative aspect-video rounded-lg overflow-hidden">
                     <Image
@@ -413,64 +397,87 @@ export default function QueueDetailsPage({ params }) {
                       layout="fill"
                       objectFit="cover"
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-70"></div>
+                    <div className="absolute bottom-4 left-4 text-white">
+                      <h2 className="text-xl font-bold mb-1">{queueData?.name}</h2>
+                      <p className="text-sm flex items-center">
+                        <MapPin className="w-4 h-4 mr-1" />
+                        {queueData?.location}
+                      </p>
+                    </div>
+                    <div className="absolute top-4 right-4 bg-yellow-500 dark:bg-yellow-700 rounded-full px-3 py-1 flex items-center">
+                      <Star className="w-4 h-4 text-white mr-1" />
+                      <span className="font-medium text-white">{queueData?.avg_rating || '5'}</span>
+                    </div>
+                    <div className="absolute bottom-4 right-4 flex gap-2">
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        className="bg-white bg-opacity-20"
+                      >
+                        <Heart className="h-4 w-4 text-white" />
+                      </Button>
+                      <Button
+                        isIconOnly
+                        size="sm"
+                        variant="light"
+                        className="bg-white bg-opacity-20"
+                        onClick={handleShare}
+                      >
+                        <Share2 className="h-4 w-4 text-white" />
+                      </Button>
+                    </div>
                   </div>
                 </Skeleton>
-                <Skeleton isLoaded={!isLoading} className="mb-2">
-                  <h1 className="text-3xl font-bold dark:text-white">{queueData?.name}</h1>
-                </Skeleton>
-                <Skeleton isLoaded={!isLoading} className="mb-4">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div className="flex items-center gap-2">
-                      <Chip color="secondary" variant="flat">{queueData?.category}</Chip>
-                      <div className="flex items-center">
-                        <Star className="w-4 h-4 text-yellow-500 mr-1" />
-                        <span className="font-medium text-yellow-700 dark:text-yellow-300">{queueData?.avg_rating || 'NaN'}</span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">({queueData?.total_ratings || 0})</span>
+                <div className="space-y-4">
+                  <Skeleton isLoaded={!isLoading} className="mb-4">
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                      <div className="flex items-center gap-3">
+                        <Chip color="secondary" variant="flat" className="text-sm">{queueData?.category}</Chip>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        {queueData?.short_id && (
+                          <Chip
+                            variant="flat"
+                            color="default"
+                            className="bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white"
+                          >
+                            <span className="mr-2">Queue ID: {queueData.short_id}</span>
+                            <Button
+                              isIconOnly
+                              size="sm"
+                              variant="light"
+                              onClick={() => {
+                                navigator.clipboard.writeText(queueData.short_id);
+                                toast.success('Queue ID copied');
+                              }}
+                            >
+                              <ClipboardCopy className="h-4 w-4" />
+                            </Button>
+                          </Chip>
+                        )}
                       </div>
                     </div>
-                    {queueData?.short_id && (
-                      <Chip
-                        variant="flat"
-                        color="default"
-                        className="bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white"
-                      >
-                        <span className="mr-2">ID: {queueData.short_id}</span>
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          onClick={() => {
-                            navigator.clipboard.writeText(queueData.short_id);
-                            toast.success('Queue ID copied');
-                          }}
-                        >
-                          <ClipboardCopy className="h-4 w-4" />
-                        </Button>
-                      </Chip>
-                    )}
-                  </div>
-                </Skeleton>
-                <Skeleton isLoaded={!isLoading} className="mb-4">
-                  <p className="text-gray-600 dark:text-gray-300">{queueData?.description}</p>
-                </Skeleton>
-                <Skeleton isLoaded={!isLoading}>
-                  <div className="flex flex-wrap gap-4 text-sm">
-                    <div className="flex items-center text-gray-700 dark:text-gray-300">
-                      <MapPin className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400" />
-                      <span>{queueData?.location}</span>
+                  </Skeleton>
+                  <Skeleton isLoaded={!isLoading} className="mb-4">
+                    <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{queueData?.description}</p>
+                  </Skeleton>
+                  <Skeleton isLoaded={!isLoading}>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-sm bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                      <div className="flex items-center text-gray-700 dark:text-gray-300">
+                        <Clock className="w-5 h-5 mr-2 text-gray-500 dark:text-gray-400" />
+                        <span>Open: {queueData?.opening_time} - {queueData?.closing_time}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center text-gray-700 dark:text-gray-300">
-                      <Clock className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400" />
-                      <span>Open: {queueData?.opening_time} - {queueData?.closing_time}</span>
-                    </div>
-                  </div>
-                </Skeleton>
+                  </Skeleton>
+                </div>
               </div>
             </>
           ) : (
             <>
               {/* Queue Info Section */}
-              <div className="space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+              <div className="space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
                 <Skeleton isLoaded={!isLoading} className="rounded-lg mb-4">
                   <div className="relative aspect-video rounded-lg overflow-hidden">
                     <Image
