@@ -6,7 +6,6 @@ import { Bell, X, Home, Settings, LogOut, User, Users, PieChart, HelpCircle } fr
 import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { useUserInfo } from '../../hooks/useUserName'
-import { supabase } from '../../lib/supabase'
 import { usePathname } from 'next/navigation'
 import { Avatar } from "@nextui-org/react"
 import { ThemeToggle } from '../ThemeToggle'
@@ -47,9 +46,9 @@ const Header = () => {
       <DynamicHeader session={session} />
       <header className="sticky top-0 bg-white dark:bg-gray-800 shadow-sm z-20">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/user/home">
-            <h1 className="text-2xl font-bold text-black dark:text-white">QueueSmart</h1>
-          </Link>
+         
+            <h1 className="text-2xl font-bold text-black dark:text-white">Dontque</h1>
+          
           <nav className="flex items-center space-x-4">
             {session?.user && (
               <>

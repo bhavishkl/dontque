@@ -40,6 +40,7 @@ export default function SignIn() {
     const { userId, identities, deviceInfo, network, timestamp, token } = otplessUser;
     const identity = identities[0];
     const { identityType, identityValue, channel, methods, verified } = identity;
+    const city = network.ipLocation?.city?.name || null;
 
     try {
       // First, check if the user already exists
@@ -61,7 +62,8 @@ export default function SignIn() {
           .update({
             image: `https://api.dicebear.com/6.x/initials/svg?seed=${identityValue}`,
             country_code: otplessUser.country_code,
-            otpless_token: token
+            otpless_token: token,
+            city: city
           })
           .eq('user_id', existingUser.user_id)
           .select()
@@ -81,7 +83,8 @@ export default function SignIn() {
             name: userName || (identityType === 'EMAIL' ? identityValue.split('@')[0] : ''),
             image: `https://api.dicebear.com/6.x/initials/svg?seed=${identityValue}`,
             country_code: otplessUser.country_code,
-            otpless_token: token
+            otpless_token: token,
+            city: city
           })
           .select()
           .single();

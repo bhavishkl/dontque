@@ -11,6 +11,8 @@ import { useSession } from 'next-auth/react'
 import { createClient } from '@supabase/supabase-js'
 import AddKnownUserModal from '@/app/components/UniComp/AddKnownUserModal';
 import { useApi } from '@/app/hooks/useApi'
+import QueueInfoSec from '@/app/components/QueueIdCompo/QueueInfoSec'
+
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
@@ -69,7 +71,7 @@ export default function QueueDetailsPage({ params }) {
       const timer = setInterval(() => {
         const now = new Date().getTime();
         const distance = expectedTurnTime.getTime() - now;
-  
+
         if (distance < 0) {
           clearInterval(timer);
           setCountdown("It's your turn!");
@@ -77,11 +79,11 @@ export default function QueueDetailsPage({ params }) {
           const hours = Math.floor(distance / (1000 * 60 * 60));
           const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
           const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-  
+
           setCountdown(`${hours}h ${minutes}m ${seconds}s`);
         }
       }, 1000);
-  
+
       return () => clearInterval(timer);
     }
   }, [queueData]);
@@ -104,7 +106,7 @@ export default function QueueDetailsPage({ params }) {
         mutate();
       })
       .subscribe();
-  
+
     return () => {
       subscription.unsubscribe();
     };
@@ -113,69 +115,21 @@ export default function QueueDetailsPage({ params }) {
   const handleJoinQueue = async () => {
     setIsJoining(true);
     try {
-      console.log('Creating Razorpay order...');
-      const receipt = `queue_${params.queueid.substring(0, 34)}`;
-      const orderResponse = await fetch('/api/create-razorpay-order', {
+      const joinResponse = await fetch(`/api/queues/${params.queueid}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: 10, // 10 INR
-          currency: 'INR',
-          receipt: receipt,
-          notes: { queueId: params.queueid }
-        }),
+        // If needed, include any additional data here
       });
-  
-      const orderData = await orderResponse.json();
-  
-      if (!orderResponse.ok) {
-        console.error('Failed to create Razorpay order:', orderData);
-        throw new Error(orderData.error || 'Failed to create Razorpay order');
+
+      const data = await joinResponse.json();
+
+      if (!joinResponse.ok) {
+        throw new Error(data.error || 'Failed to join queue');
       }
-  
-      console.log('Razorpay order created:', orderData);
-  
-      // Initialize Razorpay payment
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: 'QueueSmart',
-        description: 'Queue Joining Fee',
-        order_id: orderData.id,
-        handler: async function (response) {
-          console.log('Payment successful:', response);
-          // Handle successful payment
-          const joinResponse = await fetch(`/api/queues/${params.queueid}/join`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_signature: response.razorpay_signature,
-            }),
-          });
-  
-          if (!joinResponse.ok) {
-            throw new Error('Failed to join queue');
-          }
-  
-          toast.success('Successfully joined the queue');
-          await mutate();
-          scrollToTop(); 
-        },
-        prefill: {
-          name: session?.user?.name,
-          email: session?.user?.email,
-        },
-        theme: {
-          color: '#3B82F6',
-        },
-      };
-  
-      console.log('Initializing Razorpay payment with options:', { ...options, key: '(hidden)' });
-      const paymentObject = new window.Razorpay(options);
-      paymentObject.open();
+
+      toast.success('Successfully joined the queue');
+      await mutate();
+      scrollToTop(); 
     } catch (err) {
       console.error('Error joining queue:', err);
       toast.error(err.message || 'Failed to join queue');
@@ -191,11 +145,11 @@ export default function QueueDetailsPage({ params }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
-  
+
       if (!response.ok) {
         throw new Error('Failed to leave queue');
       }
-  
+
       toast.success('Successfully left the queue');
       await mutate();
     } catch (err) {
@@ -233,11 +187,38 @@ export default function QueueDetailsPage({ params }) {
       toast.success('Queue link copied to clipboard');
     }
   }
+
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
       behavior: 'smooth'
     });
+  };
+
+  const handleFavorite = async () => {
+    if (!queueData || !queueData.id) {
+      toast.error('Queue data is not available for favoriting');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/queue/${queueData.id}/favorite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to favorite queue');
+      }
+
+      toast.success('Queue favorited successfully');
+      await mutate();
+    } catch (err) {
+      console.error('Error favoriting queue:', err);
+      toast.error(err.message || 'Failed to favorite queue');
+    }
   };
   
   if (isLoading) {
@@ -265,6 +246,11 @@ export default function QueueDetailsPage({ params }) {
                   <Skeleton className="w-full h-60 rounded-lg" />
                   <Skeleton className="w-full h-6 mt-4 rounded-lg" />
                   <Skeleton className="w-3/4 h-6 mt-2 rounded-lg" />
+                  <div className="flex items-center mt-4">
+                    <Skeleton className="w-8 h-8 rounded-full mr-2" />
+                    <Skeleton className="w-24 h-6 rounded-lg" />
+                  </div>
+                  <Skeleton className="w-full h-10 mt-4 rounded-lg" />
                 </CardBody>
               </Card>
             </div>
@@ -275,9 +261,23 @@ export default function QueueDetailsPage({ params }) {
                   <Skeleton className="w-48 h-8 rounded-lg" />
                 </CardHeader>
                 <CardBody>
-                  <Skeleton className="w-full h-60 rounded-lg" />
-                  <Skeleton className="w-full h-6 mt-4 rounded-lg" />
-                  <Skeleton className="w-3/4 h-6 mt-2 rounded-lg" />
+                  <Skeleton className="w-full h-40 rounded-lg" />
+                  <div className="flex justify-between mt-4">
+                    <Skeleton className="w-1/3 h-6 rounded-lg" />
+                    <Skeleton className="w-1/3 h-6 rounded-lg" />
+                  </div>
+                  <Skeleton className="w-full h-4 mt-2 rounded-lg" />
+                  <div className="flex items-center justify-between mt-4">
+                    <Skeleton className="w-8 h-8 rounded-full" />
+                    <Skeleton className="w-24 h-6 rounded-lg" />
+                    <Skeleton className="w-16 h-6 rounded-lg" />
+                  </div>
+                  <div className="flex items-center justify-between mt-4">
+                    <Skeleton className="w-8 h-8 rounded-full" />
+                    <Skeleton className="w-32 h-6 rounded-lg" />
+                    <Skeleton className="w-20 h-6 rounded-lg" />
+                  </div>
+                  <Skeleton className="w-full h-10 mt-6 rounded-lg" />
                 </CardBody>
               </Card>
             </div>
@@ -307,21 +307,21 @@ export default function QueueDetailsPage({ params }) {
             <>
               {/* Queue Entry Section */}
               <div>
-              <Card className="bg-black text-primary-foreground mb-6 dark:bg-gray-800">
-  <CardHeader>
-    <h2 className="text-2xl font-bold">Your Position</h2>
-  </CardHeader>
-  <CardBody>
-    <div className="flex items-center justify-center">
-      <div className="text-6xl font-bold">{queueData.userQueueEntry.position}</div>
-      <div className="text-2xl ml-2">of {queueData.queueEntries.length}</div>
-    </div>
-    <Progress 
-      value={(queueData.userQueueEntry.position / queueData.queueEntries.length) * 100} 
-      className="h-2 mt-4"
-    />
-  </CardBody>
-</Card>
+                <Card className="bg-black text-primary-foreground mb-6 dark:bg-gray-800">
+                  <CardHeader>
+                    <h2 className="text-2xl font-bold">Your Position</h2>
+                  </CardHeader>
+                  <CardBody>
+                    <div className="flex items-center justify-center">
+                      <div className="text-6xl font-bold">{queueData.userQueueEntry.position}</div>
+                      <div className="text-2xl ml-2">of {queueData.queueEntries.length}</div>
+                    </div>
+                    <Progress 
+                      value={(queueData.userQueueEntry.position / queueData.queueEntries.length) * 100} 
+                      className="h-2 mt-4"
+                    />
+                  </CardBody>
+                </Card>
                 <Card className="mb-6 dark:bg-gray-800 dark:text-gray-200">
                   <CardHeader>
                     <h2 className="text-2xl font-bold">Estimated Wait Time</h2>
@@ -388,180 +388,12 @@ export default function QueueDetailsPage({ params }) {
               </div>
               
               {/* Queue Info Section */}
-              <div className="space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-                <Skeleton isLoaded={!isLoading} className="rounded-lg mb-4">
-                  <div className="relative aspect-video rounded-lg overflow-hidden">
-                    <Image
-                      src={queueData?.image_url || 'https://via.placeholder.com/300x200'}
-                      alt={queueData?.name || 'Queue Image'}
-                      layout="fill"
-                      objectFit="cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-70"></div>
-                    <div className="absolute bottom-4 left-4 text-white">
-                      <h2 className="text-xl font-bold mb-1">{queueData?.name}</h2>
-                      <p className="text-sm flex items-center">
-                        <MapPin className="w-4 h-4 mr-1" />
-                        {queueData?.location}
-                      </p>
-                    </div>
-                    <div className="absolute top-4 right-4 bg-yellow-500 dark:bg-yellow-700 rounded-full px-3 py-1 flex items-center">
-                      <Star className="w-4 h-4 text-white mr-1" />
-                      <span className="font-medium text-white">{queueData?.avg_rating || '5'}</span>
-                    </div>
-                    <div className="absolute bottom-4 right-4 flex gap-2">
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        className="bg-white bg-opacity-20"
-                      >
-                        <Heart className="h-4 w-4 text-white" />
-                      </Button>
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        className="bg-white bg-opacity-20"
-                        onClick={handleShare}
-                      >
-                        <Share2 className="h-4 w-4 text-white" />
-                      </Button>
-                    </div>
-                  </div>
-                </Skeleton>
-                <div className="space-y-4">
-                  <Skeleton isLoaded={!isLoading} className="mb-4">
-                    <div className="flex items-center justify-between flex-wrap gap-3">
-                      <div className="flex items-center gap-3">
-                        <Chip color="secondary" variant="flat" className="text-sm">{queueData?.category}</Chip>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        {queueData?.short_id && (
-                          <Chip
-                            variant="flat"
-                            color="default"
-                            className="bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white"
-                          >
-                            <span className="mr-2">Queue ID: {queueData.short_id}</span>
-                            <Button
-                              isIconOnly
-                              size="sm"
-                              variant="light"
-                              onClick={() => {
-                                navigator.clipboard.writeText(queueData.short_id);
-                                toast.success('Queue ID copied');
-                              }}
-                            >
-                              <ClipboardCopy className="h-4 w-4" />
-                            </Button>
-                          </Chip>
-                        )}
-                      </div>
-                    </div>
-                  </Skeleton>
-                  <Skeleton isLoaded={!isLoading} className="mb-4">
-                    <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{queueData?.description}</p>
-                  </Skeleton>
-                  <Skeleton isLoaded={!isLoading}>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-sm bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
-                      <div className="flex items-center text-gray-700 dark:text-gray-300">
-                        <Clock className="w-5 h-5 mr-2 text-gray-500 dark:text-gray-400" />
-                        <span>Open: {queueData?.opening_time} - {queueData?.closing_time}</span>
-                      </div>
-                    </div>
-                  </Skeleton>
-                </div>
-              </div>
+              <QueueInfoSec queueData={queueData} isLoading={isLoading} handleShare={handleShare} />
             </>
           ) : (
             <>
               {/* Queue Info Section */}
-              <div className="space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-                <Skeleton isLoaded={!isLoading} className="rounded-lg mb-4">
-                  <div className="relative aspect-video rounded-lg overflow-hidden">
-                    <Image
-                      src={queueData?.image_url || 'https://via.placeholder.com/300x200'}
-                      alt={queueData?.name || 'Queue Image'}
-                      layout="fill"
-                      objectFit="cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-70"></div>
-                    <div className="absolute bottom-4 left-4 text-white">
-                      <h2 className="text-xl font-bold mb-1">{queueData?.name}</h2>
-                      <p className="text-sm flex items-center">
-                        <MapPin className="w-4 h-4 mr-1" />
-                        {queueData?.location}
-                      </p>
-                    </div>
-                    <div className="absolute top-4 right-4 bg-yellow-500 dark:bg-yellow-700 rounded-full px-3 py-1 flex items-center">
-                      <Star className="w-4 h-4 text-white mr-1" />
-                      <span className="font-medium text-white">{queueData?.avg_rating || '5'}</span>
-                    </div>
-                    <div className="absolute bottom-4 right-4 flex gap-2">
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        className="bg-white bg-opacity-20"
-                      >
-                        <Heart className="h-4 w-4 text-white" />
-                      </Button>
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant="light"
-                        className="bg-white bg-opacity-20"
-                        onClick={handleShare}
-                      >
-                        <Share2 className="h-4 w-4 text-white" />
-                      </Button>
-                    </div>
-                  </div>
-                </Skeleton>
-                <div className="space-y-4">
-                  <Skeleton isLoaded={!isLoading} className="mb-4">
-                    <div className="flex items-center justify-between flex-wrap gap-3">
-                      <div className="flex items-center gap-3">
-                        <Chip color="secondary" variant="flat" className="text-sm">{queueData?.category}</Chip>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        {queueData?.short_id && (
-                          <Chip
-                            variant="flat"
-                            color="default"
-                            className="bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white"
-                          >
-                            <span className="mr-2">Queue ID: {queueData.short_id}</span>
-                            <Button
-                              isIconOnly
-                              size="sm"
-                              variant="light"
-                              onClick={() => {
-                                navigator.clipboard.writeText(queueData.short_id);
-                                toast.success('Queue ID copied');
-                              }}
-                            >
-                              <ClipboardCopy className="h-4 w-4" />
-                            </Button>
-                          </Chip>
-                        )}
-                      </div>
-                    </div>
-                  </Skeleton>
-                  <Skeleton isLoaded={!isLoading} className="mb-4">
-                    <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{queueData?.description}</p>
-                  </Skeleton>
-                  <Skeleton isLoaded={!isLoading}>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-sm bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
-                      <div className="flex items-center text-gray-700 dark:text-gray-300">
-                        <Clock className="w-5 h-5 mr-2 text-gray-500 dark:text-gray-400" />
-                        <span>Open: {queueData?.opening_time} - {queueData?.closing_time}</span>
-                      </div>
-                    </div>
-                  </Skeleton>
-                </div>
-              </div>
+              <QueueInfoSec queueData={queueData} isLoading={isLoading} handleShare={handleShare} />
               {/* Join Queue Section */}
               <div>
                 <Card className="mb-6 dark:bg-gray-800 dark:text-gray-200">
@@ -573,23 +405,23 @@ export default function QueueDetailsPage({ params }) {
                       <div>
                         <div className="flex justify-between text-sm mb-1">
                           <span>Queue Capacity</span>
-                          <span>{queueData.current_queue} / {queueData.max_capacity}</span>
+                          <span>{queueData.queueEntries.length} / {queueData.max_capacity}</span>
                         </div>
-                        <Progress value={(queueData.current_queue / queueData.max_capacity) * 100} className="h-2" />
+                        <Progress value={(queueData.queueEntries.length / queueData.max_capacity) * 100} className="h-2" />
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
                           <Users className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
-                          <span>People in queue</span>
+                          <span>people ahead</span>
                         </div>
-                        <span className="font-semibold">{queueData.current_queue}</span>
+                        <span className="font-semibold">{queueData.queueEntries.length}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
                           <Clock className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
                           <span>Estimated wait time</span>
                         </div>
-                        <span className="font-semibold">{queueData.avg_wait_time} minutes</span>
+                        <span className="font-semibold">{queueData.queueEntries.length * queueData.est_time_to_serve} minutes</span>
                       </div>
                     </div>
                   </CardBody>

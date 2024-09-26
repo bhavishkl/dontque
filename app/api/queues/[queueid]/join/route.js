@@ -3,7 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../auth/[...nextauth]/route";
 import twilio from 'twilio';
-import crypto from 'crypto';
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
@@ -20,24 +19,6 @@ export async function POST(request, { params }) {
     }
 
     const { queueid } = params;
-    const body = await request.json();
-    console.log('Received request body:', body);
-
-    const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = body;
-
-    if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
-      return NextResponse.json({ error: 'Missing Razorpay data' }, { status: 400 });
-    }
-
-    // Verify Razorpay signature
-    const generatedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-      .digest('hex');
-
-    if (generatedSignature !== razorpay_signature) {
-      return NextResponse.json({ error: 'Invalid payment signature' }, { status: 400 });
-    }
 
     // Get the current queue information
     const { data: queueData, error: queueError } = await supabase
@@ -63,7 +44,6 @@ export async function POST(request, { params }) {
         user_id: session.user.id,
         position: queueData.current_queue + 1,
         status: 'waiting',
-        payment_id: razorpay_payment_id,
       })
       .select()
       .single();
@@ -115,21 +95,27 @@ export async function POST(request, { params }) {
         if (userProfileError) {
           console.error('Error fetching user name:', userProfileError);
         } else if (userProfileData && userProfileData.name) {
-          userName = userProfileData.name;
+          userName = userProfileData.name || 'Valued Customer';
         }
 
+        const message = `
+🌟 Welcome to the Queue, ${userName}! 🌟
 
-        const message = `🎉 Hello ${userName}! You've successfully joined the queue!
+You've successfully joined:
+🏷️ *${queueData.name}*
 
-Queue: *${queueData.name}*
-Your Position: *${newQueueCount}* 🧑‍🤝‍🧑
-📍 Location: ${queueData.location || 'Not specified'}
+Your Details:
+🧑‍🤝‍🧑 Position: *${newQueueCount}*
+📍 Location: ${queueData.location || 'To be announced'}
 
-Stay nearby and we'll notify you as your turn approaches. 📱
+📱 Stay close by! We'll keep you updated as your turn approaches.
 
-Need help? Contact us at support@queuesmart.com
+Need assistance?
+📧 support@queuesmart.com
 
-Thank you for choosing QueueSmart! We appreciate your patience. 🙏`;
+Thank you for choosing QueueSmart!
+We appreciate your patience and look forward to serving you soon. 🙏
+        `.trim();
 
         await client.messages.create({
           body: message,

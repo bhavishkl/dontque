@@ -189,8 +189,8 @@ export default function Home() {
           <div className="container mx-auto px-4">
             <div className="flex flex-col md:flex-row items-center justify-between">
               <div className="md:w-1/2 mb-3 md:mb-0">
-                <h1 className="text-2xl md:text-4xl font-bold mb-1">Skip the Wait, Join Smart</h1>
-                <p className="text-base sm:text-lg">Find and join queues near you instantly.</p>
+                <h1 className="text-2xl md:text-4xl font-bold mb-1 hidden sm:block">Skip the Wait, Join Smart</h1>
+                <p className="text-base  sm:text-lg">Find and join queues near you instantly.</p>
               </div>
               <div className="md:w-1/2">
                 <form onSubmit={handleSearch} className="flex items-center">
