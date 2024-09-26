@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { Scanner } from '@yudiel/react-qr-scanner';
+import { Modal, ModalContent, ModalHeader, ModalBody, Button, ModalFooter, useDisclosure, Card, CardBody, Skeleton, Input } from "@nextui-org/react"
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { Button, Input, Skeleton, Card, CardBody, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@nextui-org/react"
 import { categories } from '../../utils/category'
-import { Search, Clock, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, Plus, Copy, Share } from 'lucide-react'
+import { Search, Clock, Scan, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, Plus, Copy, Share } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApi } from '../../hooks/useApi'
 import debounce from 'lodash/debounce'
@@ -21,6 +22,8 @@ export default function Home() {
   const [queueId, setQueueId] = useState('')
   const router = useRouter()
   const { data: session } = useSession()
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isScannerActive, setIsScannerActive] = useState(false);
 
   // Dummy data for user stats
   const [userStats, setUserStats] = useState({
@@ -64,6 +67,33 @@ export default function Home() {
       router.push(`/user/queues?search=${searchQuery}&category=${selectedCategory}`)
     }
   }
+
+  const handleQrCodeScanned = (result) => {
+    if (result) {
+      // Assuming the QR code contains the queue ID
+      const queueId = result;
+      
+      // Close the QR scanner modal
+      onClose();
+      
+      // Navigate to the queue details page
+      router.push(`/user/queue/${queueId}`);
+      
+      // Optionally, show a success toast
+      toast.success('QR code scanned successfully');
+    }
+  };
+
+
+  const toggleScanner = () => {
+    if (isScannerActive) {
+      setIsScannerActive(false);
+      onClose();
+    } else {
+      setIsScannerActive(true);
+      onOpen();
+    }
+  };
   
   const handleCategoryClick = (category) => {
     setSelectedCategory(category)
@@ -194,6 +224,16 @@ export default function Home() {
               </div>
               <div className="md:w-1/2">
                 <form onSubmit={handleSearch} className="flex items-center">
+                  <Button
+                    isIconOnly
+                    color="primary"
+                    variant="flat"
+                    aria-label="Scan QR Code"
+                    className="mr-2 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 border border-white"
+                    onClick={toggleScanner}
+                  >
+                    <Scan className="text-white" />
+                  </Button>
                   <div className="relative w-full">
                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                       <Search className="h-5 w-5 text-gray-400" />
@@ -386,6 +426,26 @@ export default function Home() {
     </form>
   </ModalContent>
 </Modal>
+
+<Modal isOpen={isOpen} onClose={onClose}>
+        <ModalContent>
+          <ModalHeader>Scan QR Code</ModalHeader>
+          <ModalBody>
+          {isOpen && (
+            <Scanner
+              onScan={handleQrCodeScanned}
+              onError={(error) => console.log(error)}
+              style={{ width: '100%' }}
+            />
+          )}
+          </ModalBody>
+          <ModalFooter>
+            <Button color="danger" variant="light" onPress={onClose}>
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   )
 }

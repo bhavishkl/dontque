@@ -3,15 +3,15 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
-import { ArrowLeft, MapPin, Clock, Users, ClipboardCopy, Star, Share2, Bell, Heart, ChevronDown, ChevronUp, UserPlus } from 'lucide-react'
-import { Button, Card, CardBody, CardHeader, Chip, Progress, Skeleton, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input } from "@nextui-org/react"
+import { ArrowLeft, Clock, Users, ChevronDown, ChevronUp } from 'lucide-react'
+import { Button, Card, CardBody, CardHeader, Progress, Skeleton } from "@nextui-org/react"
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
 import { createClient } from '@supabase/supabase-js'
 import AddKnownUserModal from '@/app/components/UniComp/AddKnownUserModal';
 import { useApi } from '@/app/hooks/useApi'
 import QueueInfoSec from '@/app/components/QueueIdCompo/QueueInfoSec'
+
 
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
@@ -41,6 +41,9 @@ const calculateExpectedTurnTime = (queueData) => {
     expectedTurnTime: expectedTurnTime
   };
 };
+
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 
 export default function QueueDetailsPage({ params }) {
   const { data: queueData, isLoading, isError, mutate } = useApi(`/api/queues/${params.queueid}`)
@@ -115,51 +118,81 @@ export default function QueueDetailsPage({ params }) {
   const handleJoinQueue = async () => {
     setIsJoining(true);
     try {
+      // Optimistic update
+      const optimisticQueueData = {
+        ...queueData,
+        userQueueEntry: {
+          position: queueData.queueEntries.length + 1,
+          estimated_wait_time: (queueData.queueEntries.length + 1) * queueData.est_time_to_serve
+        },
+        queueEntries: [...queueData.queueEntries, { user_id: session.user.id }]
+      };
+      mutate(optimisticQueueData, false);
+  
       const joinResponse = await fetch(`/api/queues/${params.queueid}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // If needed, include any additional data here
       });
-
+  
       const data = await joinResponse.json();
-
+  
       if (!joinResponse.ok) {
         throw new Error(data.error || 'Failed to join queue');
       }
-
+  
+      // Add a slight delay before showing success message and updating UI
+      await delay(500); // 500ms delay
+  
       toast.success('Successfully joined the queue');
       await mutate();
-      scrollToTop(); 
+      scrollToTop();
     } catch (err) {
       console.error('Error joining queue:', err);
-      toast.error(err.message || 'Failed to join queue');
+      toast.error(err.message || 'Failed to join queue. Please try again.');
+      // Revert optimistic update
+      await mutate();
     } finally {
       setIsJoining(false);
     }
   };
-
+  
   const handleLeaveQueue = async () => {
     setIsLeaving(true);
     try {
+      // Optimistic update
+      const optimisticQueueData = {
+        ...queueData,
+        userQueueEntry: null,
+        queueEntries: queueData.queueEntries.filter(entry => entry.user_id !== session.user.id)
+      };
+      mutate(optimisticQueueData, false);
+  
       const response = await fetch(`/api/queues/${params.queueid}/leave`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
-
+  
       if (!response.ok) {
-        throw new Error('Failed to leave queue');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to leave queue');
       }
-
+  
+      // Add a slight delay before showing success message and updating UI
+      await delay(2000); // 500ms delay
+  
       toast.success('Successfully left the queue');
       await mutate();
     } catch (err) {
       console.error('Error leaving queue:', err);
-      toast.error(err.message || 'Failed to leave queue');
+      toast.error(err.message || 'Failed to leave queue. Please try again.');
+      // Revert optimistic update
+      await mutate();
     } finally {
       setIsLeaving(false);
     }
   };
 
+// ... rest of the component ...
   const handleShare = async () => {
     if (!queueData || !queueData.name || !queueData.short_id) {
       toast.error('Queue data is not available for sharing');
