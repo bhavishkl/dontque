@@ -70,23 +70,13 @@ export default function Home() {
 
   const handleQrCodeScanned = (result) => {
     if (result) {
-      // The result might be an object with a 'text' property
-      const queueId = typeof result === 'object' ? result.text : result;
-      
-      // Check if queueId is a valid UUID
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(queueId)) {
-        toast.error('Invalid QR code. Please try again.');
-        return;
-      }
-      
       // Close the QR scanner modal
       onClose();
       
-      // Navigate to the queue details page
-      router.push(`/user/queue/${queueId}`);
+      // Navigate to the scanned URL
+      router.push(result);
       
-      // Optionally, show a success toast
+      // Show a success toast
       toast.success('QR code scanned successfully');
     } else {
       toast.error('Failed to scan QR code. Please try again.');
