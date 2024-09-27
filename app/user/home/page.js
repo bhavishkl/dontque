@@ -70,8 +70,8 @@ export default function Home() {
 
   const handleQrCodeScanned = (result) => {
     if (result) {
-      // Assuming the QR code contains the queue ID
-      const queueId = result;
+      // The result might be an object with a 'text' property
+      const queueId = typeof result === 'object' ? result.text : result;
       
       // Close the QR scanner modal
       onClose();
