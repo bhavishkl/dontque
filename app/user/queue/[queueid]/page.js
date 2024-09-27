@@ -46,7 +46,7 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 
 export default function QueueDetailsPage({ params }) {
-  const { data: queueData, isLoading, isError, mutate } = useApi(`/api/queues/${params.queueid}`)
+  const { data: queueData, isLoading, isError, error, mutate } = useApi(`/api/queues/${params.queueid}`)
   const [isJoining, setIsJoining] = useState(false)
   const [isLeaving, setIsLeaving] = useState(false)
   const router = useRouter()
@@ -55,6 +55,14 @@ export default function QueueDetailsPage({ params }) {
   const [showAllInfo, setShowAllInfo] = useState(false)
   const [countdown, setCountdown] = useState('');
   const [expectedTurnTime, setExpectedTurnTime] = useState(null);
+
+  useEffect(() => {
+    if (isError) {
+      console.error('Error fetching queue data:', error);
+      toast.error('Failed to load queue data. Please try again.');
+      router.push('/user/queues');
+    }
+  }, [isError, error, router]);
 
   const toggleNotifications = async () => {
     setNotificationsEnabled(!notificationsEnabled)
