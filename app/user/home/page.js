@@ -139,7 +139,7 @@ export default function Home() {
         },
         (error) => {
           console.error("Error getting user location:", error);
-          toast.error("Failed to get location");
+          toast.error("Failed to get location", error);
         },
         { timeout: 10000, maximumAge: 60000 }
       );
