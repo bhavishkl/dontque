@@ -8,22 +8,64 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { categories } from '../../utils/category'
-import { Search, Clock, Scan, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, Plus, Copy, Share } from 'lucide-react'
+import { Search, Clock, Scan, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, Plus, Copy, Share, Chat } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApi } from '../../hooks/useApi'
 import debounce from 'lodash/debounce'
+import { memo } from 'react';
+const QueueItem = memo(({ queue }) => {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden relative" style={{ width: '250px', maxWidth: '100%' }}>
+      <div className="absolute top-2 right-2 bg-white dark:bg-gray-700 rounded-full px-2 py-1 text-xs font-semibold flex items-center z-10">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-400 mr-1" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+        </svg>
+        {queue.avg_rating ? queue.avg_rating.toFixed(1) : '4'}
+      </div>
+      <Image
+        src={queue.image_url || 'https://via.placeholder.com/400x200'}
+        alt={queue.name}
+        width={400}
+        height={200}
+        className="w-full h-32 sm:h-40 object-cover"
+      />
+      <div className="p-2 sm:p-4">
+        <h4 className="font-semibold mb-1 sm:mb-2 text-sm sm:text-base">{queue.name}</h4>
+        <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">
+          <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+          <span>{queue.total_est_wait_time} mins wait</span>
+        </div>
+        <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-3">
+          <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+          <span>{queue.queue_entry_length} people in queue</span>
+        </div>
+        <Link href={`/user/queue/${queue.queue_id}`}>
+          <Button className="w-full bg-gray-800 text-white dark:bg-gray-700 dark:text-gray-100 py-1 sm:py-2 text-xs sm:text-sm rounded-md hover:bg-gray-700 dark:hover:bg-gray-600">
+            View Queue
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+});
+
+QueueItem.displayName = 'QueueItem';
+
 
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
-  const { data: popularQueues, isLoading, isError, mutate } = useApi(`/api/queues?category=${selectedCategory}&search=${searchQuery}&limit=6`)
-  const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
+  const { data: popularQueues, isLoading, isError, mutate } = useApi(`/api/queues?category=${selectedCategory}&limit=6`)
+  const [searchResults, setSearchResults] = useState([])
+  const [isSearching, setIsSearching] = useState(false)
   const [userId, setUserId] = useState('')
   const [queueId, setQueueId] = useState('')
   const router = useRouter()
   const { data: session } = useSession()
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isScannerActive, setIsScannerActive] = useState(false);
+  const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
+  const [userCity, setUserCity] = useState('');
 
   // Dummy data for user stats
   const [userStats, setUserStats] = useState({
@@ -46,10 +88,13 @@ export default function Home() {
     if (searchParam) setSearchQuery(searchParam)
   
     debouncedMutate()
+    fetchUserLocation()
+    console.log("useEffect called, fetchUserLocation triggered");
   }, [selectedCategory, searchQuery, debouncedMutate])
   
   const handleSearch = async (e) => {
     e.preventDefault()
+    setIsSearching(true)
     if (/^\d{6}$/.test(searchQuery)) {
       try {
         const response = await fetch(`/api/queues/short/${searchQuery}`)
@@ -66,7 +111,43 @@ export default function Home() {
     } else {
       router.push(`/user/queues?search=${searchQuery}&category=${selectedCategory}`)
     }
+    setIsSearching(false)
   }
+
+  const fetchUserLocation = () => {
+    console.log("Fetching user location...");
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const coordinates = `${latitude}, ${longitude}`;
+          console.log("Coordinates obtained:", coordinates);
+          toast.success(
+            <div>
+              Coordinates: {coordinates}
+              <Button
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(coordinates);
+                  toast.success('Coordinates copied to clipboard');
+                }}
+              >
+                Copy
+              </Button>
+            </div>
+          );
+        },
+        (error) => {
+          console.error("Error getting user location:", error);
+          toast.error("Failed to get location");
+        },
+        { timeout: 10000, maximumAge: 60000 }
+      );
+    } else {
+      console.log("Geolocation is not supported by this browser.");
+      toast.error("Geolocation is not supported by this browser");
+    }
+  };
 
   const handleQrCodeScanned = (result) => {
     if (result) {
@@ -219,7 +300,8 @@ export default function Home() {
             <div className="flex flex-col md:flex-row items-center justify-between">
               <div className="md:w-1/2 mb-3 md:mb-0">
                 <h1 className="text-2xl md:text-4xl font-bold mb-1 hidden sm:block">Skip the Wait, Join Smart</h1>
-                <p className="text-base  sm:text-lg">Find and join queues near you instantly.</p>
+                <p className="text-base sm:text-lg">Find and join queues near you instantly.</p>
+                <p className="text-lg sm:text-xl mt-2">{userCity ? `Queues in ${userCity}` : 'Loading location...'}</p>
               </div>
               <div className="md:w-1/2">
                 <form onSubmit={handleSearch} className="flex items-center">
@@ -228,7 +310,7 @@ export default function Home() {
                     color="primary"
                     variant="flat"
                     aria-label="Scan QR Code"
-                    className="mr-2 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 border border-white"
+                    className="mr-2 bg-[#1F2937] hover:bg-[#374151] focus:ring-4 focus:outline-none focus:ring-gray-700 dark:bg-[#1F2937] dark:hover:bg-[#374151] dark:focus:ring-gray-600 border border-white rounded-md"
                     onClick={toggleScanner}
                   >
                     <Scan className="text-white" />
@@ -247,12 +329,12 @@ export default function Home() {
                     />
                   </div>
                   <button
-                    type="submit"
-                    className="ml-2 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-3 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? 'Searching...' : 'Search'}
-                  </button>
+  type="submit"
+  className="ml-2 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-3 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+  disabled={isSearching}
+>
+  {isSearching ? 'Searching...' : 'Search'}
+</button>
                 </form>
               </div>
             </div>
@@ -343,54 +425,28 @@ export default function Home() {
             </div>
             <div className="overflow-x-auto custom-scrollbar">
               <div className="flex gap-3 sm:gap-4 pb-2 sm:pb-4" style={{ width: 'max-content' }}>
-                {isLoading ? (
-                  // Skeleton loading state
-                  Array(6).fill().map((_, index) => (
-                    <div key={index} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden" style={{ width: '250px', maxWidth: '100%' }}>
-                      <Skeleton className="w-full h-32 sm:h-40" />
-                      <div className="p-2 sm:p-4">
-                        <Skeleton className="w-3/4 h-4 sm:h-6 mb-1 sm:mb-2" />
-                        <Skeleton className="w-1/2 h-3 sm:h-4 mb-1" />
-                        <Skeleton className="w-2/3 h-3 sm:h-4 mb-2 sm:mb-3" />
-                        <Skeleton className="w-full h-8 sm:h-10 rounded-md" />
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  popularQueues.map((queue) => (
-                    <div key={queue.queue_id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden relative" style={{ width: '250px', maxWidth: '100%' }}>
-                      <div className="absolute top-2 right-2 bg-white dark:bg-gray-700 rounded-full px-2 py-1 text-xs font-semibold flex items-center z-10">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-400 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                        {queue.avg_rating ? queue.avg_rating.toFixed(1) : '4'}
-                      </div>
-                      <Image
-                        src={queue.image_url || 'https://via.placeholder.com/400x200'}
-                        alt={queue.name}
-                        width={400}
-                        height={200}
-                        className="w-full h-32 sm:h-40 object-cover"
-                      />
-                      <div className="p-2 sm:p-4">
-                        <h4 className="font-semibold mb-1 sm:mb-2 text-sm sm:text-base">{queue.name}</h4>
-                        <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">
-                          <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                          <span>{queue.total_est_wait_time} mins wait</span>
-                        </div>
-                        <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-3">
-                          <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                          <span>{queue.current_queue} people in queue</span>
-                        </div>
-                        <Link href={`/user/queue/${queue.queue_id}`}>
-                          <Button className="w-full bg-gray-800 text-white dark:bg-gray-700 dark:text-gray-100 py-1 sm:py-2 text-xs sm:text-sm rounded-md hover:bg-gray-700 dark:hover:bg-gray-600">
-                            View Queue
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  ))
-                )}
+              {isLoading ? (
+  // Skeleton loading state
+  Array(6).fill().map((_, index) => (
+    <div key={index} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden" style={{ width: '250px', maxWidth: '100%' }}>
+      <Skeleton className="w-full h-32 sm:h-40" />
+      <div className="p-2 sm:p-4">
+        <Skeleton className="w-3/4 h-4 sm:h-6 mb-1 sm:mb-2" />
+        <Skeleton className="w-1/2 h-3 sm:h-4 mb-1" />
+        <Skeleton className="w-2/3 h-3 sm:h-4 mb-2 sm:mb-3" />
+        <Skeleton className="w-full h-8 sm:h-10 rounded-md" />
+      </div>
+    </div>
+  ))
+) : searchResults.length > 0 ? (
+  searchResults.map((queue) => (
+    <QueueItem key={queue.queue_id} queue={queue} />
+  ))
+) : (
+  popularQueues.map((queue) => (
+    <QueueItem key={queue.queue_id} queue={queue} />
+  ))
+)}
               </div>
             </div>
           </div>
