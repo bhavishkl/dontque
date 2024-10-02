@@ -13,6 +13,8 @@ import { toast } from 'sonner'
 import { useApi } from '../../hooks/useApi'
 import debounce from 'lodash/debounce'
 import { memo } from 'react';
+import { useGeolocated } from "react-geolocated";
+
 const QueueItem = memo(({ queue }) => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden relative" style={{ width: '250px', maxWidth: '100%' }}>
@@ -51,7 +53,6 @@ const QueueItem = memo(({ queue }) => {
 
 QueueItem.displayName = 'QueueItem';
 
-
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
@@ -79,19 +80,43 @@ export default function Home() {
     [mutate]
   );
 
+  const { coords, isGeolocationAvailable, isGeolocationEnabled } =
+  useGeolocated({
+      positionOptions: {
+          enableHighAccuracy: false,
+      },
+      userDecisionTimeout: 5000,
+  });
+
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search)
     const categoryParam = searchParams.get('category')
     const searchParam = searchParams.get('search')
-  
+
     if (categoryParam) setSelectedCategory(categoryParam)
     if (searchParam) setSearchQuery(searchParam)
-  
+
     debouncedMutate()
-    fetchUserLocation()
-    console.log("useEffect called, fetchUserLocation triggered");
   }, [selectedCategory, searchQuery, debouncedMutate])
-  
+
+  useEffect(() => {
+    if (coords) {
+      const fetchCityName = async () => {
+        try {
+          const response = await fetch(`https://api.openweathermap.org/geo/1.0/reverse?lat=${coords.latitude}&lon=${coords.longitude}&limit=1&appid=YOUR_OPENWEATHERMAP_API_KEY`);
+          const data = await response.json();
+          if (data && data.length > 0) {
+            setUserCity(data[0].name);
+            toast.success(`Location set to ${data[0].name}`);
+          }
+        } catch (error) {
+          console.error("Error fetching city name:", error);
+          toast.error("Failed to get city name");
+        }
+      };
+      fetchCityName();
+    }
+  }, [coords]);
   const handleSearch = async (e) => {
     e.preventDefault()
     setIsSearching(true)
@@ -113,41 +138,6 @@ export default function Home() {
     }
     setIsSearching(false)
   }
-
-  const fetchUserLocation = () => {
-    console.log("Fetching user location...");
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          const coordinates = `${latitude}, ${longitude}`;
-          console.log("Coordinates obtained:", coordinates);
-          toast.success(
-            <div>
-              Coordinates: {coordinates}
-              <Button
-                size="sm"
-                onClick={() => {
-                  navigator.clipboard.writeText(coordinates);
-                  toast.success('Coordinates copied to clipboard');
-                }}
-              >
-                Copy
-              </Button>
-            </div>
-          );
-        },
-        (error) => {
-          console.error("Error getting user location:", error);
-          toast.error("Failed to get location", error);
-        },
-        { timeout: 10000, maximumAge: 60000 }
-      );
-    } else {
-      console.log("Geolocation is not supported by this browser.");
-      toast.error("Geolocation is not supported by this browser");
-    }
-  };
 
   const handleQrCodeScanned = (result) => {
     if (result) {
@@ -301,8 +291,15 @@ export default function Home() {
               <div className="md:w-1/2 mb-3 md:mb-0">
                 <h1 className="text-2xl md:text-4xl font-bold mb-1 hidden sm:block">Skip the Wait, Join Smart</h1>
                 <p className="text-base sm:text-lg">Find and join queues near you instantly.</p>
-                <p className="text-lg sm:text-xl mt-2">{userCity ? `Queues in ${userCity}` : 'Loading location...'}</p>
-              </div>
+                <p className="text-lg sm:text-xl mt-2">
+    {!isGeolocationAvailable
+        ? "Your browser does not support Geolocation"
+        : !isGeolocationEnabled
+        ? "Geolocation is not enabled"
+        : coords
+        ? `Latitude: ${coords.latitude}, Longitude: ${coords.longitude}`
+        : "Getting location data..."}
+</p>              </div>
               <div className="md:w-1/2">
                 <form onSubmit={handleSearch} className="flex items-center">
                   <Button
