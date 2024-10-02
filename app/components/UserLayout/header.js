@@ -2,12 +2,12 @@
 
 import Link from 'next/link'
 import { useSession, signOut } from "next-auth/react"
-import { Bell, X, Home, Settings, LogOut, User, Users, PieChart, HelpCircle } from 'lucide-react'
+import { Bell, X, Home, Settings, LogOut, User, Users, PieChart, HelpCircle, ChevronRight } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { useUserInfo } from '../../hooks/useUserName'
 import { usePathname } from 'next/navigation'
-import { Avatar } from "@nextui-org/react"
+import { Avatar, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Button, Divider } from "@nextui-org/react"
 import { ThemeToggle } from '../ThemeToggle'
 
 const DynamicHeader = dynamic(() => import('./DynamicHeader'), { ssr: false })
@@ -17,7 +17,9 @@ const Header = () => {
   const { data: session } = useSession()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const sidebarRef = useRef(null)
-  const { name: userName, role, image: userImage } = useUserInfo(session?.user?.id)
+  const { name: userName, role, image: userImage, isNameNull, updateUserInfo } = useUserInfo(session?.user?.id)
+  const [isNameModalOpen, setIsNameModalOpen] = useState(false)
+  const [newName, setNewName] = useState('')
   
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
 
@@ -34,21 +36,57 @@ const Header = () => {
     }
   }, [])
 
+  useEffect(() => {
+    if (isNameNull && pathname !== '/signin') {
+      setIsNameModalOpen(true)
+    }
+  }, [isNameNull, pathname])
+
   const handleLogout = async () => {
-    localStorage.removeItem(`userName_${session?.user?.id}`)
+    localStorage.removeItem(`userInfo_${session?.user?.id}`)
     await signOut({ redirect: true, callbackUrl: '/' })
   }
 
-  if (pathname === '/') return null // Don't render on the landing page
+  const handleNameSubmit = async () => {
+    if (newName.trim()) {
+      try {
+        const response = await fetch('/api/user/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newName.trim() })
+        })
+        if (response.ok) {
+          updateUserInfo({ name: newName.trim() })
+          setIsNameModalOpen(false)
+        } else {
+          throw new Error('Failed to update name')
+        }
+      } catch (error) {
+        console.error('Error updating name:', error)
+      }
+    }
+  }
+
+  if (pathname === '/' || pathname === '/signin') return null
+
+  const SidebarLink = ({ href, icon: Icon, children }) => (
+    <Link 
+      href={href} 
+      className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200" 
+      onClick={toggleSidebar}
+    >
+      <Icon size={20} className="mr-3" />
+      <span className="flex-grow">{children}</span>
+      <ChevronRight size={16} />
+    </Link>
+  )
 
   return (
     <>
       <DynamicHeader session={session} />
       <header className="sticky top-0 bg-white dark:bg-gray-800 shadow-sm z-20">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-         
-            <h1 className="text-2xl font-bold text-black dark:text-white">Dontque</h1>
-          
+          <h1 className="text-2xl font-bold text-black dark:text-white">Dontque</h1>
           <nav className="flex items-center space-x-4">
             {session?.user && (
               <>
@@ -73,76 +111,83 @@ const Header = () => {
         </div>
       </header>
 
-      {/* Sidebar */}
+      {/* Improved Sidebar */}
       {session && (
         <div className={`fixed inset-0 bg-black bg-opacity-50 z-30 transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
           <div 
             ref={sidebarRef}
-            className={`absolute right-0 top-0 h-full w-72 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}
+            className={`absolute right-0 top-0 h-full w-80 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}
           >
-            <div className="flex flex-col h-full p-6">
-              <button onClick={toggleSidebar} className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 transition-colors duration-200">
-                <X size={24} />
-              </button>
-              <div className="flex flex-col items-center mb-8">
-                <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mb-3 border-4 border-blue-500">
-                  <User size={48} className="text-gray-600 dark:text-gray-300" />
+            <div className="flex flex-col h-full">
+              <div className="p-6 bg-blue-600 dark:bg-blue-800 text-white">
+                <button onClick={toggleSidebar} className="absolute top-4 right-4 text-white hover:text-gray-200 transition-colors duration-200">
+                  <X size={24} />
+                </button>
+                <div className="flex items-center space-x-4">
+                  <Avatar
+                    src={userImage || ''}
+                    name={userName || 'User'}
+                    size="lg"
+                    className="w-16 h-16 border-2 border-white"
+                  />
+                  <div>
+                    <h2 className="text-xl font-bold">{userName || session.user?.name || 'Guest'}</h2>
+                    <p className="text-sm opacity-80">{role === 'business' ? 'Business Account' : 'User Account'}</p>
+                  </div>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">{userName || session.user?.name || 'Guest'}</h2>
               </div>
-              <div className="h-px bg-gray-200 dark:bg-gray-700 my-4"></div>
-              <nav className="flex-grow overflow-y-auto">
-                <Link href="/user/home" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200" onClick={toggleSidebar}>
-                  <Home size={20} className="mr-3" />
-                  Home
-                </Link>
-                <Link href="/user/queues" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200" onClick={toggleSidebar}>
-                  <Users size={20} className="mr-3" />
-                  Queues
-                </Link>
+              <nav className="flex-grow overflow-y-auto p-4">
+                <SidebarLink href="/user/home" icon={Home}>Home</SidebarLink>
+                <SidebarLink href="/user/queues" icon={Users}>Queues</SidebarLink>
+                <SidebarLink href="/user/dashboard" icon={PieChart}>User Dashboard</SidebarLink>
                 {role === 'business' && (
                   <>
-                    <Link href="/dashboard" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200" onClick={toggleSidebar}>
-                      <PieChart size={20} className="mr-3" />
-                      Business Dashboard
-                    </Link>
-                    <Link href="/business/profile" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200" onClick={toggleSidebar}>
-                      <User size={20} className="mr-3" />
-                      Business Profile
-                    </Link>
-                    <Link href="/business/support" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200" onClick={toggleSidebar}>
-                      <HelpCircle size={20} className="mr-3" />
-                      Support
-                    </Link>
+                    <Divider className="my-2" />
+                    <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2 mt-4">Business</h3>
+                    <SidebarLink href="/dashboard" icon={PieChart}>Business Dashboard</SidebarLink>
+                    <SidebarLink href="/business/profile" icon={User}>Business Profile</SidebarLink>
+                    <SidebarLink href="/business/support" icon={HelpCircle}>Support</SidebarLink>
                   </>
                 )}
-                <Link href="/user/dashboard" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200" onClick={toggleSidebar}>
-                  <PieChart size={20} className="mr-3" />
-                  User Dashboard
-                </Link>
-                <Link href="/user/settings" className="flex items-center p-3 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-colors duration-200" onClick={toggleSidebar}>
-                  <Settings size={20} className="mr-3" />
-                  Settings
-                </Link>
+                <Divider className="my-2" />
+                <SidebarLink href="/user/settings" icon={Settings}>Settings</SidebarLink>
               </nav>
-              <div className="mt-auto">
-                <div className="h-px bg-gray-200 dark:bg-gray-700 my-2"></div>
-                <div className="flex items-center justify-between p-3">
+              <div className="p-4 bg-gray-100 dark:bg-gray-700">
+                <div className="flex items-center justify-between mb-4">
                   <span className="text-gray-700 dark:text-gray-300">Dark Mode</span>
                   <ThemeToggle />
                 </div>
-                <button 
+                <Button 
                   onClick={handleLogout}
-                  className="flex items-center p-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900 rounded-lg transition-colors duration-200 w-full"
+                  color="danger"
+                  variant="flat"
+                  startContent={<LogOut size={20} />}
+                  className="w-full"
                 >
-                  <LogOut size={20} className="mr-3" />
                   Logout
-                </button>
+                </Button>
               </div>
             </div>
           </div>
         </div>
       )}
+      <Modal isOpen={isNameModalOpen} onClose={() => {}} hideCloseButton>
+        <ModalContent>
+          <ModalHeader>Welcome! Please enter your name</ModalHeader>
+          <ModalBody>
+            <Input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Your name"
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button color="primary" onClick={handleNameSubmit} disabled={!newName.trim()}>
+              Submit
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </>
   )
 }

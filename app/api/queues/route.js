@@ -40,10 +40,26 @@ export async function GET(request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Calculate total estimated wait time for each queue
-  const queuesWithTotalWaitTime = data.map(queue => ({
+  // Fetch queue entry lengths for each queue
+  const queueEntryLengths = await Promise.all(data.map(async (queue) => {
+    const { count, error: countError } = await supabase
+      .from('queue_entries')
+      .select('*', { count: 'exact', head: true })
+      .eq('queue_id', queue.queue_id);
+
+    if (countError) {
+      console.error('Error fetching queue entry length:', countError);
+      return 0;
+    }
+
+    return count;
+  }));
+
+  // Calculate total estimated wait time for each queue and add queue entry length
+  const queuesWithTotalWaitTime = data.map((queue, index) => ({
     ...queue,
-    total_est_wait_time: queue.current_queue * queue.est_time_to_serve
+    total_est_wait_time: queueEntryLengths[index] * queue.est_time_to_serve,
+    queue_entry_length: queueEntryLengths[index]
   }));
 
   return NextResponse.json(queuesWithTotalWaitTime);

@@ -8,14 +8,17 @@ import { Button, Card, CardBody, CardHeader, Avatar, Badge, Tabs, Tab, Table, Ta
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { useApi } from '../../hooks/useApi'
+import { useUserInfo } from '../../hooks/useUserName'
+
 
 export default function UserDashboard() {
   const [activeTab, setActiveTab] = useState('my-queues')
   const { data: userData, isLoading: isUserLoading, isError: isUserError, mutate: mutateUser } = useApi('/api/user/profile')
   const { data: currentQueues, isLoading: isCurrentQueuesLoading, isError: isCurrentQueuesError, mutate: mutateCurrentQueues } = useApi('/api/user/current-queues')
   const { data: pastQueues, isLoading: isPastQueuesLoading, isError: isPastQueuesError, mutate: mutatePastQueues } = useApi('/api/user/past-queues')
-  const { data: session } = useSession()
+  const { data: session, update: updateSession } = useSession()
   const router = useRouter()
+  const { updateUserInfo } = useUserInfo(session?.user?.id)
 
   useEffect(() => {
     if (!session) {
@@ -42,13 +45,38 @@ export default function UserDashboard() {
       })
       if (!response.ok) throw new Error('Failed to update profile')
       toast.success('Profile updated successfully')
+      mutateUser()
+      
+      // Update session and local storage
+      await updateSession({ ...session, user: { ...session.user, name: userData.name } })
+      updateUserInfo({ name: userData.name })
     } catch (error) {
       console.error('Error updating profile:', error)
       toast.error('Failed to update profile')
     }
   }
 
-  
+  const renderCurrentQueuesSkeleton = () => (
+    <Table>
+      <TableHeader>
+        <TableColumn className="dark:text-gray-200">Queue Name</TableColumn>
+        <TableColumn className="dark:text-gray-200">Position</TableColumn>
+        <TableColumn className="dark:text-gray-200">Estimated Wait Time</TableColumn>
+        <TableColumn className="dark:text-gray-200">Actions</TableColumn>
+      </TableHeader>
+      <TableBody>
+        {[...Array(3)].map((_, index) => (
+          <TableRow key={index} className="dark:bg-gray-800 dark:text-white">
+            <TableCell><Skeleton className="w-full h-6" /></TableCell>
+            <TableCell><Skeleton className="w-16 h-6" /></TableCell>
+            <TableCell><Skeleton className="w-24 h-6" /></TableCell>
+            <TableCell><Skeleton className="w-24 h-8 rounded-md" /></TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  )
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="container mx-auto px-4 py-8">
@@ -60,8 +88,8 @@ export default function UserDashboard() {
               </CardHeader>
               <CardBody>
                 {isLoading ? (
-                  <Skeleton className="w-full h-40" />
-                ) : currentQueues.length > 0 ? (
+                  renderCurrentQueuesSkeleton()
+                ) : currentQueues && currentQueues.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableColumn className="dark:text-gray-200">Queue Name</TableColumn>
@@ -86,6 +114,7 @@ export default function UserDashboard() {
                   </Table>
                 ) : (
                   <p className="dark:text-gray-300">You are not currently in any queues.</p>
+                  
                 )}
               </CardBody>
             </Card>
@@ -98,7 +127,7 @@ export default function UserDashboard() {
               <CardBody>
                 {isLoading ? (
                   <Skeleton className="w-full h-60" />
-                ) : (
+                ) : pastQueues && pastQueues.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableColumn className="dark:text-gray-200">Queue Name</TableColumn>
@@ -131,6 +160,8 @@ export default function UserDashboard() {
                       ))}
                     </TableBody>
                   </Table>
+                ) : (
+                  <p className="dark:text-gray-300">You have no queue history.</p>
                 )}
               </CardBody>
             </Card>
@@ -149,7 +180,7 @@ export default function UserDashboard() {
                     <Skeleton className="h-20 w-full" />
                     <Skeleton className="h-10 w-full" />
                   </div>
-                ) : (
+                ) : userData ? (
                   <form onSubmit={handleSaveChanges} className="space-y-4">
                     <div className="flex items-center space-x-4">
                       <Avatar src={userData.image} name={userData.name} className="h-20 w-20" />
@@ -160,7 +191,7 @@ export default function UserDashboard() {
                       <input
                         type="text"
                         value={userData.name}
-                        onChange={(e) => setUserData({ ...userData, name: e.target.value })}
+                        onChange={(e) => mutateUser({...userData, name: e.target.value}, false)}
                         className="w-full mt-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:text-white"
                       />
                     </div>
@@ -169,7 +200,7 @@ export default function UserDashboard() {
                       <input
                         type="tel"
                         value={userData.phone_number}
-                        onChange={(e) => setUserData({ ...userData, phone_number: e.target.value })}
+                        onChange={(e) => mutateUser({...userData, phone_number: e.target.value}, false)}
                         className="w-full mt-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:text-white"
                       />
                     </div>
@@ -180,7 +211,7 @@ export default function UserDashboard() {
                           <input
                             type="checkbox"
                             checked={userData.emailNotifications}
-                            onChange={(e) => setUserData({ ...userData, emailNotifications: e.target.checked })}
+                            onChange={(e) => mutateUser({...userData, emailNotifications: e.target.checked}, false)}
                             className="rounded border-gray-300 text-primary focus:ring-primary dark:border-gray-600 dark:bg-gray-700"
                           />
                           <span className="ml-2 dark:text-gray-300">Email notifications</span>
@@ -189,7 +220,7 @@ export default function UserDashboard() {
                           <input
                             type="checkbox"
                             checked={userData.pushNotifications}
-                            onChange={(e) => setUserData({ ...userData, pushNotifications: e.target.checked })}
+                            onChange={(e) => mutateUser({...userData, pushNotifications: e.target.checked}, false)}
                             className="rounded border-gray-300 text-primary focus:ring-primary dark:border-gray-600 dark:bg-gray-700"
                           />
                           <span className="ml-2 dark:text-gray-300">Push notifications</span>
@@ -198,6 +229,8 @@ export default function UserDashboard() {
                     </div>
                     <Button color="primary" type="submit" className="w-full dark:bg-blue-600 dark:hover:bg-blue-700">Save Changes</Button>
                   </form>
+                ) : (
+                  <p className="dark:text-gray-300">Failed to load user data.</p>
                 )}
               </CardBody>
             </Card>

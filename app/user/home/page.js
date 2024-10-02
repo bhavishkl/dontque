@@ -13,7 +13,6 @@ import { toast } from 'sonner'
 import { useApi } from '../../hooks/useApi'
 import debounce from 'lodash/debounce'
 import { memo } from 'react';
-import { useGeolocated } from "react-geolocated";
 
 const QueueItem = memo(({ queue }) => {
   return (
@@ -66,7 +65,6 @@ export default function Home() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isScannerActive, setIsScannerActive] = useState(false);
   const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
-  const [userCity, setUserCity] = useState('');
 
   // Dummy data for user stats
   const [userStats, setUserStats] = useState({
@@ -80,14 +78,6 @@ export default function Home() {
     [mutate]
   );
 
-  const { coords, isGeolocationAvailable, isGeolocationEnabled } =
-  useGeolocated({
-      positionOptions: {
-          enableHighAccuracy: false,
-      },
-      userDecisionTimeout: 5000,
-  });
-
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search)
     const categoryParam = searchParams.get('category')
@@ -98,25 +88,6 @@ export default function Home() {
 
     debouncedMutate()
   }, [selectedCategory, searchQuery, debouncedMutate])
-
-  useEffect(() => {
-    if (coords) {
-      const fetchCityName = async () => {
-        try {
-          const response = await fetch(`https://api.openweathermap.org/geo/1.0/reverse?lat=${coords.latitude}&lon=${coords.longitude}&limit=1&appid=YOUR_OPENWEATHERMAP_API_KEY`);
-          const data = await response.json();
-          if (data && data.length > 0) {
-            setUserCity(data[0].name);
-            toast.success(`Location set to ${data[0].name}`);
-          }
-        } catch (error) {
-          console.error("Error fetching city name:", error);
-          toast.error("Failed to get city name");
-        }
-      };
-      fetchCityName();
-    }
-  }, [coords]);
   const handleSearch = async (e) => {
     e.preventDefault()
     setIsSearching(true)
@@ -291,15 +262,7 @@ export default function Home() {
               <div className="md:w-1/2 mb-3 md:mb-0">
                 <h1 className="text-2xl md:text-4xl font-bold mb-1 hidden sm:block">Skip the Wait, Join Smart</h1>
                 <p className="text-base sm:text-lg">Find and join queues near you instantly.</p>
-                <p className="text-lg sm:text-xl mt-2">
-    {!isGeolocationAvailable
-        ? "Your browser does not support Geolocation"
-        : !isGeolocationEnabled
-        ? "Geolocation is not enabled"
-        : coords
-        ? `Latitude: ${coords.latitude}, Longitude: ${coords.longitude}`
-        : "Getting location data..."}
-</p>              </div>
+                </div>
               <div className="md:w-1/2">
                 <form onSubmit={handleSearch} className="flex items-center">
                   <Button

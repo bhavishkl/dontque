@@ -17,7 +17,7 @@ export default function QueueManagementPage({ params }) {
   const [serviceTime, setServiceTime] = useState('')
   const router = useRouter()
   const [isToggling, setIsToggling] = useState(false)
-  const [activeTab, setActiveTab] = useState('stats')
+  const [activeTab, setActiveTab] = useState("cards");
   const [loadingActions, setLoadingActions] = useState({})
 
   const { data: queueData, isLoading, isError, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage`)
@@ -144,6 +144,112 @@ export default function QueueManagementPage({ params }) {
     await refetchQueueData();
   };
 
+  const CustomerCard = ({ customer, index, onServed, onNoShow, loadingActions }) => {
+    return (
+      <Card className="w-full dark:bg-gray-800 shadow-lg p-6">
+        <CardBody>
+          <div className="flex flex-col space-y-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <div className="bg-blue-500 text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold">
+                  {customer.user_profile?.name?.[0] || customer.name?.[0] || 'W'}
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold dark:text-white">
+                    {customer.user_profile?.name || customer.name || 'Walk-in Customer'}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Queue ID: {customer.entry_id}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-gray-500 dark:text-gray-400">Waiting time</p>
+                <p className="font-semibold dark:text-white">{customer.waitingTime || '15m 20s'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 dark:text-gray-400">Estimated service time</p>
+                <p className="font-semibold dark:text-white">{customer.estimatedServiceTime || '20m'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 dark:text-gray-400">Joined at</p>
+                <p className="font-semibold dark:text-white">{customer.formattedJoinTime}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 dark:text-gray-400">Status</p>
+                <p className="font-semibold dark:text-white">{customer.status || 'Waiting'}</p>
+              </div>
+            </div>
+  
+            <div className="flex flex-col space-y-2">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Additional notes</p>
+              <Input 
+                placeholder="Add notes here..." 
+                variant="bordered" 
+                className="dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+  
+            <div className="flex justify-between items-center pt-4">
+              <div className="flex space-x-2">
+                <Button 
+                  size="sm" 
+                  color="success" 
+                  variant="flat" 
+                  onClick={() => onServed(customer.entry_id)}
+                  isLoading={loadingActions[customer.entry_id]?.serve}
+                >
+                  <Check className="mr-1 h-4 w-4" />
+                  Served
+                </Button>
+                <Button 
+                  size="sm" 
+                  color="danger" 
+                  variant="flat" 
+                  onClick={() => onNoShow(customer.entry_id)}
+                  isLoading={loadingActions[customer.entry_id]?.noShow}
+                >
+                  <X className="mr-1 h-4 w-4" />
+                  No Show
+                </Button>
+              </div>
+              <Button size="sm" color="primary" variant="ghost">
+                <MessageSquare className="mr-1 h-4 w-4" />
+                Notify
+              </Button>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
+    );
+  };
+  
+  const CustomerCardStack = ({ customers, onServed, onNoShow, loadingActions }) => {
+    return (
+      <div className="relative w-full max-w-md mx-auto">
+        {customers.map((customer, index) => (
+          <div
+            key={customer.entry_id}
+            className="absolute w-full"
+            style={{
+              top: `${index * 4}px`,
+              left: `${index * 4}px`,
+              zIndex: customers.length - index,
+            }}
+          >
+            <CustomerCard
+              customer={customer}
+              index={index}
+              onServed={onServed}
+              onNoShow={onNoShow}
+              loadingActions={loadingActions}
+            />
+          </div>
+        ))}
+      </div>
+    );
+  };
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="sticky top-0 bg-white dark:bg-gray-800 shadow-sm z-10">
@@ -176,7 +282,7 @@ export default function QueueManagementPage({ params }) {
     <>
       <Card className="mb-8 dark:bg-gray-800">
         <CardBody>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
             <div className="flex items-center space-x-4">
               <Chip color={queueData.queueData.status === 'active' ? "success" : "default"}>
                 {queueData.queueData.status === 'active' ? "Active" : "Paused"}
@@ -192,7 +298,7 @@ export default function QueueManagementPage({ params }) {
                 </span>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center space-x-2 sm:space-x-4">
               <div className="flex items-center space-x-2">
                 <Input
                   type="number"
@@ -202,14 +308,22 @@ export default function QueueManagementPage({ params }) {
                 />
                 <span className="dark:text-gray-300">min</span>
               </div>
-              <Button onClick={handleUpdateServiceTime}>Update Service Time</Button>
+              <Button onClick={handleUpdateServiceTime} className="mt-2 sm:mt-0">Update Service Time</Button>
               <AddKnownUserModal queueId={params.queueId} onSuccess={handleAddKnownSuccess} />
             </div>
           </div>
         </CardBody>
       </Card>
 
-      <Tabs selectedKey="queue" onSelectionChange={setActiveTab}>
+      <Tabs selectedKey={activeTab} onSelectionChange={setActiveTab}>
+      <Tab key="cards" title="Queue Cards">
+  <CustomerCardStack
+    customers={customersInQueue}
+    onServed={handleServed}
+    onNoShow={handleNoShow}
+    loadingActions={loadingActions}
+  />
+</Tab>
         <Tab key="queue" title="Queue">
           <Card className="dark:bg-gray-800">
             <CardHeader>

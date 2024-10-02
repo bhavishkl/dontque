@@ -36,13 +36,26 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Queue is full' }, { status: 400 });
     }
 
+    // Get the current queue entries
+    const { data: queueEntries, error: queueEntriesError } = await supabase
+      .from('queue_entries')
+      .select('user_id')
+      .eq('queue_id', queueid);
+
+    if (queueEntriesError) {
+      console.error('Error fetching queue entries:', queueEntriesError);
+      return NextResponse.json({ error: queueEntriesError.message }, { status: 500 });
+    }
+
+    const newPosition = queueEntries.length + 1;
+
     // Add the user to the queue
     const { data: queueEntry, error: insertError } = await supabase
       .from('queue_entries')
       .insert({
         queue_id: queueid,
         user_id: session.user.id,
-        position: queueData.current_queue + 1,
+        position: newPosition,
         status: 'waiting',
       })
       .select()
@@ -98,6 +111,8 @@ export async function POST(request, { params }) {
           userName = userProfileData.name || 'Valued Customer';
         }
 
+        const estimatedWaitTime = newPosition * queueData.est_time_to_serve;
+
         const message = `
 🌟 Welcome to the Queue, ${userName}! 🌟
 
@@ -105,10 +120,15 @@ You've successfully joined:
 🏷️ *${queueData.name}*
 
 Your Details:
-🧑‍🤝‍🧑 Position: *${newQueueCount}*
+🧑‍🤝‍🧑 Position: *${newPosition}*
+⏱️ Estimated Wait Time: *${estimatedWaitTime} minutes*
 📍 Location: ${queueData.location || 'To be announced'}
 
 📱 Stay close by! We'll keep you updated as your turn approaches.
+
+*🔔 Important:*
+*Would you like to be notified when you reach the 7th position in the queue?*
+*Reply with 'YES' if you'd like this notification.*
 
 Need assistance?
 📧 support@queuesmart.com
@@ -133,8 +153,8 @@ We appreciate your patience and look forward to serving you soon. 🙏
       message: 'Successfully joined the queue',
       queueEntry: queueEntry,
       updatedQueue: updatedQueue,
-      userPosition: newQueueCount,
-      estWaitTime: newQueueCount * queueData.avg_wait_time
+      userPosition: newPosition,
+      estWaitTime: newPosition * queueData.est_time_to_serve
     });
   } catch (error) {
     console.error('Error joining queue:', error);
