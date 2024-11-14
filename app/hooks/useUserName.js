@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
 export function useUserInfo(userId) {
-  const [userInfo, setUserInfo] = useState({ name: '', role: '', image: '' })
+  const [userInfo, setUserInfo] = useState({ name: '', role: '', image: '', short_id: '' })
   const [isNameNull, setIsNameNull] = useState(false)
 
   const fetchUserInfo = async () => {
@@ -19,14 +19,14 @@ export function useUserInfo(userId) {
 
       const { data, error } = await supabase
         .from('user_profile')
-        .select('name, role, image')
+        .select('name, role, image, user_short_id')
         .eq('user_id', userId)
         .single()
 
       if (error) {
         console.error('Error fetching user info:', error)
       } else if (data) {
-        const newUserInfo = { name: data.name, role: data.role, image: data.image }
+        const newUserInfo = { name: data.name, role: data.role, image: data.image, short_id: data.user_short_id }
         setUserInfo(newUserInfo)
         setIsNameNull(!data.name)
         if (typeof window !== 'undefined') {

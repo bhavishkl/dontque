@@ -9,6 +9,7 @@ import { useUserInfo } from '../../hooks/useUserName'
 import { usePathname } from 'next/navigation'
 import { Avatar, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Button, Divider } from "@nextui-org/react"
 import { ThemeToggle } from '../ThemeToggle'
+import { toast } from 'sonner'
 
 const DynamicHeader = dynamic(() => import('./DynamicHeader'), { ssr: false })
 
@@ -17,9 +18,10 @@ const Header = () => {
   const { data: session } = useSession()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const sidebarRef = useRef(null)
-  const { name: userName, role, image: userImage, isNameNull, updateUserInfo } = useUserInfo(session?.user?.id)
+  const { name: userName, role, image: userImage, short_id: userShortId, isNameNull, updateUserInfo } = useUserInfo(session?.user?.id)
   const [isNameModalOpen, setIsNameModalOpen] = useState(false)
   const [newName, setNewName] = useState('')
+  const [pressTimer, setPressTimer] = useState(null)
   
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
 
@@ -67,6 +69,23 @@ const Header = () => {
     }
   }
 
+  const handlePressStart = () => {
+    const timer = setTimeout(() => {
+      if (userShortId) {
+        navigator.clipboard.writeText(userShortId)
+        toast.success('ID copied to clipboard')
+      }
+    }, 500) // 500ms for long press
+    setPressTimer(timer)
+  }
+
+  const handlePressEnd = () => {
+    if (pressTimer) {
+      clearTimeout(pressTimer)
+      setPressTimer(null)
+    }
+  }
+
   if (pathname === '/' || pathname === '/signin') return null
 
   const SidebarLink = ({ href, icon: Icon, children }) => (
@@ -96,14 +115,35 @@ const Header = () => {
                 <button className="text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100">
                   <Bell size={24} />
                 </button>
-                <div className="flex items-center space-x-2 cursor-pointer" onClick={toggleSidebar}>
+                <div 
+                  className="flex items-center space-x-2 cursor-pointer"
+                  onMouseEnter={() => setSidebarOpen(true)}
+                >
+                  <div className="flex flex-col items-end">
+                    <span className="text-gray-700 dark:text-gray-300 hidden sm:inline">{userName || 'Set Name'}</span>
+                    {userShortId && (
+                      <div className="relative group">
+                        <p className="text-sm opacity-80 cursor-pointer"
+                          onMouseDown={handlePressStart}
+                          onMouseUp={handlePressEnd}
+                          onMouseLeave={handlePressEnd}
+                          onTouchStart={handlePressStart}
+                          onTouchEnd={handlePressEnd}
+                        >
+                          ID: {userShortId}
+                        </p>
+                        <span className="absolute -bottom-6 left-0 text-xs bg-gray-800 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                          Long press to copy ID
+                        </span>
+                      </div>
+                    )}
+                  </div>
                   <Avatar
                     src={userImage || ''}
                     name={userName || 'User'}
                     size="sm"
                     className="w-10 h-10"
                   />
-                  <span className="text-gray-700 dark:text-gray-300 hidden sm:inline">{userName || 'Set Name'}</span>
                 </div>
               </>
             )}
@@ -132,6 +172,22 @@ const Header = () => {
                   />
                   <div>
                     <h2 className="text-xl font-bold">{userName || session.user?.name || 'Guest'}</h2>
+                    {userShortId && (
+                      <div className="relative group">
+                        <p className="text-sm opacity-80 cursor-pointer"
+                          onMouseDown={handlePressStart}
+                          onMouseUp={handlePressEnd}
+                          onMouseLeave={handlePressEnd}
+                          onTouchStart={handlePressStart}
+                          onTouchEnd={handlePressEnd}
+                        >
+                          ID: {userShortId}
+                        </p>
+                        <span className="absolute -bottom-6 left-0 text-xs bg-gray-800 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                          Long press to copy ID
+                        </span>
+                      </div>
+                    )}
                     <p className="text-sm opacity-80">{role === 'business' ? 'Business Account' : 'User Account'}</p>
                   </div>
                 </div>
