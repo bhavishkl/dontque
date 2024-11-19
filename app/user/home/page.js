@@ -8,47 +8,153 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { categories } from '../../utils/category'
-import { Search, Clock, Scan, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, Plus, Copy, Share, Chat } from 'lucide-react'
+import { Search, Clock, Scan, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, Plus, Copy, Share, Chat, MapPin, Star, Phone, Timer, Globe, ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApi } from '../../hooks/useApi'
 import debounce from 'lodash/debounce'
 import { memo } from 'react';
 
 const QueueItem = memo(({ queue }) => {
+  const router = useRouter();
+  const busyness = getCurrentBusyness(queue.busy_hours);
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden relative" style={{ width: '250px', maxWidth: '100%' }}>
-      <div className="absolute top-2 right-2 bg-white dark:bg-gray-700 rounded-full px-2 py-1 text-xs font-semibold flex items-center z-10">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-yellow-400 mr-1" viewBox="0 0 20 20" fill="currentColor">
-          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-        </svg>
-        {queue.avg_rating ? queue.avg_rating.toFixed(1) : '4'}
-      </div>
-      <Image
-        src={queue.image_url || 'https://via.placeholder.com/400x200'}
-        alt={queue.name}
-        width={400}
-        height={200}
-        className="w-full h-32 sm:h-40 object-cover"
-      />
-      <div className="p-2 sm:p-4">
-        <h4 className="font-semibold mb-1 sm:mb-2 text-sm sm:text-base">{queue.name}</h4>
-        <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">
-          <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-          <span>{queue.total_est_wait_time} mins wait</span>
+    <div 
+      className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl"
+      style={{ width: '320px' }}
+    >
+      {/* Image Container */}
+      <div className="relative h-48">
+        <Image
+          src={queue.image_url || 'https://via.placeholder.com/400x200'}
+          alt={queue.name}
+          width={400}
+          height={200}
+          className="w-full h-full object-cover"
+        />
+        {/* Live Traffic Indicator */}
+        <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/30 backdrop-blur-sm px-3 py-1.5 rounded-full">
+          <div className={`h-2 w-2 rounded-full ${busyness.color} animate-pulse`} />
+          <span className="text-white text-sm font-medium">{busyness.level} Traffic</span>
         </div>
-        <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-3">
-          <Users className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-          <span>{queue.queue_entry_length} people in queue</span>
-        </div>
-        <Link href={`/user/queue/${queue.queue_id}`}>
-          <Button className="w-full bg-gray-800 text-white dark:bg-gray-700 dark:text-gray-100 py-1 sm:py-2 text-xs sm:text-sm rounded-md hover:bg-gray-700 dark:hover:bg-gray-600">
-            View Queue
+
+        {/* Quick Actions Overlay */}
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
+          <Button
+            isIconOnly
+            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-full p-3"
+            onClick={() => window.open(`https://maps.google.com/?q=${queue.location}`, '_blank')}
+          >
+            <MapPin className="h-5 w-5" />
           </Button>
-        </Link>
+          <Button
+            isIconOnly
+            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-full p-3"
+            onClick={() => {
+              navigator.share({
+                title: queue.name,
+                text: `Check out ${queue.name} on QueueSmart!`,
+                url: `/user/queue/${queue.queue_id}`
+              })
+            }}
+          >
+            <Share2 className="h-5 w-5" />
+          </Button>
+          {queue.phone && (
+            <Button
+              isIconOnly
+              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-full p-3"
+              onClick={() => window.open(`tel:${queue.phone}`, '_blank')}
+            >
+              <Phone className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-6">
+        {/* Header */}
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className="text-lg font-semibold mb-1 line-clamp-1">
+              {queue.name}
+            </h3>
+            <span className="text-sm text-gray-500">
+              {formatOperatingHours(queue.operating_hours)}
+            </span>
+          </div>
+          <div className="flex flex-col items-end">
+            <div className="flex items-center gap-1 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded-lg mb-1">
+              <Star className="h-4 w-4 text-yellow-400 fill-current" />
+              <span className="text-sm font-medium">
+                {queue.avg_rating?.toFixed(1) || '4.0'}
+              </span>
+            </div>
+            <span className="text-xs text-gray-500">
+              {formatReviewCount(queue.total_ratings)}
+            </span>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-blue-500" />
+              <span className="text-lg font-semibold">{queue.est_wait_time || 0}</span>
+            </div>
+            <p className="text-xs text-gray-500">min wait</p>
+          </div>
+          <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-blue-500" />
+              <span className="text-lg font-semibold">{queue.current_queue || 0}</span>
+            </div>
+            <p className="text-xs text-gray-500">in queue</p>
+          </div>
+          <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl">
+            <div className="flex items-center gap-2">
+              <Timer className="h-4 w-4 text-blue-500" />
+              <span className="text-lg font-semibold">{queue.avg_service_time || 5}</span>
+            </div>
+            <p className="text-xs text-gray-500">min/person</p>
+          </div>
+        </div>
+
+        {/* View Button */}
+        <Button
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-xl transition-colors"
+          onClick={() => router.push(`/user/queue/${queue.queue_id}`)}
+        >
+          View Queue
+        </Button>
       </div>
     </div>
   );
 });
+
+// Helper functions for formatting data
+const getCurrentBusyness = (busyHours) => {
+  const hour = new Date().getHours();
+  const busyness = busyHours?.[hour] || 0;
+  
+  if (busyness > 7) return { level: 'High', color: 'text-red-500' };
+  if (busyness > 4) return { level: 'Medium', color: 'text-yellow-500' };
+  return { level: 'Low', color: 'text-green-500' };
+};
+
+const formatOperatingHours = (hours) => {
+  const today = new Date().getDay();
+  const todayHours = hours?.[today];
+  return todayHours || '9 AM - 6 PM';
+};
+
+const formatReviewCount = (count) => {
+  if (!count) return '100+ reviews';
+  if (count >= 1000) return `${(count / 1000).toFixed(1)}k reviews`;
+  return `${count} reviews`;
+};
 
 QueueItem.displayName = 'QueueItem';
 
@@ -256,45 +362,46 @@ export default function Home() {
     <div className="min-h-screen dark:bg-gray-900 dark:text-gray-100">
       <main>
         {/* Hero Section with Search */}
-        <section className="bg-gradient-to-r from-blue-600 to-indigo-700 dark:from-blue-800 dark:to-indigo-900 text-white py-4 sm:py-8">
-          <div className="container mx-auto px-4">
-            <div className="flex flex-col md:flex-row items-center justify-between">
-              <div className="md:w-1/2 mb-3 md:mb-0">
-                <h1 className="text-2xl md:text-4xl font-bold mb-1 hidden sm:block">Skip the Wait, Join Smart</h1>
-                <p className="text-base sm:text-lg">Find and join queues near you instantly.</p>
-                </div>
-              <div className="md:w-1/2">
-                <form onSubmit={handleSearch} className="flex items-center">
+        <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 dark:from-blue-800 dark:via-blue-900 dark:to-indigo-950 text-white py-8 sm:py-12 rounded-b-[2.5rem] shadow-lg">
+          <div className="container mx-auto px-4 max-w-6xl">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="md:w-1/2 space-y-3">
+                <h1 className="text-3xl md:text-5xl font-bold mb-2 hidden sm:block bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-100">
+                  Skip the Wait, Join Smart
+                </h1>
+                <p className="text-lg sm:text-xl text-blue-100">Find and join queues near you instantly.</p>
+              </div>
+              
+              <div className="md:w-1/2 w-full">
+                <form onSubmit={handleSearch} className="flex items-center gap-2">
                   <Button
                     isIconOnly
-                    color="primary"
-                    variant="flat"
-                    aria-label="Scan QR Code"
-                    className="mr-2 bg-[#1F2937] hover:bg-[#374151] focus:ring-4 focus:outline-none focus:ring-gray-700 dark:bg-[#1F2937] dark:hover:bg-[#374151] dark:focus:ring-gray-600 border border-white rounded-md"
+                    className="h-12 w-12 bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20 rounded-xl"
                     onClick={toggleScanner}
                   >
-                    <Scan className="text-white" />
+                    <Scan className="text-white h-5 w-5" />
                   </Button>
-                  <div className="relative w-full">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  
+                  <div className="relative flex-1">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-4">
                       <Search className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
                       type="search"
-                      className="w-full p-3 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                      placeholder="Search queues or locations..."
+                      className="w-full h-12 pl-12 pr-4 rounded-xl text-gray-900 bg-white/95 backdrop-blur-md border border-white/20 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                      placeholder="Search queues or enter 6-digit code..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      required
                     />
                   </div>
-                  <button
-  type="submit"
-  className="ml-2 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-3 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-  disabled={isSearching}
->
-  {isSearching ? 'Searching...' : 'Search'}
-</button>
+                  
+                  <Button
+                    type="submit"
+                    className="h-12 px-6 bg-white text-blue-700 hover:bg-blue-50 rounded-xl font-medium"
+                    disabled={isSearching}
+                  >
+                    {isSearching ? 'Searching...' : 'Search'}
+                  </Button>
                 </form>
               </div>
             </div>

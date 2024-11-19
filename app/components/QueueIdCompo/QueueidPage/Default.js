@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Clock, Users, ChevronDown, ChevronUp } from 'lucide-react'
-import { Button, Card, CardBody, CardHeader, Progress, Skeleton } from "@nextui-org/react"
+import { ArrowLeft, Clock, Users, ChevronDown, ChevronUp, Bell, AlertCircle, Timer, Share2, Star, MapPin, Calendar, LogOut } from 'lucide-react'
+import { Button, Card, CardBody, CardHeader, Progress, Skeleton, CircularProgress, Switch, Tooltip, Badge } from "@nextui-org/react"
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
 import { createClient } from '@supabase/supabase-js'
@@ -385,52 +385,201 @@ export default function QueueDetailsPage({ params }) {
             <div className="space-y-6">
               {queueData?.userQueueEntry ? (
                 <>
-                  <Card className="bg-gradient-to-br from-blue-600 to-blue-800 text-white">
-                    <CardHeader>
-                      <h2 className="text-2xl font-bold">Your Queue Position</h2>
-                    </CardHeader>
-                    <CardBody>
-                      <div className="flex items-center justify-center">
-                        <div className="text-7xl font-bold">{queueData.userQueueEntry.position}</div>
-                        <div className="text-2xl ml-3">of {queueData.queueEntries.length}</div>
-                      </div>
-                      <Progress 
-                        value={(queueData.userQueueEntry.position / queueData.queueEntries.length) * 100} 
-                        className="h-2 mt-6 bg-blue-300"
-                      />
-                    </CardBody>
-                  </Card>
-
-                  <Card className="dark:bg-gray-800">
-                    <CardHeader>
-                      <h2 className="text-2xl font-bold">Estimated Wait Time</h2>
-                    </CardHeader>
-                    <CardBody>
-                      <div className="space-y-4">
-                        <div className="text-5xl font-bold text-center text-blue-600 dark:text-blue-400">
-                          {queueData.userQueueEntry.estimated_wait_time} minutes
+                  <Card className="bg-gradient-to-br from-blue-500 to-blue-700 text-white overflow-hidden mb-6">
+                    <CardBody className="p-6">
+                      <div className="flex items-center justify-between mb-6">
+                        <div>
+                          <h2 className="text-2xl font-bold">Your Queue Status</h2>
+                          <p className="text-sm opacity-80">
+                            Joined at {new Date(queueData.userQueueEntry.join_time).toLocaleTimeString()}
+                          </p>
                         </div>
-                        <p className="text-center text-gray-600 dark:text-gray-400">
-                          {expectedTurnTime ? `Your turn is expected at ${expectedTurnTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : "Service start time not available"}
-                        </p>
-                        {countdown && (
-                          <div className="text-2xl font-bold text-center text-blue-600 dark:text-blue-400">
-                            {countdown}
+                        <Badge content={queueData.userQueueEntry.position} color="warning">
+                          <div className="p-2 bg-white/20 rounded-full">
+                            <AlertCircle className="h-6 w-6" />
                           </div>
-                        )}
+                        </Badge>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-8">
+                        {/* Position Indicator */}
+                        <div className="relative flex justify-center">
+                          <div className="w-40 h-40">
+                            <CircularProgress
+                              value={((queueData.queueEntries.length - queueData.userQueueEntry.position + 1) / queueData.queueEntries.length) * 100}
+                              strokeWidth={8}
+                              showValueLabel={false}
+                              classNames={{
+                                svg: "w-full h-full -rotate-90",
+                                indicator: "stroke-white",
+                                track: "stroke-white/20",
+                              }}
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center flex-col">
+                              <div className="bg-white/10 backdrop-blur-sm rounded-full w-28 h-28 flex items-center justify-center flex-col">
+                                <span className="text-4xl font-bold">{queueData.userQueueEntry.position}</span>
+                                <span className="text-sm opacity-80">in queue</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Queue Stats */}
+                        <div className="flex flex-col justify-center space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Timer className="h-5 w-5" />
+                              <span>Wait Time</span>
+                            </div>
+                            <span className="font-bold">{queueData.userQueueEntry.estimated_wait_time} min</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-5 w-5" />
+                              <span>Expected At</span>
+                            </div>
+                            <span className="font-bold">
+                              {expectedTurnTime?.toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </CardBody>
                   </Card>
 
-                  <Button 
-                    color="danger" 
-                    variant="flat" 
-                    onClick={handleLeaveQueue} 
-                    className="w-full"
-                    isLoading={isLeaving}
-                  >
-                    {isLeaving ? 'Leaving Queue...' : 'Leave Queue'}
-                  </Button>
+                  {/* Countdown and Actions Card */}
+                  <Card className="dark:bg-gray-800 mb-6">
+                    <CardBody className="p-6">
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold mb-4">Time Until Your Turn</h3>
+                        <div className="flex justify-center gap-4">
+                          {countdown.split(' ').map((unit, index) => (
+                            <div key={index} className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 flex-1 text-center">
+                              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                                {unit.split(/([0-9]+)/)[1]}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {unit.split(/([a-z]+)/)[1]}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="space-y-3">
+                        <Button
+                          className="w-full"
+                          color={notificationsEnabled ? "success" : "primary"}
+                          variant="flat"
+                          startContent={<Bell className="h-4 w-4" />}
+                          onClick={toggleNotifications}
+                        >
+                          {notificationsEnabled ? "Notifications Enabled" : "Enable Notifications"}
+                        </Button>
+
+                        <div className="flex gap-2">
+                          <Tooltip content="Request additional waiting time">
+                            <Button
+                              className="flex-1"
+                              color="warning"
+                              variant="flat"
+                              startContent={<Timer className="h-4 w-4" />}
+                            >
+                              Request More Time
+                            </Button>
+                          </Tooltip>
+                          
+                          <Tooltip content="Share your queue position">
+                            <Button
+                              className="flex-1"
+                              color="secondary"
+                              variant="flat"
+                              startContent={<Share2 className="h-4 w-4" />}
+                              onClick={handleShare}
+                            >
+                              Share Status
+                            </Button>
+                          </Tooltip>
+                        </div>
+
+                        <Button
+                          className="w-full"
+                          color="danger"
+                          variant="flat"
+                          startContent={<LogOut className="h-4 w-4" />}
+                          onClick={handleLeaveQueue}
+                          isLoading={isLeaving}
+                        >
+                          {isLeaving ? "Leaving Queue..." : "Leave Queue"}
+                        </Button>
+                      </div>
+                    </CardBody>
+                  </Card>
+
+                  {/* Queue Progress Card */}
+                  <Card className="dark:bg-gray-800">
+                    <CardBody className="p-6">
+                      <h3 className="font-semibold mb-4">Queue Progress</h3>
+                      <div className="relative">
+                        <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-500 to-gray-200 dark:to-gray-700"></div>
+                        <div className="space-y-6">
+                          {[
+                            { 
+                              status: 'Joined Queue', 
+                              done: true, 
+                              time: new Date(queueData.userQueueEntry.join_time).toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              }),
+                              icon: Calendar
+                            },
+                            { 
+                              status: 'Waiting', 
+                              done: true, 
+                              time: 'Current',
+                              icon: Clock
+                            },
+                            { 
+                              status: 'Almost There', 
+                              done: queueData.userQueueEntry.position <= 3,
+                              time: queueData.userQueueEntry.position <= 3 ? 'Soon' : 'Waiting',
+                              icon: AlertCircle
+                            },
+                            { 
+                              status: 'Your Turn', 
+                              done: false, 
+                              time: expectedTurnTime?.toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              }),
+                              icon: Star
+                            }
+                          ].map((step, index) => (
+                            <div key={index} className="flex items-center">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center relative z-10 ${
+                                step.done ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                              }`}>
+                                {<step.icon className="h-4 w-4" />}
+                              </div>
+                              <div className="ml-4 flex-1">
+                                <div className="font-medium">{step.status}</div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">{step.time}</div>
+                              </div>
+                              {step.done && (
+                                <Badge color="success" variant="flat">
+                                  Completed
+                                </Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </CardBody>
+                  </Card>
 
                   <AddKnownUserModal queueId={params.queueid} onSuccess={handleAddKnownSuccess} />
 
