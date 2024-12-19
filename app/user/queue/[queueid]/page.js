@@ -6,9 +6,38 @@ import PharmacyPreOrder from '@/app/components/QueueIdCompo/ServiceTypes/Pharmac
 import RestaurantPage from '@/app/components/QueueIdCompo/ServiceTypes/restaurant'
 import { useApi } from '@/app/hooks/useApi'
 import { Spinner } from "@nextui-org/react"
+import { SWRConfig } from 'swr'
+
+// Prefetch configuration
+const fetcher = async (url) => {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('Failed to fetch data')
+  return res.json()
+}
 
 export default function QueuePage({ params }) {
-  const { data: minimalQueueData, isLoading, isError, error } = useApi(`/api/queues/${params.queueid}/minimal`)
+  const { data: minimalQueueData, isLoading, isError, error } = useApi(`/api/queues/${params.queueid}/minimal`, {
+    onSuccess: (data) => {
+      // Prefetch full queue data based on service type
+      if (data?.service_type) {
+        // Prefetch detailed queue data
+        fetcher(`/api/queues/${params.queueid}`)
+        
+        // Prefetch service-specific data
+        switch(data.service_type) {
+          case 'streetfood':
+            fetcher(`/api/queues/${params.queueid}/menu`)
+            break
+          case 'pharmacy':
+            fetcher(`/api/queues/${params.queueid}/inventory`)
+            break
+          case 'restaurant':
+            fetcher(`/api/queues/${params.queueid}/tables`)
+            break
+        }
+      }
+    }
+  })
 
   if (isLoading) {
     return (
@@ -34,8 +63,15 @@ export default function QueuePage({ params }) {
   }
 
   return (
-    <>
+    <SWRConfig 
+      value={{
+        fetcher,
+        revalidateOnFocus: false,
+        dedupingInterval: 5000,
+        suspense: false,
+      }}
+    >
       {content}
-    </>
+    </SWRConfig>
   )
 }

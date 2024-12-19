@@ -15,7 +15,21 @@ import { useApi } from '@/app/hooks/useApi'
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
 export default function QueueDetailsPage({ params }) {
-  const { data: queueData, isLoading, isError, error, mutate } = useApi(`/api/queues/${params.queueid}`)    
+  const { data: queueData, isLoading, isError, error, mutate } = useApi(`/api/queues/${params.queueid}`, {
+    revalidateOnMount: false, // Use prefetched data if available
+    dedupingInterval: 5000,
+    onSuccess: (data) => {
+      // Prefetch related data
+      if (data?.id) {
+        // Prefetch queue statistics
+        fetch(`/api/queues/${params.queueid}/stats`)
+        // Prefetch user position if in queue
+        if (data.userQueueEntry) {
+          fetch(`/api/queues/${params.queueid}/position`)
+        }
+      }
+    }
+  })
   const router = useRouter();
   const [isJoining, setIsJoining] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
