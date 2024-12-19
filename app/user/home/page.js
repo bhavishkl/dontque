@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { Scanner } from '@yudiel/react-qr-scanner';
-import { Modal, ModalContent, ModalHeader, ModalBody, Button, ModalFooter, useDisclosure, Card, CardBody, Skeleton, Input } from "@nextui-org/react"
+import { Modal, ModalContent, ModalHeader, ModalBody, Button, ModalFooter, useDisclosure, Card, CardBody, Skeleton, Input, Chip } from "@nextui-org/react"
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -16,7 +16,7 @@ import { memo } from 'react';
 
 const QueueItem = memo(({ queue }) => {
   const router = useRouter();
-  const busyness = getCurrentBusyness(queue.busy_hours);
+  const { icon } = categories.find(cat => cat.name === queue.category) || { icon: '🏢' };
 
   return (
     <div 
@@ -32,10 +32,14 @@ const QueueItem = memo(({ queue }) => {
           height={200}
           className="w-full h-full object-cover"
         />
-        {/* Live Traffic Indicator */}
-        <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/30 backdrop-blur-sm px-3 py-1.5 rounded-full">
-          <div className={`h-2 w-2 rounded-full ${busyness.color} animate-pulse`} />
-          <span className="text-white text-sm font-medium">{busyness.level} Traffic</span>
+        {/* Category Chip */}
+        <div className="absolute top-4 right-4">
+          <Chip
+            className="bg-black/30 backdrop-blur-sm border-none text-white"
+            startContent={<span className="text-base mr-1">{icon}</span>}
+          >
+            {queue.category || 'General'}
+          </Chip>
         </div>
 
         {/* Quick Actions Overlay */}
@@ -53,22 +57,13 @@ const QueueItem = memo(({ queue }) => {
             onClick={() => {
               navigator.share({
                 title: queue.name,
-                text: `Check out ${queue.name} on QueueSmart!`,
+                text: `Check out ${queue.name} on DontQ!`,
                 url: `/user/queue/${queue.queue_id}`
-              })
+              });
             }}
           >
             <Share2 className="h-5 w-5" />
           </Button>
-          {queue.phone && (
-            <Button
-              isIconOnly
-              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-full p-3"
-              onClick={() => window.open(`tel:${queue.phone}`, '_blank')}
-            >
-              <Phone className="h-5 w-5" />
-            </Button>
-          )}
         </div>
       </div>
 
@@ -80,45 +75,26 @@ const QueueItem = memo(({ queue }) => {
             <h3 className="text-lg font-semibold mb-1 line-clamp-1">
               {queue.name}
             </h3>
-            <span className="text-sm text-gray-500">
-              {formatOperatingHours(queue.operating_hours)}
-            </span>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Clock className="h-4 w-4" />
+              <span>{formatOperatingHours(queue.operating_hours)}</span>
+            </div>
           </div>
-          <div className="flex flex-col items-end">
-            <div className="flex items-center gap-1 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded-lg mb-1">
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-1 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded-lg">
               <Star className="h-4 w-4 text-yellow-400 fill-current" />
               <span className="text-sm font-medium">
                 {queue.avg_rating?.toFixed(1) || '4.0'}
               </span>
             </div>
-            <span className="text-xs text-gray-500">
-              {formatReviewCount(queue.total_ratings)}
-            </span>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-blue-500" />
-              <span className="text-lg font-semibold">{queue.est_wait_time || 0}</span>
-            </div>
-            <p className="text-xs text-gray-500">min wait</p>
-          </div>
-          <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-blue-500" />
-              <span className="text-lg font-semibold">{queue.current_queue || 0}</span>
-            </div>
-            <p className="text-xs text-gray-500">in queue</p>
-          </div>
-          <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl">
-            <div className="flex items-center gap-2">
-              <Timer className="h-4 w-4 text-blue-500" />
-              <span className="text-lg font-semibold">{queue.avg_service_time || 5}</span>
-            </div>
-            <p className="text-xs text-gray-500">min/person</p>
+            {queue.current_queue > 0 && (
+              <Chip
+                size="sm"
+                className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-200"
+              >
+                {queue.current_queue} in queue
+              </Chip>
+            )}
           </div>
         </div>
 
@@ -128,6 +104,7 @@ const QueueItem = memo(({ queue }) => {
           onClick={() => router.push(`/user/queue/${queue.queue_id}`)}
         >
           View Queue
+          <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
     </div>
@@ -135,15 +112,6 @@ const QueueItem = memo(({ queue }) => {
 });
 
 // Helper functions for formatting data
-const getCurrentBusyness = (busyHours) => {
-  const hour = new Date().getHours();
-  const busyness = busyHours?.[hour] || 0;
-  
-  if (busyness > 7) return { level: 'High', color: 'text-red-500' };
-  if (busyness > 4) return { level: 'Medium', color: 'text-yellow-500' };
-  return { level: 'Low', color: 'text-green-500' };
-};
-
 const formatOperatingHours = (hours) => {
   const today = new Date().getDay();
   const todayHours = hours?.[today];
@@ -371,7 +339,6 @@ export default function Home() {
                 </h1>
                 <p className="text-lg sm:text-xl text-blue-100">Find and join queues near you instantly.</p>
               </div>
-              
               <div className="md:w-1/2 w-full">
                 <form onSubmit={handleSearch} className="flex items-center gap-2">
                   <Button
@@ -381,7 +348,6 @@ export default function Home() {
                   >
                     <Scan className="text-white h-5 w-5" />
                   </Button>
-                  
                   <div className="relative flex-1">
                     <div className="absolute inset-y-0 left-0 flex items-center pl-4">
                       <Search className="h-5 w-5 text-gray-400" />
@@ -394,13 +360,13 @@ export default function Home() {
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
-                  
                   <Button
                     type="submit"
-                    className="h-12 px-6 bg-white text-blue-700 hover:bg-blue-50 rounded-xl font-medium"
+                    isIconOnly
+                    className="h-12 w-12 bg-white text-blue-700 hover:bg-blue-50 rounded-xl font-medium"
                     disabled={isSearching}
                   >
-                    {isSearching ? 'Searching...' : 'Search'}
+                    {isSearching ? <div className="animate-spin">⌛</div> : <Search className="h-5 w-5" />}
                   </Button>
                 </form>
               </div>
@@ -434,7 +400,7 @@ export default function Home() {
         </section>
 
         {/* User Stats Section */}
-        <section className="py-6 bg-white dark:bg-gray-800">
+        <section className="py-6 bg-white dark:bg-gray-800 hidden">
           <div className="container mx-auto px-4">
             <Card className="dark:bg-gray-700 dark:text-gray-100">
               <CardBody className="p-4 lg:p-6">

@@ -4,13 +4,14 @@ import Link from 'next/link'
 import { useSession, signOut } from "next-auth/react"
 import { 
   Bell, X, Home, Settings, LogOut, User, 
-  Users, PieChart, HelpCircle, 
+  Users, PieChart, HelpCircle, Search,
+  Clock, Star, Shield
 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { useUserInfo } from '../../hooks/useUserName'
 import { usePathname } from 'next/navigation'
-import { Avatar } from "@nextui-org/react"
+import { Avatar, Button, Popover, PopoverTrigger, PopoverContent, Tooltip, Input } from "@nextui-org/react"
 import { ThemeToggle } from '../ThemeToggle'
 
 const DynamicHeader = dynamic(() => import('./DynamicHeader'), { ssr: false })
@@ -44,15 +45,38 @@ const Header = () => {
 
   if (pathname === '/') return null
 
-  const NavLink = ({ href, icon: Icon, children }) => (
-    <Link 
-      href={href}
-      className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all duration-200"
-      onClick={toggleSidebar}
-    >
-      <Icon className="w-5 h-5" />
-      <span>{children}</span>
-    </Link>
+  const NavLink = ({ href, icon: Icon, children }) => {
+    const pathname = usePathname()
+    const isActive = pathname === href || pathname.startsWith(`${href}?`)
+    
+    return (
+      <Tooltip content={children} placement="right" delay={300}>
+        <Link 
+          href={href}
+          className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 group
+            ${isActive 
+              ? 'bg-primary/10 text-primary dark:bg-primary/20' 
+              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+            }`}
+          onClick={toggleSidebar}
+        >
+          <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'group-hover:text-primary transition-colors'}`} />
+          <span>{children}</span>
+          {isActive && (
+            <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
+          )}
+        </Link>
+      </Tooltip>
+    )
+  }
+
+  const NavGroup = ({ title, children }) => (
+    <div className="space-y-1">
+      <h3 className="px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+        {title}
+      </h3>
+      {children}
+    </div>
   )
 
   return (
@@ -72,9 +96,33 @@ const Header = () => {
             {/* Right section */}
             {session?.user && (
               <div className="flex items-center gap-4">
-                <button className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800">
-                  <Bell size={20} />
-                </button>
+                <Popover placement="bottom-end">
+                  <PopoverTrigger>
+                    <button className="relative p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800">
+                      <Bell size={20} />
+                      <span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        0
+                      </span>
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="p-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-semibold">Recent Notifications</h3>
+                        <Link href="/user/notifications">
+                          <Button size="sm" variant="light">
+                            View All
+                          </Button>
+                        </Link>
+                      </div>
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        <p className="text-center text-gray-500 dark:text-gray-400 py-4">
+                          No notifications yet
+                        </p>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
                 <div 
                   className="flex items-center gap-3 cursor-pointer p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
                   onClick={toggleSidebar}
@@ -100,7 +148,7 @@ const Header = () => {
         <div className={`fixed inset-0 z-30 transition-all duration-300 ${sidebarOpen ? 'bg-black/50' : 'pointer-events-none'}`}>
           <div
             ref={sidebarRef}
-            className={`absolute right-0 top-0 h-full w-64 bg-white dark:bg-gray-900 shadow-xl transform transition-transform duration-300 ease-in-out ${
+            className={`absolute right-0 top-0 h-full w-72 bg-white dark:bg-gray-900 shadow-xl transform transition-transform duration-300 ease-in-out ${
               sidebarOpen ? 'translate-x-0' : 'translate-x-full'
             }`}
           >
@@ -111,7 +159,7 @@ const Header = () => {
                   src={userImage || ''}
                   name={userName || 'User'}
                   size="lg"
-                  className="w-12 h-12"
+                  className="w-12 h-12 ring-2 ring-primary/20"
                 />
                 <div>
                   <h2 className="font-semibold text-gray-900 dark:text-white">
@@ -122,41 +170,57 @@ const Header = () => {
                   </p>
                 </div>
               </div>
+              
+              {/* Search Bar */}
+              <div className="mt-4">
+                <Input
+                  placeholder="Search..."
+                  startContent={<Search className="w-4 h-4 text-gray-400" />}
+                  size="sm"
+                  className="w-full"
+                />
+              </div>
             </div>
 
             {/* Navigation Links */}
-            <nav className="p-4 space-y-1">
-              <NavLink href="/user/home" icon={Home}>Home</NavLink>
-              <NavLink href="/user/queues" icon={Users}>Queues</NavLink>
+            <nav className="p-4 space-y-6 overflow-y-auto max-h-[calc(100vh-250px)]">
+              <NavGroup title="Main">
+                <NavLink href="/user/home" icon={Home}>Home</NavLink>
+                <NavLink href="/user/queues" icon={Users}>Queues</NavLink>
+                <NavLink href="/user/dashboard" icon={PieChart}>Dashboard</NavLink>
+              </NavGroup>
               
               {role === 'business' && (
-                <>
+                <NavGroup title="Business">
                   <NavLink href="/dashboard" icon={PieChart}>Business Dashboard</NavLink>
                   <NavLink href="/business/profile" icon={User}>Business Profile</NavLink>
                   <NavLink href="/business/support" icon={HelpCircle}>Support</NavLink>
-                </>
+                </NavGroup>
               )}
               
-              <NavLink href="/user/dashboard" icon={PieChart}>User Dashboard</NavLink>
-              <NavLink href="/user/settings" icon={Settings}>Settings</NavLink>
+              <NavGroup title="Personal">
+                <NavLink href="/user/dashboard?tab=my-queues" icon={Clock}>Active Queues</NavLink>
+                <NavLink href="/user/dashboard?tab=favorites" icon={Star}>Favorites</NavLink>
+                <NavLink href="/user/dashboard?tab=profile" icon={Shield}>Account Settings</NavLink>
+              </NavGroup>
               
               {/* Theme Toggle */}
-              <div className="px-4 py-3">
-                <div className="flex items-center justify-between text-gray-700 dark:text-gray-300">
-                  <span>Theme</span>
+              <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
+                  <span>Theme Mode</span>
                   <ThemeToggle />
                 </div>
               </div>
             </nav>
 
             {/* Sidebar Footer */}
-            <div className="absolute bottom-0 w-full p-4 border-t border-gray-200 dark:border-gray-800">
+            <div className="absolute bottom-0 w-full p-4 border-t border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
               <button 
                 onClick={handleLogout}
                 className="flex items-center gap-3 w-full px-4 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors duration-200"
               >
                 <LogOut className="w-5 h-5" />
-                <span>Logout</span>
+                <span className="font-medium">Logout</span>
               </button>
             </div>
           </div>

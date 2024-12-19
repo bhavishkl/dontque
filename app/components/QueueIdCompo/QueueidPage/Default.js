@@ -101,12 +101,6 @@ export default function QueueDetailsPage({ params }) {
         table: 'queue_entries',
         filter: `queue_id=eq.${params.queueid}`
       }, (payload) => {
-        console.log('Change received:', payload);
-        if (payload.eventType === 'INSERT') {
-          toast.info('New customer joined the queue');
-        } else if (payload.eventType === 'DELETE') {
-          toast.info('A customer left the queue');
-        }
         mutate();
       })
       .subscribe();
@@ -119,21 +113,6 @@ export default function QueueDetailsPage({ params }) {
   const handleJoinQueue = async () => {
     setIsJoining(true);
     try {
-
-      
-      // Optimistic update
-      const optimisticQueueData = {
-        ...queueData,
-        userQueueEntry: {
-          position: queueData.queueEntries.length + 1,
-          estimated_wait_time: (queueData.queueEntries.length + 1) * queueData.est_time_to_serve
-        },
-        queueEntries: [...queueData.queueEntries, { user_id: session.user.id }]
-      };
-      await delay(2000);
-
-      mutate(optimisticQueueData, false);
-  
       const joinResponse = await fetch(`/api/queues/${params.queueid}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -145,17 +124,12 @@ export default function QueueDetailsPage({ params }) {
         throw new Error(data.error || 'Failed to join queue');
       }
   
-      // Add a slight delay before showing success message and updating UI
-       // 500ms delay
-       
       toast.success('Successfully joined the queue');
       await mutate();
       scrollToTop();
     } catch (err) {
       console.error('Error joining queue:', err);
       toast.error(err.message || 'Failed to join queue. Please try again.');
-      // Revert optimistic update
-      await mutate();
     } finally {
       setIsJoining(false);
     }
@@ -164,17 +138,6 @@ export default function QueueDetailsPage({ params }) {
   const handleLeaveQueue = async () => {
     setIsLeaving(true);
     try {
-      // Optimistic update
-      const optimisticQueueData = {
-        ...queueData,
-        userQueueEntry: null,
-        queueEntries: queueData.queueEntries.filter(entry => entry.user_id !== session.user.id)
-      };
-
-      await delay(2000);
-
-      mutate(optimisticQueueData, false);
-    
       const response = await fetch(`/api/queues/${params.queueid}/leave`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -185,15 +148,11 @@ export default function QueueDetailsPage({ params }) {
         throw new Error(errorData.error || 'Failed to leave queue');
       }
   
-      // Add a slight delay before showing success message and updating UI
-  
       toast.success('Successfully left the queue');
       await mutate();
     } catch (err) {
       console.error('Error leaving queue:', err);
       toast.error(err.message || 'Failed to leave queue. Please try again.');
-      // Revert optimistic update
-      await mutate();
     } finally {
       setIsLeaving(false);
     }
@@ -468,18 +427,21 @@ export default function QueueDetailsPage({ params }) {
                           ))}
                         </div>
                       </div>
-
                       {/* Action Buttons */}
                       <div className="space-y-3">
-                        <Button
-                          className="w-full"
-                          color={notificationsEnabled ? "success" : "primary"}
-                          variant="flat"
-                          startContent={<Bell className="h-4 w-4" />}
-                          onClick={toggleNotifications}
-                        >
-                          {notificationsEnabled ? "Notifications Enabled" : "Enable Notifications"}
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            className="flex-1"
+                            color={notificationsEnabled ? "success" : "primary"}
+                            variant="flat"
+                            startContent={<Bell className="h-4 w-4" />}
+                            onClick={toggleNotifications}
+                          >
+                            {notificationsEnabled ? "Notifications Enabled" : "Enable Notifications"}
+                          </Button>
+
+                          <AddKnownUserModal queueId={params.queueid} onSuccess={handleAddKnownSuccess} />
+                        </div>
 
                         <div className="flex gap-2">
                           <Tooltip content="Request additional waiting time">
@@ -581,7 +543,6 @@ export default function QueueDetailsPage({ params }) {
                     </CardBody>
                   </Card>
 
-                  <AddKnownUserModal queueId={params.queueid} onSuccess={handleAddKnownSuccess} />
 
                   <Card className="dark:bg-gray-800">
                     <CardBody>

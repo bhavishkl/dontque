@@ -26,6 +26,14 @@ export default function UserDashboard() {
     }
   }, [session, router])
 
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search)
+    const tabParam = searchParams.get('tab')
+    if (tabParam) {
+      setActiveTab(tabParam)
+    }
+  }, [])
+
   const isLoading = isUserLoading || isCurrentQueuesLoading || isPastQueuesLoading
   const isError = isUserError || isCurrentQueuesError || isPastQueuesError
 
@@ -77,10 +85,18 @@ export default function UserDashboard() {
     </Table>
   )
 
+  const handleTabChange = (key) => {
+    setActiveTab(key)
+    router.push(`/user/dashboard?tab=${key}`, undefined, { shallow: true })
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="container mx-auto px-4 py-8">
-        <Tabs selectedKey={activeTab} onSelectionChange={setActiveTab}>
+        <Tabs 
+          selectedKey={activeTab} 
+          onSelectionChange={handleTabChange}
+        >
           <Tab key="my-queues" title="My Queues">
             <Card className="dark:bg-gray-800">
               <CardHeader>
