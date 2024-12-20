@@ -9,6 +9,7 @@ import { Search, Clock, Users, MapPin, Star, Bookmark, Share2 } from 'lucide-rea
 import { Input, Select, SelectItem, Card, CardBody, Button, Chip, Progress, Skeleton } from "@nextui-org/react"
 import debounce from 'lodash/debounce'
 import { useApi } from '../../hooks/useApi'
+import SaveButton from '@/app/components/UniComp/SaveButton'
 
 const categories = [
   'All',
@@ -233,9 +234,7 @@ export default function QueueListPage() {
                       <div className="flex items-center justify-between">
                         <Button color="primary" onClick={() => handleViewQueue(queue.queue_id)}>View Queue</Button>
                         <div className="flex space-x-2">
-                          <Button isIconOnly variant="bordered" aria-label="Bookmark">
-                            <Bookmark className="h-4 w-4" />
-                          </Button>
+                          <SaveButton queueId={queue.queue_id} />
                           <Button isIconOnly variant="bordered" aria-label="Share" onClick={() => handleShare(queue)}>
                             <Share2 className="h-4 w-4" />
                           </Button>

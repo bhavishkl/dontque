@@ -2,6 +2,7 @@ import { MapPin, Star, Heart, Share2, ClipboardCopy, Clock, Map, CheckCircle, Us
 import { Button, Chip, Skeleton, Card, CardBody, CardHeader, Divider, Badge, Tooltip } from "@nextui-org/react"
 import Image from 'next/image'
 import { useState } from 'react'
+import SaveButton from '@/app/components/UniComp/SaveButton';
 
 const QueueInfoSec = ({ queueData, isLoading, handleShare, handleFavorite }) => {
   const [showFullDescription, setShowFullDescription] = useState(false);
@@ -31,14 +32,7 @@ const QueueInfoSec = ({ queueData, isLoading, handleShare, handleFavorite }) => 
           </div>
 
           <div className="absolute top-4 right-4 flex gap-2">
-            <Button
-              isIconOnly
-              variant="flat"
-              className="bg-white/20 backdrop-blur-sm hover:bg-white/30"
-              onClick={handleFavorite}
-            >
-              <Heart className={`h-5 w-5 ${queueData?.isFavorited ? 'fill-red-500 text-red-500' : 'text-white'}`} />
-            </Button>
+            <SaveButton queueId={queueData?.queue_id} />
             <Button
               isIconOnly
               variant="flat"

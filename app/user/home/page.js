@@ -13,6 +13,7 @@ import { toast } from 'sonner'
 import { useApi } from '../../hooks/useApi'
 import debounce from 'lodash/debounce'
 import { memo } from 'react';
+import SaveButton from '@/app/components/UniComp/SaveButton';
 
 const QueueItem = memo(({ queue }) => {
   const router = useRouter();
@@ -44,6 +45,10 @@ const QueueItem = memo(({ queue }) => {
 
         {/* Quick Actions Overlay */}
         <div className="absolute inset-0 bg-gray-950/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
+          <SaveButton 
+            queueId={queue.queue_id}
+            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-full p-3"
+          />
           <Button
             isIconOnly
             className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-full p-3"
@@ -139,6 +144,7 @@ export default function Home() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isScannerActive, setIsScannerActive] = useState(false);
   const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
+  const { data: savedQueues, isLoading: isSavedLoading } = useApi('/api/user/saved-queues')
 
   // Dummy data for user stats
   const [userStats, setUserStats] = useState({
@@ -226,106 +232,7 @@ export default function Home() {
   }
 
   
-  const generateStatsImage = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1080;
-    canvas.height = 1080;
-    const ctx = canvas.getContext('2d');
-  
-    // Create gradient background
-    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    gradient.addColorStop(0, '#ffffff');
-    gradient.addColorStop(1, '#f0f0f0');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
-    // Set common text styles
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#000000';
-  
-    // Add title
-    ctx.font = 'bold 48px Arial';
-    ctx.fillText(`${session.user.name}'s QueueSmart Stats`, canvas.width / 2, 80);
-  
-    // Add stats
-    const drawStat = (value, label, x) => {
-      ctx.font = 'bold 72px Arial';
-      ctx.fillStyle = '#0066cc';
-      ctx.fillText(value, x, 200);
-      ctx.font = '24px Arial';
-      ctx.fillStyle = '#666666';
-      ctx.fillText(label, x, 240);
-    };
-  
-    drawStat(`${userStats.totalTimeSaved} mins`, 'Total Time Saved', canvas.width / 4);
-    drawStat(userStats.queuesJoined, 'Queues Joined', canvas.width / 2);
-    drawStat(`${userStats.averageTimeSaved} mins`, 'Avg. Time Saved per Queue', 3 * canvas.width / 4);
-  
-    // Add "How you could use your saved time" section
-    ctx.fillStyle = '#000000';
-    ctx.font = 'bold 36px Arial';
-    ctx.fillText('How you could use your saved time:', canvas.width / 2, 320);
-  
-    const activities = [
-      { icon: '☕', text: `Enjoy ${Math.floor(userStats.totalTimeSaved / 15)} coffee breaks` },
-      { icon: '📚', text: `Read ${Math.floor(userStats.totalTimeSaved / 30)} book chapters` },
-      { icon: '🏋️', text: `Complete ${Math.floor(userStats.totalTimeSaved / 45)} workouts` },
-      { icon: '🗣️', text: `Have ${Math.floor(userStats.totalTimeSaved / 60)} hour-long chats` }
-    ];
-  
-    activities.forEach((activity, index) => {
-      const x = (index % 2 === 0 ? canvas.width / 4 : 3 * canvas.width / 4);
-      const y = 420 + Math.floor(index / 2) * 160;
-      
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(x - 200, y - 60, 400, 120);
-      ctx.strokeStyle = '#dddddd';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x - 200, y - 60, 400, 120);
-  
-      ctx.font = '48px Arial';
-      ctx.fillStyle = '#000000';
-      ctx.fillText(activity.icon, x, y - 10);
-      ctx.font = '24px Arial';
-      ctx.fillText(activity.text, x, y + 40);
-    });
-  
-    // Add link
-    ctx.fillStyle = '#0066cc';
-    ctx.font = 'bold 36px Arial';
-    ctx.fillText('Try QueueSmart:', canvas.width / 2, canvas.height - 100);
-    ctx.font = 'bold 48px Arial';
-    ctx.fillText('dontq.vercel.app', canvas.width / 2, canvas.height - 50);
-  
-    // Add QueueSmart logo or watermark
-    ctx.font = 'italic 24px Arial';
-    ctx.fillStyle = '#999999';
-    ctx.fillText('Powered by QueueSmart', canvas.width / 2, canvas.height - 20);
-  
-    return canvas.toDataURL('image/png');
-  };
-
-  const handleShareStats = async () => {
-    const imageUrl = generateStatsImage();
-    const blob = await (await fetch(imageUrl)).blob();
-    const file = new File([blob], 'queue-smart-stats.png', { type: 'image/png' });
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'My QueueSmart Stats',
-          text: 'Check out how much time I\'ve saved using QueueSmart! Try it yourself at https://dontq.vercel.app',
-          url: 'https://dontq.vercel.app',
-          files: [file],
-        });
-      } catch (error) {
-        console.error('Error sharing:', error);
-        toast.error('Failed to share stats. Please try again.');
-      }
-    } else {
-      toast.error('Web Share API is not supported in your browser. Please use a different sharing method.');
-    }
-  };
+ 
   return (
     <div className="min-h-screen dark:bg-gray-900 dark:text-gray-100">
       <main>
@@ -458,7 +365,7 @@ export default function Home() {
             </div>
             <div className="overflow-x-auto custom-scrollbar">
               <div className="flex gap-3 sm:gap-4 pb-2 sm:pb-4" style={{ width: 'max-content' }}>
-              {isLoading ? (
+                {isLoading ? (
   // Skeleton loading state
   Array(6).fill().map((_, index) => (
     <div key={index} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden" style={{ width: '250px', maxWidth: '100%' }}>
@@ -484,6 +391,39 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* Saved Queues */}
+        {savedQueues?.length > 0 && (
+          <section className="py-4 sm:py-8 bg-white dark:bg-gray-800">
+            <div className="container mx-auto px-4">
+              <div className="flex justify-between items-center mb-2 sm:mb-4">
+                <h3 className="text-lg sm:text-xl font-semibold">Saved Queues</h3>
+              </div>
+              <div className="overflow-x-auto custom-scrollbar">
+                <div className="flex gap-3 sm:gap-4 pb-2 sm:pb-4" style={{ width: 'max-content' }}>
+                  {isSavedLoading ? (
+                    // Skeleton loading state
+                    Array(3).fill().map((_, index) => (
+                      <div key={index} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden" style={{ width: '250px', maxWidth: '100%' }}>
+                        <Skeleton className="w-full h-32 sm:h-40" />
+                        <div className="p-2 sm:p-4">
+                          <Skeleton className="w-3/4 h-4 sm:h-6 mb-1 sm:mb-2" />
+                          <Skeleton className="w-1/2 h-3 sm:h-4 mb-1" />
+                          <Skeleton className="w-2/3 h-3 sm:h-4 mb-2 sm:mb-3" />
+                          <Skeleton className="w-full h-8 sm:h-10 rounded-md" />
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    savedQueues.map((queue) => (
+                      <QueueItem key={queue.queue_id} queue={queue} />
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
       </main>
       <Modal isOpen={isAddMemberModalOpen} onClose={() => setIsAddMemberModalOpen(false)}>
   <ModalContent>
