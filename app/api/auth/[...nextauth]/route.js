@@ -37,6 +37,12 @@ export const authOptions = {
       };
       return session;
     },
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith('/quick-join/')) {
+        return url;
+      }
+      return baseUrl;
+    },
   },
   pages: {
     signIn: "/signin",

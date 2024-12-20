@@ -124,6 +124,21 @@ export default function QueueDetailsPage({ params }) {
     };
   }, [params.queueid, mutate]);
 
+  useEffect(() => {
+    const handleQuickJoin = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isQuickJoin = urlParams.get('quick_join') === 'true';
+      
+      if (isQuickJoin && !queueData?.userQueueEntry && !isJoining && session) {
+        await handleJoinQueue();
+        // Clean up the URL
+        window.history.replaceState({}, '', `/user/queue/${params.queueid}`);
+      }
+    };
+
+    handleQuickJoin();
+  }, [queueData, session]);
+
   const handleJoinQueue = async () => {
     setIsJoining(true);
     try {

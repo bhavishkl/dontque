@@ -9,6 +9,7 @@ import { Button, Input, Card, CardBody, CardHeader, Chip, Switch, Table, TableHe
 import AddKnownUserModal from '@/app/components/UniComp/AddKnownUserModal';
 import { createClient } from '@supabase/supabase-js'
 import { useApi } from '@/app/hooks/useApi'
+import QueueQRCode from '@/app/components/QueueQRCode';
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
@@ -452,6 +453,18 @@ export default function QueueManagementPage({ params }) {
           </div>
         </Tab>
       </Tabs>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <h3 className="text-xl font-semibold">Quick Join QR Code</h3>
+        </CardHeader>
+        <CardBody>
+          <QueueQRCode queueId={params.queueId} />
+          <p className="mt-4 text-sm text-gray-600">
+            Display this QR code at your location for customers to quickly join the queue
+          </p>
+        </CardBody>
+      </Card>
     </>
   ) : (
     <div className="dark:text-white">Error loading queue data</div>
