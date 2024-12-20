@@ -135,23 +135,9 @@ const Header = () => {
                     size="sm"
                     className="w-8 h-8 ring-1 ring-amber-200 dark:ring-amber-800"
                   />
-                  <div className="hidden sm:flex flex-col">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                      {userName || 'Set Name'}
-                    </span>
-                    {shortid && (
-                      <code className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                        ID: {shortid}
-                      </code>
-                    )}
-                  </div>
-                  <div className="sm:hidden">
-                    {shortid && (
-                      <code className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                        {shortid}
-                      </code>
-                    )}
-                  </div>
+                  <span className="hidden sm:block text-sm font-medium text-gray-700 dark:text-gray-200">
+                    {userName || 'Set Name'}
+                  </span>
                 </div>
               </div>
             )}
@@ -181,16 +167,16 @@ const Header = () => {
                   size="lg"
                   className="w-12 h-12 ring-2 ring-amber-200 dark:ring-amber-800"
                 />
-                <div>
-                  <h2 className="font-semibold text-gray-900 dark:text-white">
+                <div className="flex-1 min-w-0">
+                  <h2 className="font-semibold text-gray-900 dark:text-white truncate">
                     {userName || session.user?.name || 'Guest'}
                   </h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {role || 'User'}
                   </p>
                   {shortid && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono">
+                    <div className="flex items-center gap-2 mt-2 overflow-x-auto">
+                      <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono whitespace-nowrap">
                         ID: {shortid}
                       </code>
                       <button
@@ -198,7 +184,7 @@ const Header = () => {
                           navigator.clipboard.writeText(shortid);
                           toast.success('Shortid copied to clipboard');
                         }}
-                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+                        className="flex-shrink-0 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
                         title="Copy ID"
                       >
                         <Copy className="w-4 h-4 text-gray-500" />
@@ -215,7 +201,7 @@ const Header = () => {
                             toast.success('Shortid copied to clipboard');
                           }
                         }}
-                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+                        className="flex-shrink-0 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
                         title="Share ID"
                       >
                         <Share2 className="w-4 h-4 text-gray-500" />
@@ -233,7 +219,7 @@ const Header = () => {
                 <NavLink href="/user/queues" icon={Users}>Queues</NavLink>
                 <NavLink href="/user/dashboard" icon={PieChart}>Dashboard</NavLink>
               </NavGroup>
-　　 　 　 　
+              
               {role === 'business' && (
                 <NavGroup title="Business">
                   <NavLink href="/dashboard" icon={PieChart}>Business Dashboard</NavLink>
@@ -241,13 +227,13 @@ const Header = () => {
                   <NavLink href="/business/support" icon={HelpCircle}>Support</NavLink>
                 </NavGroup>
               )}
-　　 　 　 　
+              
               <NavGroup title="Personal">
                 <NavLink href="/user/dashboard?tab=my-queues" icon={Clock}>Active Queues</NavLink>
                 <NavLink href="/user/dashboard?tab=favorites" icon={Star}>Favorites</NavLink>
                 <NavLink href="/user/dashboard?tab=profile" icon={Shield}>Account Settings</NavLink>
               </NavGroup>
-　　 　 　 　
+              
               {/* Theme Toggle */}
               <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                 <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
