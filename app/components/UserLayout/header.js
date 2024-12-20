@@ -5,7 +5,7 @@ import { useSession, signOut } from "next-auth/react"
 import { 
   Bell, X, Home, Settings, LogOut, User, 
   Users, PieChart, HelpCircle, Search,
-  Clock, Star, Shield
+  Clock, Star, Shield, ChevronDown, Copy, Share2
 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
@@ -13,6 +13,7 @@ import { useUserInfo } from '../../hooks/useUserName'
 import { usePathname } from 'next/navigation'
 import { Avatar, Button, Popover, PopoverTrigger, PopoverContent, Tooltip, Input } from "@nextui-org/react"
 import { ThemeToggle } from '../ThemeToggle'
+import { toast } from 'sonner'
 
 const DynamicHeader = dynamic(() => import('./DynamicHeader'), { ssr: false })
 
@@ -21,7 +22,7 @@ const Header = () => {
   const { data: session } = useSession()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const sidebarRef = useRef(null)
-  const { name: userName, role, image: userImage } = useUserInfo(session?.user?.id)
+  const { name: userName, role, image: userImage, short_id: shortid } = useUserInfo(session?.user?.id)
   
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
 
@@ -55,15 +56,15 @@ const Header = () => {
           href={href}
           className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 group
             ${isActive 
-              ? 'bg-primary/10 text-primary dark:bg-primary/20' 
+              ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300' 
               : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
             }`}
           onClick={toggleSidebar}
         >
-          <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'group-hover:text-primary transition-colors'}`} />
+          <Icon className={`w-5 h-5 ${isActive ? 'text-amber-600 dark:text-amber-400' : 'group-hover:text-amber-500 transition-colors'}`} />
           <span>{children}</span>
           {isActive && (
-            <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
+            <div className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400" />
           )}
         </Link>
       </Tooltip>
@@ -100,7 +101,7 @@ const Header = () => {
                   <PopoverTrigger>
                     <button className="relative p-2 rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800">
                       <Bell size={20} />
-                      <span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      <span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                         0
                       </span>
                     </button>
@@ -123,6 +124,7 @@ const Header = () => {
                     </div>
                   </PopoverContent>
                 </Popover>
+
                 <div 
                   className="flex items-center gap-3 cursor-pointer p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
                   onClick={toggleSidebar}
@@ -131,9 +133,9 @@ const Header = () => {
                     src={userImage || ''}
                     name={userName || 'User'}
                     size="sm"
-                    className="w-8 h-8"
+                    className="w-8 h-8 ring-1 ring-amber-200 dark:ring-amber-800"
                   />
-                  <span className="hidden sm:block text-sm font-medium">
+                  <span className="hidden sm:block text-sm font-medium text-gray-700 dark:text-gray-200">
                     {userName || 'Set Name'}
                   </span>
                 </div>
@@ -145,10 +147,14 @@ const Header = () => {
 
       {/* Sidebar */}
       {session && (
-        <div className={`fixed inset-0 z-30 transition-all duration-300 ${sidebarOpen ? 'bg-black/50' : 'pointer-events-none'}`}>
+        <div className={`fixed inset-0 z-30 transition-all duration-300 ${
+          sidebarOpen 
+            ? 'bg-black/30 backdrop-blur-sm' 
+            : 'pointer-events-none bg-transparent backdrop-blur-none'
+        }`}>
           <div
             ref={sidebarRef}
-            className={`absolute right-0 top-0 h-full w-72 bg-white dark:bg-gray-900 shadow-xl transform transition-transform duration-300 ease-in-out ${
+            className={`absolute right-0 top-0 h-full w-72 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-xl transform transition-transform duration-300 ease-in-out ${
               sidebarOpen ? 'translate-x-0' : 'translate-x-full'
             }`}
           >
@@ -159,7 +165,7 @@ const Header = () => {
                   src={userImage || ''}
                   name={userName || 'User'}
                   size="lg"
-                  className="w-12 h-12 ring-2 ring-primary/20"
+                  className="w-12 h-12 ring-2 ring-amber-200 dark:ring-amber-800"
                 />
                 <div>
                   <h2 className="font-semibold text-gray-900 dark:text-white">
@@ -168,17 +174,41 @@ const Header = () => {
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {role || 'User'}
                   </p>
+                  {shortid && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono">
+                        ID: {shortid}
+                      </code>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(shortid);
+                          toast.success('Shortid copied to clipboard');
+                        }}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+                        title="Copy ID"
+                      >
+                        <Copy className="w-4 h-4 text-gray-500" />
+                      </button>
+                      <button
+                        onClick={async () => {
+                          try {
+                            await navigator.share({
+                              title: 'My Queue Shortid',
+                              text: `My queue shortid: ${shortid}`,
+                            });
+                          } catch (err) {
+                            navigator.clipboard.writeText(shortid);
+                            toast.success('Shortid copied to clipboard');
+                          }
+                        }}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+                        title="Share ID"
+                      >
+                        <Share2 className="w-4 h-4 text-gray-500" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-              </div>
-              
-              {/* Search Bar */}
-              <div className="mt-4">
-                <Input
-                  placeholder="Search..."
-                  startContent={<Search className="w-4 h-4 text-gray-400" />}
-                  size="sm"
-                  className="w-full"
-                />
               </div>
             </div>
 
