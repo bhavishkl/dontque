@@ -4,8 +4,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Card, CardBody } from "@nextui-org/react";
 
 export default function QueueQRCode({ queueId }) {
-  // Generate the quick join URL using a dedicated quick-join page
-  const quickJoinUrl = `${process.env.NEXT_PUBLIC_APP_URL}/quick-join/${queueId}`;
+  // Generate the quick join URL with the full domain
+  const quickJoinUrl = `${window.location.origin}/quick-join/${queueId}`;
   
   return (
     <Card className="w-fit mx-auto">

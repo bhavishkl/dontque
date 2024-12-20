@@ -192,14 +192,26 @@ export default function Home() {
 
   const handleQrCodeScanned = (result) => {
     if (result) {
-      // Close the QR scanner modal
-      onClose();
-      
-      // Navigate to the scanned URL
-      router.push(result);
-      
-      // Show a success toast
-      toast.success('QR code scanned successfully');
+      try {
+        // Close the QR scanner modal
+        onClose();
+        
+        // Extract the queue ID from the URL
+        const url = new URL(result);
+        const pathParts = url.pathname.split('/');
+        const queueId = pathParts[pathParts.length - 1];
+        
+        if (queueId) {
+          // Navigate to the queue page
+          router.push(`/quick-join/${queueId}`);
+          toast.success('QR code scanned successfully');
+        } else {
+          throw new Error('Invalid QR code');
+        }
+      } catch (error) {
+        console.error('Error processing QR code:', error);
+        toast.error('Invalid QR code format. Please try again.');
+      }
     } else {
       toast.error('Failed to scan QR code. Please try again.');
     }
