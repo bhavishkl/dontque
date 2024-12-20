@@ -42,7 +42,7 @@ export default function LandingPage() {
       {/* Header */}
       <Navbar className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm shadow-sm">
         <NavbarBrand>
-          <Link href="/" className="text-2xl font-bold text-black dark:text-white">dontq</Link>
+          <Link href="/" className="text-2xl font-bold text-black dark:text-white">dontque</Link>
         </NavbarBrand>
         <NavbarContent className="hidden sm:flex gap-4" justify="center">
           <NavbarItem>
