@@ -1,13 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 import Script from 'next/script'
 import { signIn } from 'next-auth/react'
 
 export default function SignIn() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get('callbackUrl') || '/user/home'
 
   const handleOTPlessSuccess = async (response) => {
     console.log('OTPless success:', response);
@@ -19,6 +21,7 @@ export default function SignIn() {
         userId,
         idToken,
         redirect: false,
+        callbackUrl: callbackUrl
       });
 
       if (result.error) {
@@ -28,11 +31,11 @@ export default function SignIn() {
       // Save user data
       await saveUserData(otplessUser, '');
 
-      // Redirect to home page
-      router.push('/user/home');
+      // Redirect to callback URL if provided, otherwise go to home
+      router.push(callbackUrl);
     } catch (error) {
       console.error('Error signing in:', error);
-      alert('An error occurred. Please try again.');
+      toast.error('An error occurred. Please try again.');
     }
   };
 
