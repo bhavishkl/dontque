@@ -20,7 +20,7 @@ const QueueItem = memo(({ queue }) => {
 
   return (
     <div 
-      className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl"
+      className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary-100/50 dark:hover:shadow-primary-900/10"
       style={{ width: '320px' }}
     >
       {/* Image Container */}
@@ -43,7 +43,7 @@ const QueueItem = memo(({ queue }) => {
         </div>
 
         {/* Quick Actions Overlay */}
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
+        <div className="absolute inset-0 bg-gray-950/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
           <Button
             isIconOnly
             className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-full p-3"
@@ -72,25 +72,25 @@ const QueueItem = memo(({ queue }) => {
         {/* Header */}
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h3 className="text-lg font-semibold mb-1 line-clamp-1">
+            <h3 className="text-lg font-semibold mb-1 line-clamp-1 text-gray-900 dark:text-gray-100">
               {queue.name}
             </h3>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Clock className="h-4 w-4" />
+            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+              <Clock className="h-4 w-4 text-orange-600 dark:text-orange-400" />
               <span>{formatOperatingHours(queue.operating_hours)}</span>
             </div>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <div className="flex items-center gap-1 bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded-lg">
-              <Star className="h-4 w-4 text-yellow-400 fill-current" />
-              <span className="text-sm font-medium">
+            <div className="flex items-center gap-1 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-lg">
+              <Star className="h-4 w-4 text-orange-500 fill-current" />
+              <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
                 {queue.avg_rating?.toFixed(1) || '4.0'}
               </span>
             </div>
             {queue.current_queue > 0 && (
               <Chip
                 size="sm"
-                className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-200"
+                className="bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300"
               >
                 {queue.current_queue} in queue
               </Chip>
@@ -100,10 +100,10 @@ const QueueItem = memo(({ queue }) => {
 
         {/* View Button */}
         <Button
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-xl transition-colors"
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
           onClick={() => router.push(`/user/queue/${queue.queue_id}`)}
         >
-          View Queue
+          View Details
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
@@ -330,14 +330,14 @@ export default function Home() {
     <div className="min-h-screen dark:bg-gray-900 dark:text-gray-100">
       <main>
         {/* Hero Section with Search */}
-        <section className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 dark:from-blue-800 dark:via-blue-900 dark:to-indigo-950 text-white py-8 sm:py-12 rounded-b-[2.5rem] shadow-lg">
+        <section className="bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 dark:from-gray-800 dark:via-gray-900 dark:to-black text-white py-8 sm:py-12 rounded-b-[2.5rem] shadow-lg">
           <div className="container mx-auto px-4 max-w-6xl">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="md:w-1/2 space-y-3">
-                <h1 className="text-3xl md:text-5xl font-bold mb-2 hidden sm:block bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-100">
+                <h1 className="text-3xl md:text-5xl font-bold mb-2 hidden sm:block bg-clip-text text-transparent bg-gradient-to-r from-white to-orange-100">
                   Skip the Wait, Join Smart
                 </h1>
-                <p className="text-lg sm:text-xl text-blue-100">Find and join queues near you instantly.</p>
+                <p className="text-lg sm:text-xl text-orange-50">Find and join queues near you instantly.</p>
               </div>
               <div className="md:w-1/2 w-full">
                 <form onSubmit={handleSearch} className="flex items-center gap-2">
@@ -354,7 +354,7 @@ export default function Home() {
                     </div>
                     <input
                       type="search"
-                      className="w-full h-12 pl-12 pr-4 rounded-xl text-gray-900 bg-white/95 backdrop-blur-md border border-white/20 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                      className="w-full h-12 pl-12 pr-4 rounded-xl text-gray-900 bg-white/95 backdrop-blur-md border border-white/20 focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all"
                       placeholder="Search queues or enter 6-digit code..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -363,7 +363,7 @@ export default function Home() {
                   <Button
                     type="submit"
                     isIconOnly
-                    className="h-12 w-12 bg-white text-blue-700 hover:bg-blue-50 rounded-xl font-medium"
+                    className="h-12 w-12 bg-white text-orange-500 hover:bg-orange-50 rounded-xl font-medium"
                     disabled={isSearching}
                   >
                     {isSearching ? <div className="animate-spin">⌛</div> : <Search className="h-5 w-5" />}
@@ -385,7 +385,7 @@ export default function Home() {
                   key={category.name}
                   className={`inline-flex items-center px-2 sm:px-3 py-1 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors duration-200 ease-in-out whitespace-nowrap ${
                     selectedCategory === category.name
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-orange-500 text-white'
                       : 'bg-gray-100 text-black hover:bg-gray-200 dark:bg-[#111827] dark:text-white dark:hover:bg-gray-700'
                   }`}
                   onClick={() => handleCategoryClick(category.name)}
@@ -407,36 +407,36 @@ export default function Home() {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
                   <div className="flex space-x-4 mb-4 md:mb-0 lg:space-x-6">
                     <div className="text-center">
-                      <p className="text-2xl lg:text-3xl font-bold text-primary dark:text-blue-400">{userStats.totalTimeSaved} mins</p>
-                      <p className="text-xs lg:text-sm text-muted-foreground dark:text-gray-400">Total Time Saved</p>
+                      <p className="text-2xl lg:text-3xl font-bold text-orange-600 dark:text-orange-400">{userStats.totalTimeSaved} mins</p>
+                      <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">Total Time Saved</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl lg:text-3xl font-bold text-primary dark:text-blue-400">{userStats.queuesJoined}</p>
-                      <p className="text-xs lg:text-sm text-muted-foreground dark:text-gray-400">Queues Joined</p>
+                      <p className="text-2xl lg:text-3xl font-bold text-orange-600 dark:text-orange-400">{userStats.queuesJoined}</p>
+                      <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">Queues Joined</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl lg:text-3xl font-bold text-primary dark:text-blue-400">{userStats.averageTimeSaved} mins</p>
-                      <p className="text-xs lg:text-sm text-muted-foreground dark:text-gray-400">Avg. Time Saved</p>
+                      <p className="text-2xl lg:text-3xl font-bold text-orange-600 dark:text-orange-400">{userStats.averageTimeSaved} mins</p>
+                      <p className="text-xs lg:text-sm text-gray-500 dark:text-gray-400">Avg. Time Saved</p>
                     </div>
                   </div>
                   <div className="w-full md:w-auto">
                     <p className="text-sm lg:text-base font-semibold mb-2">How you could use saved time:</p>
                     <div className="grid grid-cols-2 gap-2 lg:gap-3">
                       <div className="flex items-center">
-                        <Coffee className="h-4 w-4 lg:h-5 lg:w-5 text-primary dark:text-blue-400 mr-2" />
-                        <span className="text-xs lg:text-sm">{Math.floor(userStats.totalTimeSaved / 15)} coffee breaks</span>
+                        <Coffee className="h-4 w-4 lg:h-5 lg:w-5 text-orange-600 dark:text-orange-400 mr-2" />
+                        <span className="text-xs lg:text-sm text-gray-600 dark:text-gray-300">{Math.floor(userStats.totalTimeSaved / 15)} coffee breaks</span>
                       </div>
                       <div className="flex items-center">
-                        <BookOpen className="h-4 w-4 lg:h-5 lg:w-5 text-primary dark:text-blue-400 mr-2" />
-                        <span className="text-xs lg:text-sm">{Math.floor(userStats.totalTimeSaved / 30)} book chapters</span>
+                        <BookOpen className="h-4 w-4 lg:h-5 lg:w-5 text-orange-600 dark:text-orange-400 mr-2" />
+                        <span className="text-xs lg:text-sm text-gray-600 dark:text-gray-300">{Math.floor(userStats.totalTimeSaved / 30)} book chapters</span>
                       </div>
                       <div className="flex items-center">
-                        <Dumbbell className="h-4 w-4 lg:h-5 lg:w-5 text-primary dark:text-blue-400 mr-2" />
-                        <span className="text-xs lg:text-sm">{Math.floor(userStats.totalTimeSaved / 45)} workouts</span>
+                        <Dumbbell className="h-4 w-4 lg:h-5 lg:w-5 text-orange-600 dark:text-orange-400 mr-2" />
+                        <span className="text-xs lg:text-sm text-gray-600 dark:text-gray-300">{Math.floor(userStats.totalTimeSaved / 45)} workouts</span>
                       </div>
                       <div className="flex items-center">
-                        <Users className="h-4 w-4 lg:h-5 lg:w-5 text-primary dark:text-blue-400 mr-2" />
-                        <span className="text-xs lg:text-sm">{Math.floor(userStats.totalTimeSaved / 60)} hour-long chats</span>
+                        <Users className="h-4 w-4 lg:h-5 lg:w-5 text-orange-600 dark:text-orange-400 mr-2" />
+                        <span className="text-xs lg:text-sm text-gray-600 dark:text-gray-300">{Math.floor(userStats.totalTimeSaved / 60)} hour-long chats</span>
                       </div>
                     </div>
                   </div>
@@ -451,7 +451,7 @@ export default function Home() {
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-2 sm:mb-4">
               <h3 className="text-lg sm:text-xl font-semibold">Popular Queues</h3>
-              <Link href="/user/queues" className="inline-flex items-center px-3 sm:px-4 py-1 sm:py-2 rounded-full text-xs sm:text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-800 dark:text-blue-100 dark:hover:bg-blue-700 transition-colors duration-200 ease-in-out">
+              <Link href="/user/queues" className="inline-flex items-center px-3 sm:px-4 py-1 sm:py-2 rounded-full text-xs sm:text-sm font-medium bg-orange-100 text-orange-600 hover:bg-orange-200 dark:bg-orange-700 dark:text-orange-50 dark:hover:bg-orange-600 transition-colors duration-200 ease-in-out">
                 View all
                 <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
               </Link>
