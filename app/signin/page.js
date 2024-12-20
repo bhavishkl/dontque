@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 import Script from 'next/script'
 import { signIn } from 'next-auth/react'
+import { toast } from 'sonner'
 
 export default function SignIn() {
   const router = useRouter()
@@ -17,21 +18,23 @@ export default function SignIn() {
     const { userId, idToken } = otplessUser;
 
     try {
+      // Save user data first
+      const profileData = await saveUserData(otplessUser, '');
+
+      // Sign in with credentials and handle redirect
       const result = await signIn("credentials", {
         userId,
         idToken,
         redirect: false,
-        callbackUrl: callbackUrl
+        callbackUrl
       });
 
       if (result.error) {
         throw new Error(result.error);
       }
 
-      // Save user data
-      await saveUserData(otplessUser, '');
-
-      // Redirect to callback URL if provided, otherwise go to home
+      // Important: Use the callbackUrl here instead of hardcoding '/user/home'
+      console.log('Redirecting to:', callbackUrl);
       router.push(callbackUrl);
     } catch (error) {
       console.error('Error signing in:', error);
@@ -132,9 +135,10 @@ export default function SignIn() {
         redirect: false,
       });
 
-      router.push('/user/home');
+      return profileData; // Return the profile data instead of redirecting
     } catch (error) {
       console.error('Error saving user data:', error);
+      throw error;
     }
   };
 
