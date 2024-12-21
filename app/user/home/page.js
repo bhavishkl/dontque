@@ -254,27 +254,58 @@ export default function Home() {
   }
 
   useEffect(() => {
-    // Check if we already have location in session storage
+    // Only request location if we don't have it in session storage
     const storedLocation = sessionStorage.getItem('userLocation');
-    if (storedLocation) {
-      setUserLocation(JSON.parse(storedLocation));
+    if (!storedLocation) {
+      // Small delay to ensure the page has loaded properly
+      setTimeout(() => {
+        requestAndStoreLocation();
+      }, 1000);
     } else {
-      requestAndStoreLocation();
+      setUserLocation(JSON.parse(storedLocation));
     }
-  }, [session?.user?.id]);
+  }, []);
 
   const requestAndStoreLocation = async () => {
     try {
+      // First check if geolocation is available
+      if (!navigator.geolocation) {
+        toast.error('Geolocation is not supported by your browser');
+        return null;
+      }
+
+      // Check if we have permission
+      const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
+      console.log('Geolocation permission status:', permissionStatus.state);
+
       const position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0,
-          accuracy: {
-            android: "high",
-            ios: "best"
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          (error) => {
+            console.log('Geolocation error code:', error.code);
+            console.log('Geolocation error message:', error.message);
+            
+            switch (error.code) {
+              case error.PERMISSION_DENIED:
+                toast.error('Please enable location access in your browser settings');
+                break;
+              case error.POSITION_UNAVAILABLE:
+                toast.error('Location information is unavailable');
+                break;
+              case error.TIMEOUT:
+                toast.error('Location request timed out');
+                break;
+              default:
+                toast.error('An unknown error occurred');
+            }
+            reject(error);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
           }
-        });
+        );
       });
 
       const location = {
@@ -284,7 +315,6 @@ export default function Home() {
         timestamp: new Date().toISOString()
       };
 
-      // Log and show coordinates in toast
       const coords = {
         lat: location.latitude.toFixed(6),
         lng: location.longitude.toFixed(6),
@@ -293,7 +323,6 @@ export default function Home() {
       
       console.log('Location obtained:', coords);
 
-      // Only store if accuracy is reasonable (less than 5km)
       if (location.accuracy > 5000) {
         toast.error('Location accuracy is too low. Please check your GPS settings.');
         return null;
@@ -305,8 +334,7 @@ export default function Home() {
       toast.success(`Location: ${coords.lat}, ${coords.lng} (±${coords.accuracy})`);
       return location;
     } catch (error) {
-      console.error('Error getting location:', error);
-      toast.error('Unable to access location. Some features may be limited.');
+      console.error('Detailed location error:', error);
       return null;
     }
   };
