@@ -15,6 +15,32 @@ import debounce from 'lodash/debounce'
 import { memo } from 'react';
 import SaveButton from '@/app/components/UniComp/SaveButton';
 
+const cityCoordinates = {
+  'Bangalore': { lat: 12.9716, lng: 77.5946 },
+  'Mumbai': { lat: 19.0760, lng: 72.8777 },
+  'Delhi': { lat: 28.6139, lng: 77.2090 },
+  'Chennai': { lat: 13.0827, lng: 80.2707 },
+  'Hyderabad': { lat: 17.3850, lng: 78.4867 },
+  'Kalaburagi': { lat: 17.3297, lng: 76.8343 }
+};
+
+const getCityFromCoordinates = (lat, lng) => {
+  let nearestCity = null;
+  let shortestDistance = Infinity;
+
+  for (const [city, coords] of Object.entries(cityCoordinates)) {
+    const distance = Math.sqrt(
+      Math.pow(lat - coords.lat, 2) + 
+      Math.pow(lng - coords.lng, 2)
+    );
+    if (distance < shortestDistance) {
+      shortestDistance = distance;
+      nearestCity = city;
+    }
+  }
+  return nearestCity;
+};
+
 const QueueItem = memo(({ queue }) => {
   const router = useRouter();
   const { icon } = categories.find(cat => cat.name === queue.category) || { icon: '🏢' };
@@ -268,73 +294,39 @@ export default function Home() {
 
   const requestAndStoreLocation = async () => {
     try {
-      // First check if geolocation is available
       if (!navigator.geolocation) {
-        toast.error('Geolocation is not supported by your browser');
+        console.error('Geolocation not supported');
         return null;
       }
 
-      // Check if we have permission
-      const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
-      console.log('Geolocation permission status:', permissionStatus.state);
-
       const position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(
-          resolve,
-          (error) => {
-            console.log('Geolocation error code:', error.code);
-            console.log('Geolocation error message:', error.message);
-            
-            switch (error.code) {
-              case error.PERMISSION_DENIED:
-                toast.error('Please enable location access in your browser settings');
-                break;
-              case error.POSITION_UNAVAILABLE:
-                toast.error('Location information is unavailable');
-                break;
-              case error.TIMEOUT:
-                toast.error('Location request timed out');
-                break;
-              default:
-                toast.error('An unknown error occurred');
-            }
-            reject(error);
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
-          }
-        );
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        });
       });
 
       const location = {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
         accuracy: position.coords.accuracy,
+        city: getCityFromCoordinates(position.coords.latitude, position.coords.longitude),
         timestamp: new Date().toISOString()
       };
 
-      const coords = {
+      console.log('Location obtained:', {
         lat: location.latitude.toFixed(6),
         lng: location.longitude.toFixed(6),
+        city: location.city,
         accuracy: `${Math.round(location.accuracy)}m`
-      };
-      
-      console.log('Location obtained:', coords);
-
-      if (location.accuracy > 5000) {
-        toast.error('Location accuracy is too low. Please check your GPS settings.');
-        return null;
-      }
+      });
 
       sessionStorage.setItem('userLocation', JSON.stringify(location));
       setUserLocation(location);
-      
-      toast.success(`Location: ${coords.lat}, ${coords.lng} (±${coords.accuracy})`);
       return location;
     } catch (error) {
-      console.error('Detailed location error:', error);
+      console.error('Location error:', error);
       return null;
     }
   };
@@ -351,6 +343,10 @@ export default function Home() {
                   Skip the Wait, Join Smart
                 </h1>
                 <p className="text-lg sm:text-xl text-orange-50">Find and join queues near you instantly.</p>
+                <div className="flex items-center gap-2 text-orange-50/80 text-sm">
+                  <MapPin className="h-4 w-4" />
+                  {userLocation?.city || 'Loading location...'}
+                </div>
               </div>
               <div className="md:w-1/2 w-full">
                 <form onSubmit={handleSearch} className="flex items-center gap-2">
@@ -382,14 +378,7 @@ export default function Home() {
                     {isSearching ? <div className="animate-spin">⌛</div> : <Search className="h-5 w-5" />}
                   </Button>
                 </form>
-                {!userLocation && (
-                  <Button
-                    className="mt-4 bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20 text-white rounded-xl px-4 py-2 text-sm"
-                    onClick={requestAndStoreLocation}
-                  >
-                    Enable Location Services
-                  </Button>
-                )}
+               
               </div>
             </div>
           </div>
