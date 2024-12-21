@@ -398,21 +398,22 @@ export default function QueueDetailsPage({ params }) {
                       <div className="grid grid-cols-2 gap-8">
                         {/* Position Indicator */}
                         <div className="relative flex justify-center">
-                          <div className="w-40 h-40">
-                            <CircularProgress
-                              value={((queueData.queueEntries.length - queueData.userQueueEntry.position + 1) / queueData.queueEntries.length) * 100}
-                              strokeWidth={8}
-                              showValueLabel={false}
-                              classNames={{
-                                svg: "w-full h-full -rotate-90",
-                                indicator: "stroke-white",
-                                track: "stroke-white/20",
-                              }}
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center flex-col">
-                              <div className="bg-white/10 backdrop-blur-sm rounded-full w-28 h-28 flex items-center justify-center flex-col">
-                                <span className="text-4xl font-bold">{queueData.userQueueEntry.position}</span>
-                                <span className="text-sm opacity-80">in queue</span>
+                          <div className="w-40 h-40 relative">
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              {/* White background div with glow */}
+                              <div className="absolute inset-0 bg-white rounded-2xl shadow-[0_0_15px_rgba(255,255,255,0.7)]"></div>
+                              {/* Blur effect div */}
+                              <div className="relative w-full h-32 backdrop-blur-lg bg-white/40 p-4 border border-white/20 rounded-2xl shadow-[inset_0_0_15px_rgba(255,255,255,0.9)]">
+                                <div className="flex flex-col items-center justify-center h-full">
+                                  <span className="text-sm text-orange-600 mb-1">Your Position</span>
+                                  <div className="flex items-baseline">
+                                    <span className="text-5xl font-bold text-orange-600 drop-shadow-sm">#</span>
+                                    <span className="text-6xl font-bold text-orange-600 drop-shadow-sm">
+                                      {queueData.userQueueEntry.position}
+                                    </span>
+                                  </div>
+                                  <span className="text-sm text-orange-600 mt-1">in queue</span>
+                                </div>
                               </div>
                             </div>
                           </div>
