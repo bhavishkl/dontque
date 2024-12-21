@@ -8,7 +8,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { categories } from '../../utils/category'
-import { Search, Clock, Scan, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, Plus, Copy, Share, Chat, MapPin, Star, Phone, Timer, Globe, ChevronDown } from 'lucide-react'
+import { Search, Clock, Scan, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, MapPin, Star } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApi } from '../../hooks/useApi'
 import debounce from 'lodash/debounce'
@@ -145,6 +145,7 @@ export default function Home() {
   const [isScannerActive, setIsScannerActive] = useState(false);
   const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
   const { data: savedQueues, isLoading: isSavedLoading } = useApi('/api/user/saved-queues')
+  const [userLocation, setUserLocation] = useState(null);
 
   // Dummy data for user stats
   const [userStats, setUserStats] = useState({
@@ -252,8 +253,64 @@ export default function Home() {
     setQueueId('')
   }
 
-  
- 
+  useEffect(() => {
+    // Check if we already have location in session storage
+    const storedLocation = sessionStorage.getItem('userLocation');
+    if (storedLocation) {
+      setUserLocation(JSON.parse(storedLocation));
+    } else {
+      requestAndStoreLocation();
+    }
+  }, [session?.user?.id]);
+
+  const requestAndStoreLocation = async () => {
+    try {
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+          accuracy: {
+            android: "high",
+            ios: "best"
+          }
+        });
+      });
+
+      const location = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+        timestamp: new Date().toISOString()
+      };
+
+      // Log and show coordinates in toast
+      const coords = {
+        lat: location.latitude.toFixed(6),
+        lng: location.longitude.toFixed(6),
+        accuracy: `${Math.round(location.accuracy)}m`
+      };
+      
+      console.log('Location obtained:', coords);
+
+      // Only store if accuracy is reasonable (less than 5km)
+      if (location.accuracy > 5000) {
+        toast.error('Location accuracy is too low. Please check your GPS settings.');
+        return null;
+      }
+
+      sessionStorage.setItem('userLocation', JSON.stringify(location));
+      setUserLocation(location);
+      
+      toast.success(`Location: ${coords.lat}, ${coords.lng} (±${coords.accuracy})`);
+      return location;
+    } catch (error) {
+      console.error('Error getting location:', error);
+      toast.error('Unable to access location. Some features may be limited.');
+      return null;
+    }
+  };
+
   return (
     <div className="min-h-screen dark:bg-gray-900 dark:text-gray-100">
       <main>
@@ -297,6 +354,14 @@ export default function Home() {
                     {isSearching ? <div className="animate-spin">⌛</div> : <Search className="h-5 w-5" />}
                   </Button>
                 </form>
+                {!userLocation && (
+                  <Button
+                    className="mt-4 bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20 text-white rounded-xl px-4 py-2 text-sm"
+                    onClick={requestAndStoreLocation}
+                  >
+                    Enable Location Services
+                  </Button>
+                )}
               </div>
             </div>
           </div>
