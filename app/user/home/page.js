@@ -14,32 +14,7 @@ import { useApi } from '../../hooks/useApi'
 import debounce from 'lodash/debounce'
 import { memo } from 'react';
 import SaveButton from '@/app/components/UniComp/SaveButton';
-
-const cityCoordinates = {
-  'Bangalore': { lat: 12.9716, lng: 77.5946 },
-  'Mumbai': { lat: 19.0760, lng: 72.8777 },
-  'Delhi': { lat: 28.6139, lng: 77.2090 },
-  'Chennai': { lat: 13.0827, lng: 80.2707 },
-  'Hyderabad': { lat: 17.3850, lng: 78.4867 },
-  'Kalaburagi': { lat: 17.3297, lng: 76.8343 }
-};
-
-const getCityFromCoordinates = (lat, lng) => {
-  let nearestCity = null;
-  let shortestDistance = Infinity;
-
-  for (const [city, coords] of Object.entries(cityCoordinates)) {
-    const distance = Math.sqrt(
-      Math.pow(lat - coords.lat, 2) + 
-      Math.pow(lng - coords.lng, 2)
-    );
-    if (distance < shortestDistance) {
-      shortestDistance = distance;
-      nearestCity = city;
-    }
-  }
-  return nearestCity;
-};
+import { getCityFromCoordinates } from '../../utils/cities';
 
 const QueueItem = memo(({ queue }) => {
   const router = useRouter();
@@ -108,7 +83,7 @@ const QueueItem = memo(({ queue }) => {
             </h3>
             <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
               <Clock className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-              <span>{formatOperatingHours(queue.operating_hours)}</span>
+              <span>{formatOperatingHours(queue)}</span>
             </div>
           </div>
           <div className="flex flex-col items-end gap-1">
@@ -143,10 +118,19 @@ const QueueItem = memo(({ queue }) => {
 });
 
 // Helper functions for formatting data
-const formatOperatingHours = (hours) => {
-  const today = new Date().getDay();
-  const todayHours = hours?.[today];
-  return todayHours || '9 AM - 6 PM';
+const formatOperatingHours = (queue) => {
+  if (!queue.opening_time || !queue.closing_time) return 'Hours not available';
+  
+  const formatTime = (timeStr) => {
+    if (!timeStr) return '';
+    const [hours, minutes] = timeStr.split(':');
+    const hour = parseInt(hours);
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const formattedHour = hour % 12 || 12;
+    return `${formattedHour}${minutes !== '00' ? ':' + minutes : ''} ${period}`;
+  };
+
+  return `${formatTime(queue.opening_time)} - ${formatTime(queue.closing_time)}`;
 };
 
 const formatReviewCount = (count) => {

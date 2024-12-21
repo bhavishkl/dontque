@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button, Input, Textarea, Select, SelectItem } from "@nextui-org/react"
 import { toast } from 'sonner'
 import TimePicker from '../../components/UserLayout/TimePicker'
+import { cityCoordinates } from '../../utils/cities'
 
 const categories = [
   'Restaurants',
@@ -30,6 +31,11 @@ export default function CreateQueuePage() {
     closing_time: '',
     est_time_to_serve: '',
     service_start_time: '',
+    status: 'active',
+    current_queue: 0,
+    avg_wait_time: 0,
+    total_served: 0,
+    estimated_wait_time: 0
   })
 
   const handleChange = (e) => {
@@ -41,6 +47,11 @@ export default function CreateQueuePage() {
       const [hours, minutes] = time.split(':')
       formattedValue = `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:00`
     }
+
+    // Convert numeric fields to integers
+    if (['max_capacity', 'est_time_to_serve'].includes(name)) {
+      formattedValue = parseInt(value) || 0
+    }
   
     setFormData(prevData => ({
       ...prevData,
@@ -48,16 +59,36 @@ export default function CreateQueuePage() {
     }))
   }
 
+  const handleTimeChange = (field, newTime) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: newTime
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsLoading(true)
+
+    // Calculate initial estimated wait time based on capacity and service time
+    const estimatedWaitTime = Math.ceil((formData.max_capacity * formData.est_time_to_serve) / 2)
+
+    const queueData = {
+      ...formData,
+      estimated_wait_time: estimatedWaitTime,
+      status: 'active',
+      current_queue: 0,
+      avg_wait_time: formData.est_time_to_serve, // Initial average wait time equals service time
+      total_served: 0
+    }
+
     try {
       const response = await fetch('/api/queues', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(queueData),
       })
   
       const contentType = response.headers.get("content-type");
@@ -69,8 +100,6 @@ export default function CreateQueuePage() {
         toast.success('Queue created successfully!')
         router.push('/dashboard')
       } else {
-        const text = await response.text()
-        console.error('Non-JSON response:', text)
         throw new Error('Server returned non-JSON response')
       }
     } catch (error) {
@@ -120,15 +149,22 @@ export default function CreateQueuePage() {
             </SelectItem>
           ))}
         </Select>
-        <Input
-          label="Location"
+        <Select
+          label="City"
           name="location"
           value={formData.location}
           onChange={handleChange}
-          placeholder="Enter location"
+          required
+          placeholder="Select a city"
           className="w-full"
           disabled={isLoading}
-        />
+        >
+          {Object.keys(cityCoordinates).map((city) => (
+            <SelectItem key={city} value={city}>
+              {city}
+            </SelectItem>
+          ))}
+        </Select>
         <div className="grid grid-cols-2 gap-4">
           <Input
             type="number"
@@ -155,20 +191,23 @@ export default function CreateQueuePage() {
   <TimePicker
     label="Opening Time"
     value={formData.opening_time}
-    onChange={(newTime) => handleChange({ target: { name: 'opening_time', value: newTime } })}
+    onChange={(newTime) => handleTimeChange('opening_time', newTime)}
     className="w-full"
+    preventSubmit={true}
   />
   <TimePicker
     label="Closing Time"
     value={formData.closing_time}
-    onChange={(newTime) => handleChange({ target: { name: 'closing_time', value: newTime } })}
+    onChange={(newTime) => handleTimeChange('closing_time', newTime)}
     className="w-full"
+    preventSubmit={true}
   />
   <TimePicker
     label="Service Start Time"
     value={formData.service_start_time}
-    onChange={(newTime) => handleChange({ target: { name: 'service_start_time', value: newTime } })}
+    onChange={(newTime) => handleTimeChange('service_start_time', newTime)}
     className="w-full"
+    preventSubmit={true}
   />
 </div>
         <Button type="submit" color="primary" className="w-full" isLoading={isLoading}>

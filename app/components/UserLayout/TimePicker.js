@@ -117,13 +117,21 @@ const TimePicker = ({ value, onChange, className = '', label = '' }) => {
         />
         <div className="flex">
           <button
-            onClick={() => handlePeriodChange('AM')}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              handlePeriodChange('AM');
+            }}
             className={`px-2 py-1 text-sm ${period === 'AM' ? 'bg-blue-500 text-white' : 'bg-gray-200'} rounded-l-md`}
           >
             AM
           </button>
           <button
-            onClick={() => handlePeriodChange('PM')}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              handlePeriodChange('PM');
+            }}
             className={`px-2 py-1 text-sm ${period === 'PM' ? 'bg-blue-500 text-white' : 'bg-gray-200'} rounded-r-md`}
           >
             PM
@@ -138,21 +146,49 @@ const TimePicker = ({ value, onChange, className = '', label = '' }) => {
         <div className="absolute z-10 mt-1 bg-white border border-gray-300 rounded-md shadow-lg p-4 w-64 animate-fade-in-down">
           <div className="flex justify-between items-center mb-4">
             <div className="flex flex-col items-center">
-              <button onClick={incrementHours} className="p-1 hover:bg-gray-100 rounded-full transition-colors duration-200">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  incrementHours();
+                }}
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors duration-200"
+              >
                 <ChevronUp className="w-5 h-5 text-gray-500" />
               </button>
               <span className="w-12 text-center text-2xl font-semibold">{hours}</span>
-              <button onClick={decrementHours} className="p-1 hover:bg-gray-100 rounded-full transition-colors duration-200">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  decrementHours();
+                }}
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors duration-200"
+              >
                 <ChevronDown className="w-5 h-5 text-gray-500" />
               </button>
             </div>
             <span className="text-2xl font-semibold">:</span>
             <div className="flex flex-col items-center">
-              <button onClick={incrementMinutes} className="p-1 hover:bg-gray-100 rounded-full transition-colors duration-200">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  incrementMinutes();
+                }}
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors duration-200"
+              >
                 <ChevronUp className="w-5 h-5 text-gray-500" />
               </button>
               <span className="w-12 text-center text-2xl font-semibold">{minutes}</span>
-              <button onClick={decrementMinutes} className="p-1 hover:bg-gray-100 rounded-full transition-colors duration-200">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  decrementMinutes();
+                }}
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors duration-200"
+              >
                 <ChevronDown className="w-5 h-5 text-gray-500" />
               </button>
             </div>

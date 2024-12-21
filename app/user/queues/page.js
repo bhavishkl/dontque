@@ -27,7 +27,15 @@ export default function QueueListPage() {
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [sortBy, setSortBy] = useState('wait')
   const [search, setSearch] = useState('')
+  const [userLocation, setUserLocation] = useState(null)
   const router = useRouter()
+
+  useEffect(() => {
+    const storedLocation = sessionStorage.getItem('userLocation')
+    if (storedLocation) {
+      setUserLocation(JSON.parse(storedLocation))
+    }
+  }, [])
 
   const debouncedSearch = useMemo(
     () => debounce((value) => setSearch(value), 300),
@@ -35,7 +43,7 @@ export default function QueueListPage() {
   )
 
   const { data: queues, isLoading, isError } = useApi(
-    `/api/queues?category=${selectedCategory}&search=${search}&sortBy=${sortBy}`
+    `/api/queues?category=${selectedCategory}&search=${search}&sortBy=${sortBy}&city=${userLocation?.city || ''}`
   )
 
   useEffect(() => {

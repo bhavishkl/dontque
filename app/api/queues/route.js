@@ -8,6 +8,7 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const category = searchParams.get('category');
+  const city = searchParams.get('city');
   const limit = searchParams.get('limit') || 10;
   const search = searchParams.get('search');
 
@@ -20,7 +21,10 @@ export async function GET(request) {
       current_queue,
       avg_wait_time,
       image_url,
-      est_time_to_serve
+      est_time_to_serve,
+      opening_time,
+      closing_time,
+      service_start_time
     `)
     .eq('status', 'active')
     .order('current_queue', { ascending: false })
@@ -28,6 +32,10 @@ export async function GET(request) {
 
   if (category && category !== 'All') {
     query = query.eq('category', category);
+  }
+
+  if (city) {
+    query = query.eq('location', city);
   }
 
   if (search) {
@@ -92,7 +100,6 @@ export async function POST(request) {
         est_time_to_serve: parseInt(est_time_to_serve),
         service_start_time,
         status: 'active',
-        queue_id_short: queueId  // New field to store the short queue ID
       })
       .select()
       .single();
