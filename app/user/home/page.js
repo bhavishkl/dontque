@@ -199,10 +199,19 @@ export default function Home() {
         // Extract the queue ID from the URL
         const url = new URL(result);
         const pathParts = url.pathname.split('/');
-        const queueId = pathParts[pathParts.length - 1];
+        const quickJoinIndex = pathParts.indexOf('quick-join');
+        
+        let queueId;
+        if (quickJoinIndex !== -1 && pathParts[quickJoinIndex + 1]) {
+          // If it's already a quick-join URL
+          queueId = pathParts[quickJoinIndex + 1];
+        } else {
+          // If it's a regular queue URL, get the last part
+          queueId = pathParts[pathParts.length - 1];
+        }
         
         if (queueId) {
-          // Navigate to the queue page
+          // Navigate to the quick-join page
           router.push(`/quick-join/${queueId}`);
           toast.success('QR code scanned successfully');
         } else {
