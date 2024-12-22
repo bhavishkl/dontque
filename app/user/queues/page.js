@@ -58,7 +58,8 @@ export default function QueueListPage() {
   }, [])
 
   const handleSearchChange = (e) => {
-    debouncedSearch(e.target.value)
+    const sanitizedValue = e.target.value.replace(/[^\w\s]/gi, '');
+    debouncedSearch(sanitizedValue);
   }
 
   const handleViewQueue = (queueId) => {
@@ -106,7 +107,7 @@ export default function QueueListPage() {
   placeholder="Search for queues or locations..."
   startContent={<Search className="text-neutral-400" />}
   value={search}
-  onChange={(e) => setSearch(e.target.value)}
+  onChange={handleSearchChange}
   classNames={{
     base: "dark:bg-neutral-800",
     input: "dark:text-white",

@@ -4,11 +4,18 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Spinner, Card, CardBody } from "@nextui-org/react";
+import { toast } from 'sonner';
+import { useApi } from '@/app/hooks/useApi';
 
 export default function QuickJoinPage({ params }) {
   const router = useRouter();
   const { data: session, status } = useSession();
   const queueId = params?.queueId;
+
+  // Fetch queue data to check if user is already in queue
+  const { data: queueData, isLoading } = useApi(
+    status === 'authenticated' ? `/api/queues/${queueId}` : null
+  );
 
   useEffect(() => {
     if (!queueId) {
@@ -17,24 +24,27 @@ export default function QuickJoinPage({ params }) {
       return;
     }
 
-    if (status === 'loading') return;
+    if (status === 'loading' || isLoading) return;
 
     if (status === 'unauthenticated') {
-      // Store the queue ID in sessionStorage before redirecting to sign in
       sessionStorage.setItem('quickJoinQueueId', queueId);
       router.push(`/auth/signin?callbackUrl=/quick-join/${queueId}`);
     } else if (status === 'authenticated') {
-      // Check if we're coming back from authentication
       const storedQueueId = sessionStorage.getItem('quickJoinQueueId');
       if (storedQueueId === queueId) {
-        // Clear the stored queue ID
         sessionStorage.removeItem('quickJoinQueueId');
       }
       
-      // Redirect to the queue page with quick-join parameter
-      router.push(`/user/queue/${queueId}?quick_join=true`);
+      // Check if user is already in queue
+      if (queueData?.userQueueEntry) {
+        toast.error('You are already in this queue');
+        router.push(`/user/queue/${queueId}`);
+      } else {
+        // Only add quick_join parameter if user is not already in queue
+        router.push(`/user/queue/${queueId}?quick_join=true`);
+      }
     }
-  }, [status, queueId, router]);
+  }, [status, queueId, router, queueData, isLoading]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
@@ -45,7 +55,9 @@ export default function QuickJoinPage({ params }) {
           <p className="text-sm text-gray-600">
             {status === 'unauthenticated' 
               ? 'Redirecting to sign in...' 
-              : 'Preparing to join queue...'}
+              : isLoading 
+                ? 'Checking queue status...'
+                : 'Preparing to join queue...'}
           </p>
         </CardBody>
       </Card>

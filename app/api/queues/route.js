@@ -27,20 +27,21 @@ export async function GET(request) {
       service_start_time
     `)
     .eq('status', 'active')
-    .order('current_queue', { ascending: false })
-    .limit(limit);
+    .order('current_queue', { ascending: false });
+
+  if (city && city.trim()) {
+    query = query.eq('location', city);
+  }
+
+  if (search && search.trim()) {
+    query = query.or(`name.ilike.%${search.trim()}%, description.ilike.%${search.trim()}%, location.ilike.%${search.trim()}%`);
+  }
 
   if (category && category !== 'All') {
     query = query.eq('category', category);
   }
 
-  if (city) {
-    query = query.eq('location', city);
-  }
-
-  if (search) {
-    query = query.or(`name.ilike.%${search}%, description.ilike.%${search}%, location.ilike.%${search}%`);
-  }
+  query = query.limit(limit);
 
   const { data, error } = await query;
 

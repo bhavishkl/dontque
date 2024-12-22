@@ -1,31 +1,33 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from "@nextui-org/react";
 import { Bookmark } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
+import useSWR from 'swr';
+
+// Define fetcher function
+const fetcher = async (url) => {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to fetch save status');
+  return res.json();
+};
 
 export default function SaveButton({ queueId, className }) {
-  const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { data: session } = useSession();
+  
+  // Use SWR for caching and deduplication of requests
+  const { data, mutate } = useSWR(
+    session ? `/api/queues/${queueId}/save` : null,
+    fetcher,
+    {
+      dedupingInterval: 60000, // Dedupe requests within 1 minute
+      revalidateOnFocus: false, // Don't revalidate on window focus
+      revalidateOnReconnect: false // Don't revalidate on reconnect
+    }
+  );
 
-  useEffect(() => {
-    const checkSaveStatus = async () => {
-      if (!session) return;
-      
-      try {
-        const response = await fetch(`/api/queues/${queueId}/save`);
-        if (response.ok) {
-          const data = await response.json();
-          setIsSaved(data.saved);
-        }
-      } catch (error) {
-        console.error('Error checking save status:', error);
-      }
-    };
-
-    checkSaveStatus();
-  }, [queueId, session]);
+  const isSaved = data?.saved;
 
   const handleToggleSave = async () => {
     if (!session) {
@@ -41,9 +43,10 @@ export default function SaveButton({ queueId, className }) {
 
       if (!response.ok) throw new Error('Failed to toggle save status');
 
-      const data = await response.json();
-      setIsSaved(data.saved);
-      toast.success(data.saved ? 'Queue saved!' : 'Queue removed from saved');
+      const result = await response.json();
+      // Optimistically update the UI
+      await mutate({ saved: result.saved }, false);
+      toast.success(result.saved ? 'Queue saved!' : 'Queue removed from saved');
     } catch (error) {
       console.error('Error toggling save:', error);
       toast.error('Failed to update save status');
