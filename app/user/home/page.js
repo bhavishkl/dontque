@@ -133,11 +133,6 @@ const formatOperatingHours = (queue) => {
   return `${formatTime(queue.opening_time)} - ${formatTime(queue.closing_time)}`;
 };
 
-const formatReviewCount = (count) => {
-  if (!count) return '100+ reviews';
-  if (count >= 1000) return `${(count / 1000).toFixed(1)}k reviews`;
-  return `${count} reviews`;
-};
 
 QueueItem.displayName = 'QueueItem';
 

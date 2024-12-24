@@ -1,5 +1,5 @@
-import { MapPin, Star, Share2, Map, CheckCircle, Calendar, Clock, Hash, Copy } from 'lucide-react'
-import { Button, Chip, Skeleton, Card, CardBody, CardHeader, Divider, Badge, Tooltip } from "@nextui-org/react"
+import { MapPin, Star, Share2, Map, CheckCircle, Clock, Hash, Copy } from 'lucide-react'
+import { Button, Chip, Skeleton, Card, CardBody, Badge, Tooltip } from "@nextui-org/react"
 import Image from 'next/image'
 import { useState } from 'react'
 import SaveButton from '@/app/components/UniComp/SaveButton';
@@ -80,8 +80,8 @@ const QueueInfoSec = ({ queueData, isLoading, handleShare }) => {
           <div className="grid grid-cols-2 gap-4">
             <StatsCard
               icon={<Star className="h-5 w-5 text-yellow-400" />}
-              value={queueData?.avg_rating?.toFixed(1) || '4.5'}
-              label={`${queueData?.total_ratings || '0'} reviews`}
+              value={queueData?.rating?.toFixed(1) || 'N/A'}
+              label={`${queueData?.total_reviews || '0'} reviews`}
             />
             <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl">
               <div className="flex items-center justify-between">

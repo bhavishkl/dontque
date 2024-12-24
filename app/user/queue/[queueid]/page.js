@@ -39,14 +39,6 @@ export default function QueuePage({ params }) {
     }
   })
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Spinner size="lg" color="primary" />
-      </div>
-    );
-  }
-
   if (isError) {
     return <div>Error: {error.message}</div>
   }

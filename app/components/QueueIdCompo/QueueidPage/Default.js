@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Clock, Users, ChevronDown, ChevronUp, Bell, AlertCircle, Timer, Share2, Star, Calendar, LogOut } from 'lucide-react'
@@ -8,11 +8,16 @@ import { Button, Card, CardBody, CardHeader, Progress, Skeleton, Tooltip, Badge 
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
 import { createClient } from '@supabase/supabase-js'
-import AddKnownUserModal from '@/app/components/UniComp/AddKnownUserModal';
-import QueueInfoSec from '@/app/components/QueueIdCompo/QueueidPage/QueueInfoSec'
 import { useApi } from '@/app/hooks/useApi'
+import { debounce } from 'lodash'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+
+// Lazy load less critical components
+const ReviewModal = lazy(() => import('@/app/components/ReviewModal'));
+const ReviewsList = lazy(() => import('@/app/components/ReviewsList'));
+const AddKnownUserModal = lazy(() => import('@/app/components/UniComp/AddKnownUserModal'));
+const QueueInfoSec = lazy(() => import('@/app/components/QueueIdCompo/QueueidPage/QueueInfoSec'));
 
 export default function QueueDetailsPage({ params }) {
   const { data: queueData, isLoading, isError, error, mutate } = useApi(`/api/queues/${params.queueid}`, {
@@ -38,6 +43,8 @@ export default function QueueDetailsPage({ params }) {
   const [showAllInfo, setShowAllInfo] = useState(false);
   const [countdown, setCountdown] = useState('');
   const [expectedTurnTime, setExpectedTurnTime] = useState(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('info');
 
   if (isError) {
     return <div>Error: {error.message}</div>
@@ -68,7 +75,6 @@ export default function QueueDetailsPage({ params }) {
       expectedTurnTime: expectedTurnTime
     };
   };
-
 
   const toggleNotifications = async () => {
     setNotificationsEnabled(!notificationsEnabled)
@@ -301,7 +307,51 @@ export default function QueueDetailsPage({ params }) {
         ) : (
           <div className="grid gap-8 md:grid-cols-2">
             <div className="space-y-6">
-              <QueueInfoSec queueData={queueData} isLoading={isLoading} handleShare={handleShare} />
+              <Card className="dark:bg-gray-800 mb-4">
+                <CardHeader>
+                  <div className="flex space-x-2">
+                    <Button 
+                      color={activeTab === 'info' ? 'primary' : 'default'}
+                      onClick={() => setActiveTab('info')}
+                    >
+                      Queue Info
+                    </Button>
+                    <Button 
+                      color={activeTab === 'reviews' ? 'primary' : 'default'}
+                      onClick={() => setActiveTab('reviews')}
+                    >
+                      Reviews
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardBody>
+                  {activeTab === 'info' && (
+                    <QueueInfoSec queueData={queueData} />
+                  )}
+                  {activeTab === 'reviews' && (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                          <span className="font-semibold text-lg">
+                            {queueData?.rating?.toFixed(1) || '0.0'}
+                          </span>
+                          <span className="text-gray-600">
+                            ({queueData?.total_reviews || 0} reviews)
+                          </span>
+                        </div>
+                        <Button 
+                          color="primary"
+                          onClick={() => setIsReviewModalOpen(true)}
+                        >
+                          Write a Review
+                        </Button>
+                      </div>
+                      <ReviewsList queueId={params.queueid} />
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
               
               {!queueData?.userQueueEntry && (
                 <Card className="dark:bg-gray-800">
@@ -563,6 +613,18 @@ export default function QueueDetailsPage({ params }) {
           </div>
         )}
       </main>
+
+      {/* Add Review Modal */}
+      <ReviewModal 
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        queueId={params.queueid}
+        queueName={queueData?.name}
+        onReviewSubmitted={() => {
+          // Refresh the reviews list
+          mutate();
+        }}
+      />
     </div>
   )
 }

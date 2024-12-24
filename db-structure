@@ -19,7 +19,7 @@ CREATE INDEX idx_user_profile_short_id ON user_profile(short_id);
 CREATE TABLE queue_entries_archive (
   id SERIAL PRIMARY KEY,
   queue_id UUID NOT NULL,
-  user_id UUID NOT NULL,
+  user_id VARCHAR(255) PRIMARY KEY,
   status VARCHAR(20) NOT NULL,
   wait_time INTEGER,
   actual_wait_time INTEGER,
@@ -30,8 +30,12 @@ CREATE TABLE queue_entries_archive (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   left_position INTEGER,
-  added_by VARCHAR(255)
+  added_by VARCHAR(255),
+  review_status VARCHAR(20) DEFAULT 'pending' CHECK (review_status IN ('pending', 'completed', 'skipped')
 );
+
+CREATE INDEX idx_queue_entries_archive_review ON queue_entries_archive(user_id, review_status);
+
 -- Queues Table (rewritten)
 CREATE TABLE queues (
     queue_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -54,6 +58,9 @@ CREATE TABLE queues (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     service_start_time TIME,
+    avg_rating DECIMAL(3,1) GENERATED ALWAYS AS (
+        (SELECT avg_rating FROM queue_rating_stats WHERE queue_id = queues.queue_id)
+    ) STORED
 );
 
 CREATE INDEX idx_queues_owner_id ON queues(owner_id);
@@ -94,15 +101,60 @@ CREATE TABLE queue_analytics (
 
 CREATE INDEX idx_queue_analytics_queue_id_date ON queue_analytics(queue_id, date);
 
--- User Ratings Table (updated)
+-- Enhanced User Ratings & Reviews Table
 CREATE TABLE user_ratings (
     rating_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id VARCHAR(255) REFERENCES user_profile(user_id),
     queue_id UUID REFERENCES queues(queue_id),
     rating INTEGER CHECK (rating >= 1 AND rating <= 5),
-    comment TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    review_title VARCHAR(100),
+    review_text TEXT,
+    visit_date DATE,
+    wait_time_rating INTEGER CHECK (wait_time_rating >= 1 AND wait_time_rating <= 5),
+    service_rating INTEGER CHECK (service_rating >= 1 AND service_rating <= 5),
+    ambiance_rating INTEGER CHECK (ambiance_rating >= 1 AND ambiance_rating <= 5),
+    helpful_votes INTEGER DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'active',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, queue_id, visit_date)
 );
 
 CREATE INDEX idx_user_ratings_queue_id ON user_ratings(queue_id);
 CREATE INDEX idx_user_ratings_user_id ON user_ratings(user_id);
+CREATE INDEX idx_user_ratings_created_at ON user_ratings(created_at);
+
+CREATE TABLE review_reactions (
+    reaction_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    rating_id UUID REFERENCES user_ratings(rating_id),
+    user_id VARCHAR(255) REFERENCES user_profile(user_id),
+    reaction_type VARCHAR(20) CHECK (reaction_type IN ('helpful', 'not_helpful')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(rating_id, user_id)
+);
+
+CREATE INDEX idx_review_reactions_rating_id ON review_reactions(rating_id);
+CREATE INDEX idx_review_reactions_user_id ON review_reactions(user_id);
+
+CREATE VIEW queue_rating_stats AS
+SELECT 
+    q.queue_id,
+    COUNT(r.rating_id) as total_reviews,
+    ROUND(AVG(r.rating)::numeric, 1) as avg_rating,
+    ROUND(AVG(r.wait_time_rating)::numeric, 1) as avg_wait_time_rating,
+    ROUND(AVG(r.service_rating)::numeric, 1) as avg_service_rating,
+    ROUND(AVG(r.ambiance_rating)::numeric, 1) as avg_ambiance_rating,
+    COUNT(CASE WHEN r.rating = 5 THEN 1 END) as five_star_count,
+    COUNT(CASE WHEN r.rating = 4 THEN 1 END) as four_star_count,
+    COUNT(CASE WHEN r.rating = 3 THEN 1 END) as three_star_count,
+    COUNT(CASE WHEN r.rating = 2 THEN 1 END) as two_star_count,
+    COUNT(CASE WHEN r.rating = 1 THEN 1 END) as one_star_count
+FROM 
+    queues q
+LEFT JOIN 
+    user_ratings r ON q.queue_id = r.queue_id
+WHERE 
+    r.status = 'active'
+GROUP BY 
+    q.queue_id;
+

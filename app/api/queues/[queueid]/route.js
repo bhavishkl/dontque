@@ -26,38 +26,44 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: queueError.message }, { status: 500 });
     }
 
+    const { data: ratingStats, error } = await supabase
+      .from('queue_rating_stats')
+      .select('total_reviews, avg_rating')
+      .eq('queue_id', queueid)
+      .single();
+
     console.log('Fetching queue entries for queue ID:', queueid);
-const { data: queueEntries, error: queueEntriesError } = await supabase
-  .from('queue_entries')
-  .select('*')
-  .eq('queue_id', queueid)
-  .order('join_time', { ascending: true });
+    const { data: queueEntries, error: queueEntriesError } = await supabase
+      .from('queue_entries')
+      .select('*')
+      .eq('queue_id', queueid)
+      .order('join_time', { ascending: true });
 
-if (queueEntriesError) {
-  console.error('Error fetching queue entries:', queueEntriesError);
-  return NextResponse.json({ error: queueEntriesError.message }, { status: 500 });
-}
+    if (queueEntriesError) {
+      console.error('Error fetching queue entries:', queueEntriesError);
+      return NextResponse.json({ error: queueEntriesError.message }, { status: 500 });
+    }
 
-let userQueueEntry = null;
-let userPosition = null;
+    let userQueueEntry = null;
+    let userPosition = null;
 
-queueEntries.forEach((entry, index) => {
-  if (entry.user_id === session.user.id) {
-    userQueueEntry = entry;
-    userPosition = index + 1;
-  }
-});
+    queueEntries.forEach((entry, index) => {
+      if (entry.user_id === session.user.id) {
+        userQueueEntry = entry;
+        userPosition = index + 1;
+      }
+    });
 
-if (userQueueEntry) {
-  userQueueEntry.position = userPosition;
-}
+    if (userQueueEntry) {
+      userQueueEntry.position = userPosition;
+    }
 
     // Calculate estimated wait time
     // Calculate estimated wait time
-let estimatedWaitTime = null;
-if (userQueueEntry && queueData.est_time_to_serve) {
-    estimatedWaitTime = (userPosition - 1) * queueData.est_time_to_serve;
-}
+    let estimatedWaitTime = null;
+    if (userQueueEntry && queueData.est_time_to_serve) {
+        estimatedWaitTime = (userPosition - 1) * queueData.est_time_to_serve;
+    }
 
     // Fetch join time of user in front
     let userInFrontJoinTime = null;
@@ -87,7 +93,9 @@ if (userQueueEntry && queueData.est_time_to_serve) {
         position: userPosition,
         estimated_wait_time: estimatedWaitTime
       } : null,
-      userInFrontJoinTime: userPosition > 1 ? queueEntries[userPosition - 2].join_time : null
+      userInFrontJoinTime: userPosition > 1 ? queueEntries[userPosition - 2].join_time : null,
+      total_reviews: ratingStats?.total_reviews || 0,
+      rating: ratingStats?.avg_rating || 0
     };
 
     console.log('Returning queue data:', responseData);
