@@ -43,7 +43,17 @@ export default async function RootLayout({ children }) {
               <BottomBar />
             </div>
           </Providers>
-          <Toaster position="top-right" />
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              className: 'sm:w-auto w-[calc(100%-32px)] sm:min-w-[320px] sm:max-w-[420px] !py-2',
+              style: {
+                fontSize: '14px',
+              },
+            }}
+            className="!top-[72px] sm:!top-20 !px-4"
+            richColors
+          />
         </ThemeProvider>
         <Script
           src="https://checkout.razorpay.com/v1/checkout.js"

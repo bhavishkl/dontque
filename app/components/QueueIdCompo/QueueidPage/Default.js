@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Clock, Users, ChevronDown, ChevronUp, Bell, AlertCircle, Timer, Share2, Star, MapPin, Calendar, LogOut } from 'lucide-react'
-import { Button, Card, CardBody, CardHeader, Progress, Skeleton, CircularProgress, Switch, Tooltip, Badge } from "@nextui-org/react"
+import { ArrowLeft, Clock, Users, ChevronDown, ChevronUp, Bell, AlertCircle, Timer, Share2, Star, Calendar, LogOut } from 'lucide-react'
+import { Button, Card, CardBody, CardHeader, Progress, Skeleton, Tooltip, Badge } from "@nextui-org/react"
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
 import { createClient } from '@supabase/supabase-js'
@@ -69,7 +69,6 @@ export default function QueueDetailsPage({ params }) {
     };
   };
 
-  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   const toggleNotifications = async () => {
     setNotificationsEnabled(!notificationsEnabled)
@@ -155,7 +154,6 @@ export default function QueueDetailsPage({ params }) {
   
       toast.success('Successfully joined the queue');
       await mutate();
-      scrollToTop();
     } catch (err) {
       console.error('Error joining queue:', err);
       toast.error(err.message || 'Failed to join queue. Please try again.');
@@ -215,38 +213,7 @@ export default function QueueDetailsPage({ params }) {
     }
   }
 
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-  };
 
-  const handleFavorite = async () => {
-    if (!queueData || !queueData.id) {
-      toast.error('Queue data is not available for favoriting');
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/queue/${queueData.id}/favorite`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to favorite queue');
-      }
-
-      toast.success('Queue favorited successfully');
-      await mutate();
-    } catch (err) {
-      console.error('Error favoriting queue:', err);
-      toast.error(err.message || 'Failed to favorite queue');
-    }
-  };
   
   if (isLoading) {
     return (
@@ -450,18 +417,29 @@ export default function QueueDetailsPage({ params }) {
                     <CardBody className="p-6">
                       <div className="mb-6">
                         <h3 className="text-lg font-semibold mb-4">Time Until Your Turn</h3>
-                        <div className="flex justify-center gap-4">
-                          {countdown.split(' ').map((unit, index) => (
-                            <div key={index} className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 flex-1 text-center">
-                              <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
-                                {unit.split(/([0-9]+)/)[1]}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {unit.split(/([a-z]+)/)[1]}
-                              </div>
+                        {queueData.userQueueEntry.position === 1 && queueData.userQueueEntry.estimated_wait_time === 0 ? (
+                          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 text-center">
+                            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                              It's your turn now!
                             </div>
-                          ))}
-                        </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                              Please proceed to the service point
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex justify-center gap-4">
+                            {countdown.split(' ').map((unit, index) => (
+                              <div key={index} className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 flex-1 text-center">
+                                <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                                  {unit.split(/([0-9]+)/)[1]}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  {unit.split(/([a-z]+)/)[1]}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       {/* Action Buttons */}
                       <div className="space-y-3">
@@ -517,68 +495,6 @@ export default function QueueDetailsPage({ params }) {
                       </div>
                     </CardBody>
                   </Card>
-
-                  {/* Queue Progress Card */}
-                  <Card className="dark:bg-gray-800">
-                    <CardBody className="p-6">
-                      <h3 className="font-semibold mb-4">Queue Progress</h3>
-                      <div className="relative">
-                        <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-orange-500 to-gray-200 dark:to-gray-700"></div>
-                        <div className="space-y-6">
-                          {[
-                            { 
-                              status: 'Joined Queue', 
-                              done: true, 
-                              time: new Date(queueData.userQueueEntry.join_time).toLocaleTimeString([], { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              }),
-                              icon: Calendar
-                            },
-                            { 
-                              status: 'Waiting', 
-                              done: true, 
-                              time: 'Current',
-                              icon: Clock
-                            },
-                            { 
-                              status: 'Almost There', 
-                              done: queueData.userQueueEntry.position <= 3,
-                              time: queueData.userQueueEntry.position <= 3 ? 'Soon' : 'Waiting',
-                              icon: AlertCircle
-                            },
-                            { 
-                              status: 'Your Turn', 
-                              done: false, 
-                              time: expectedTurnTime?.toLocaleTimeString([], { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              }),
-                              icon: Star
-                            }
-                          ].map((step, index) => (
-                            <div key={index} className="flex items-center">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center relative z-10 ${
-                                step.done ? 'bg-orange-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
-                              }`}>
-                                {<step.icon className="h-4 w-4" />}
-                              </div>
-                              <div className="ml-4 flex-1">
-                                <div className="font-medium">{step.status}</div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400">{step.time}</div>
-                              </div>
-                              {step.done && (
-                                <Badge color="success" variant="flat">
-                                  Completed
-                                </Badge>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </CardBody>
-                  </Card>
-
 
                   <Card className="dark:bg-gray-800">
                     <CardBody>

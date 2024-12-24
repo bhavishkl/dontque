@@ -1,12 +1,28 @@
-import { MapPin, Star, Heart, Share2, ClipboardCopy, Clock, Map, CheckCircle, Users } from 'lucide-react'
+import { MapPin, Star, Share2, Map, CheckCircle, Calendar, Clock, Hash, Copy } from 'lucide-react'
 import { Button, Chip, Skeleton, Card, CardBody, CardHeader, Divider, Badge, Tooltip } from "@nextui-org/react"
 import Image from 'next/image'
 import { useState } from 'react'
 import SaveButton from '@/app/components/UniComp/SaveButton';
+import { toast } from 'sonner'
 
-const QueueInfoSec = ({ queueData, isLoading, handleShare, handleFavorite }) => {
+const QueueInfoSec = ({ queueData, isLoading, handleShare }) => {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [showMap, setShowMap] = useState(false);
+
+  const handleCopyId = () => {
+    navigator.clipboard.writeText(queueData?.short_id);
+    toast.success('Queue ID copied to clipboard');
+  };
+
+  // Helper function to format time
+  const formatTime = (timeStr) => {
+    if (!timeStr) return 'Not specified';
+    const [hours, minutes] = timeStr.split(':');
+    const hour = parseInt(hours);
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const formattedHour = hour % 12 || 12;
+    return `${formattedHour}${minutes !== '00' ? ':' + minutes : ''} ${period}`;
+  };
 
   return (
     <Card className="w-full dark:bg-gray-800">
@@ -21,16 +37,6 @@ const QueueInfoSec = ({ queueData, isLoading, handleShare, handleFavorite }) => 
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           
-          <div className="absolute top-4 left-4">
-            <Chip
-              color={queueData?.status === 'active' ? 'success' : 'warning'}
-              variant="shadow"
-              startContent={<div className="animate-pulse w-2 h-2 rounded-full bg-current" />}
-            >
-              {queueData?.status === 'active' ? 'Open Now' : 'Closed'}
-            </Chip>
-          </div>
-
           <div className="absolute top-4 right-4 flex gap-2">
             <SaveButton queueId={queueData?.queue_id} />
             <Button
@@ -44,57 +50,96 @@ const QueueInfoSec = ({ queueData, isLoading, handleShare, handleFavorite }) => 
           </div>
         </div>
 
-        <CardBody className="space-y-4">
+        <CardBody className="space-y-6">
           <div>
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              {queueData?.name}
-              {queueData?.verified && (
-                <Tooltip content="Verified Business">
-                  <Badge variant="flat" color="primary">
-                    <CheckCircle className="h-4 w-4" />
-                  </Badge>
-                </Tooltip>
-              )}
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                {queueData?.name}
+                {queueData?.verified && (
+                  <Tooltip content="Verified Business">
+                    <Badge variant="flat" color="primary">
+                      <CheckCircle className="h-4 w-4" />
+                    </Badge>
+                  </Tooltip>
+                )}
+              </h2>
+              <Chip
+                variant="flat"
+                color="primary"
+                size="sm"
+              >
+                {queueData?.category || 'General'}
+              </Chip>
+            </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center mt-1">
               <MapPin className="w-4 h-4 mr-1" />
               {queueData?.location}
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <StatsCard
               icon={<Star className="h-5 w-5 text-yellow-400" />}
               value={queueData?.avg_rating?.toFixed(1) || '4.5'}
               label={`${queueData?.total_ratings || '0'} reviews`}
             />
-            <StatsCard
-              icon={<Clock className="h-5 w-5 text-blue-500" />}
-              value={`${queueData?.avg_wait_time || '0'} min`}
-              label="avg. wait"
-            />
-            <StatsCard
-              icon={<Users className="h-5 w-5 text-green-500" />}
-              value={queueData?.current_queue || '0'}
-              label="in queue"
-            />
-          </div>
-
-          <Divider />
-          <div className="space-y-2">
-            <h3 className="font-semibold">Operating Hours</h3>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              {queueData?.operating_hours?.map((hours, index) => (
-                <div key={index} className="flex justify-between">
-                  <span className="text-gray-500">{hours.day}</span>
-                  <span>{hours.hours}</span>
+            <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Hash className="h-5 w-5 text-blue-500" />
+                  <span className="text-lg font-semibold">{queueData?.short_id || 'N/A'}</span>
                 </div>
-              ))}
+                <Button
+                  isIconOnly
+                  size="sm"
+                  variant="light"
+                  onClick={handleCopyId}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Queue ID</p>
             </div>
           </div>
 
-          <Divider />
-          <div>
+          <div className="space-y-4 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">Queue Details</h3>
+              <Clock className="h-5 w-5 text-gray-400" />
+            </div>
+            
+            <div className="grid gap-3">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600 dark:text-gray-300">Service Start</span>
+                <span className="font-medium">{formatTime(queueData?.service_start_time)}</span>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600 dark:text-gray-300">Operating Hours</span>
+                <span className="font-medium">
+                  {queueData?.opening_time && queueData?.closing_time ? (
+                    `${formatTime(queueData.opening_time)} - ${formatTime(queueData.closing_time)}`
+                  ) : (
+                    'Hours not specified'
+                  )}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600 dark:text-gray-300">Service Time</span>
+                <span className="font-medium">{queueData?.est_time_to_serve || '0'} min/person</span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600 dark:text-gray-300">Max Capacity</span>
+                <span className="font-medium">{queueData?.max_capacity || 'Unlimited'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="font-semibold">About</h3>
             <p className={`text-gray-600 dark:text-gray-300 ${!showFullDescription && 'line-clamp-3'}`}>
               {queueData?.description}
             </p>
@@ -109,13 +154,18 @@ const QueueInfoSec = ({ queueData, isLoading, handleShare, handleFavorite }) => 
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {queueData?.features?.map((feature, index) => (
-              <Chip key={index} variant="flat" size="sm">
-                {feature}
-              </Chip>
-            ))}
-          </div>
+          {queueData?.features?.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="font-semibold">Features</h3>
+              <div className="flex flex-wrap gap-2">
+                {queueData?.features?.map((feature, index) => (
+                  <Chip key={index} variant="flat" size="sm">
+                    {feature}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+          )}
 
           <Button
             variant="bordered"
