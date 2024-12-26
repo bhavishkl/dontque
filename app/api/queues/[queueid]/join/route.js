@@ -2,162 +2,131 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../auth/[...nextauth]/route";
-import twilio from 'twilio';
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const client = twilio(accountSid, authToken);
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 export async function POST(request, { params }) {
+  console.log('🚀 Starting queue join process for queue:', params.queueid);
+  const metrics = {
+    startTime: performance.now(),
+    authTime: 0,
+    dbTransactionTime: 0,
+    totalTime: 0
+  };
+
+  let session;
+
   try {
-    const session = await getServerSession(authOptions);
-    
+    // Auth check with timing
+    console.log('📝 Authenticating user...');
+    const authStart = performance.now();
+    session = await getServerSession(authOptions);
+    metrics.authTime = performance.now() - authStart;
+    console.log('⏱️ Auth time:', metrics.authTime.toFixed(2) + 'ms');
+
     if (!session) {
+      console.log('❌ Authentication failed');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { queueid } = params;
 
-    // Get the current queue information
+    // First, check if queue exists and has capacity
     const { data: queueData, error: queueError } = await supabase
       .from('queues')
-      .select('current_queue, max_capacity, avg_wait_time, est_time_to_serve, name, location')
+      .select('current_queue, max_capacity, est_time_to_serve')
       .eq('queue_id', queueid)
       .single();
 
     if (queueError) {
-      console.error('Error fetching queue data:', queueError);
-      return NextResponse.json({ error: queueError.message }, { status: 500 });
+      throw new Error('Queue not found');
     }
 
     if (queueData.current_queue >= queueData.max_capacity) {
       return NextResponse.json({ error: 'Queue is full' }, { status: 400 });
     }
 
-    // Get the current queue entries
-    const { data: queueEntries, error: queueEntriesError } = await supabase
+    // Check if user is already in queue
+    const { data: existingEntry, error: existingError } = await supabase
       .from('queue_entries')
-      .select('user_id')
-      .eq('queue_id', queueid);
+      .select('entry_id')
+      .eq('queue_id', queueid)
+      .eq('user_id', session.user.id)
+      .eq('status', 'waiting')
+      .single();
 
-    if (queueEntriesError) {
-      console.error('Error fetching queue entries:', queueEntriesError);
-      return NextResponse.json({ error: queueEntriesError.message }, { status: 500 });
+    if (existingEntry) {
+      return NextResponse.json({ error: 'Already in queue' }, { status: 400 });
     }
 
-    const newPosition = queueEntries.length + 1;
-
-    // Add the user to the queue
-    const { data: queueEntry, error: insertError } = await supabase
+    // Execute the database transaction
+    console.log('💾 Executing database transaction...');
+    const dbStart = performance.now();
+    
+    const { data: newEntry, error: joinError } = await supabase
       .from('queue_entries')
       .insert({
         queue_id: queueid,
         user_id: session.user.id,
-        position: newPosition,
         status: 'waiting',
+        position: queueData.current_queue + 1,
+        estimated_wait_time: queueData.est_time_to_serve * (queueData.current_queue + 1)
       })
       .select()
       .single();
 
-    if (insertError) {
-      console.error('Error inserting queue entry:', insertError);
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
-    }
+    if (joinError) throw joinError;
 
-    // Update the current queue count and total estimated time
-    const newQueueCount = queueData.current_queue + 1;
-    const newTotalEstimatedTime = newQueueCount * queueData.est_time_to_serve;
-
+    // Update queue count
     const { data: updatedQueue, error: updateError } = await supabase
       .from('queues')
       .update({ 
-        current_queue: newQueueCount,
-        total_estimated_time: newTotalEstimatedTime
+        current_queue: queueData.current_queue + 1,
+        total_estimated_time: (queueData.current_queue + 1) * queueData.est_time_to_serve
       })
       .eq('queue_id', queueid)
       .select('current_queue, total_estimated_time')
       .single();
 
-    if (updateError) {
-      console.error('Error updating queue:', updateError);
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
-    }
+    if (updateError) throw updateError;
 
-    // Fetch user's phone number from user_profile
-    const { data: userData, error: userError } = await supabase
-      .from('user_profile')
-      .select('phone_number')
-      .eq('user_id', session.user.id)
-      .single();
+    metrics.dbTransactionTime = performance.now() - dbStart;
+    console.log('⏱️ Database transaction time:', metrics.dbTransactionTime.toFixed(2) + 'ms');
 
-    if (userError) {
-      console.error('Error fetching user phone number:', userError);
-    } else if (userData && userData.phone_number) {
-      // Send WhatsApp notification
-      try {
-        // Fetch user name from user_profile
-        const { data: userProfileData, error: userProfileError } = await supabase
-          .from('user_profile')
-          .select('name')
-          .eq('user_id', session.user.id)
-          .single();
-
-        let userName = 'Valued Customer';
-        if (userProfileError) {
-          console.error('Error fetching user name:', userProfileError);
-        } else if (userProfileData && userProfileData.name) {
-          userName = userProfileData.name || 'Valued Customer';
-        }
-
-        const estimatedWaitTime = newPosition * queueData.est_time_to_serve;
-
-        const message = `
-🌟 Welcome to the Queue, ${userName}! 🌟
-
-You've successfully joined:
-🏷️ *${queueData.name}*
-
-Your Details:
-🧑‍🤝‍🧑 Position: *${newPosition}*
-⏱️ Estimated Wait Time: *${estimatedWaitTime} minutes*
-📍 Location: ${queueData.location || 'To be announced'}
-
-📱 Stay close by! We'll keep you updated as your turn approaches.
-
-*🔔 Important:*
-*Would you like to be notified when you reach the 7th position in the queue?*
-*Reply with 'YES' if you'd like this notification.*
-
-Need assistance?
-📧 support@queuesmart.com
-
-Thank you for choosing QueueSmart!
-We appreciate your patience and look forward to serving you soon. 🙏
-        `.trim();
-
-        await client.messages.create({
-          body: message,
-          from: 'whatsapp:+14155238886',
-          to: `whatsapp:+${userData.phone_number}`
-        });
-      } catch (error) {
-        console.error('Error sending WhatsApp notification:', error);
-      }
-    } else {
-      console.warn('User phone number not found');
-    }
+    metrics.totalTime = performance.now() - metrics.startTime;
+    console.log('✅ Queue join complete! Final metrics:', {
+      ...metrics,
+      totalTime: metrics.totalTime.toFixed(2) + 'ms',
+      userId: session.user.id,
+      queueId: queueid
+    });
 
     return NextResponse.json({
       message: 'Successfully joined the queue',
-      queueEntry: queueEntry,
-      updatedQueue: updatedQueue,
-      userPosition: newPosition,
-      estWaitTime: newPosition * queueData.est_time_to_serve
+      entry: newEntry,
+      queue: updatedQueue,
+      metrics
     });
+
   } catch (error) {
-    console.error('Error joining queue:', error);
-    return NextResponse.json({ error: 'An unexpected error occurred', details: error.message }, { status: 500 });
+    metrics.totalTime = performance.now() - metrics.startTime;
+    console.error('❌ Error joining queue:', {
+      error: error.message,
+      metrics: {
+        ...metrics,
+        totalTime: metrics.totalTime.toFixed(2) + 'ms'
+      },
+      userId: session?.user?.id,
+      queueId: params.queueid
+    });
+    
+    return NextResponse.json({ 
+      error: 'An unexpected error occurred', 
+      details: error.message,
+      metrics
+    }, { status: 500 });
   }
 }
