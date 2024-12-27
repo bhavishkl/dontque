@@ -14,7 +14,8 @@ import { useApi } from '../../hooks/useApi'
 import debounce from 'lodash/debounce'
 import { memo } from 'react';
 import SaveButton from '@/app/components/UniComp/SaveButton';
-import { getCityFromCoordinates } from '../../utils/cities';
+import { useLocation } from '../../hooks/useLocation';
+import SearchBar from '@/app/components/SearchBar';
 
 const QueueItem = memo(({ queue }) => {
   const router = useRouter();
@@ -53,7 +54,10 @@ const QueueItem = memo(({ queue }) => {
           <Button
             isIconOnly
             className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-full p-3"
-            onClick={() => window.open(`https://maps.google.com/?q=${queue.location}`, '_blank')}
+            onClick={() => window.open(
+              `https://maps.app.goo.gl/uYAVo2VP4Gz3B9FK6?q`,
+              '_blank'
+            )}
           >
             <MapPin className="h-5 w-5" />
           </Button>
@@ -148,9 +152,8 @@ export default function Home() {
   const { data: session } = useSession()
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isScannerActive, setIsScannerActive] = useState(false);
-  const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false)
   const { data: savedQueues, isLoading: isSavedLoading } = useApi('/api/user/saved-queues')
-  const [userLocation, setUserLocation] = useState(null);
+  const { location: userLocation, isLoading: isLocationLoading, refreshLocation } = useLocation();
 
   // Dummy data for user stats
   const [userStats, setUserStats] = useState({
@@ -174,27 +177,26 @@ export default function Home() {
 
     debouncedMutate()
   }, [selectedCategory, searchQuery, debouncedMutate])
-  const handleSearch = async (e) => {
-    e.preventDefault()
-    setIsSearching(true)
-    if (/^\d{6}$/.test(searchQuery)) {
+  const handleSearch = async (searchValue) => {
+    setIsSearching(true);
+    if (/^\d{6}$/.test(searchValue)) {
       try {
-        const response = await fetch(`/api/queues/short/${searchQuery}`)
+        const response = await fetch(`/api/queues/short/${searchValue}`);
         if (response.ok) {
-          const data = await response.json()
-          router.push(`/user/queue/${data.queue_id}`)
+          const data = await response.json();
+          router.push(`/user/queue/${data.queue_id}`);
         } else {
-          toast.error('Queue not found')
+          toast.error('Queue not found');
         }
       } catch (error) {
-        console.error('Error fetching queue:', error)
-        toast.error('An error occurred while searching for the queue')
+        console.error('Error fetching queue:', error);
+        toast.error('An error occurred while searching for the queue');
       }
     } else {
-      router.push(`/user/queues?search=${searchQuery}&category=${selectedCategory}`)
+      router.push(`/user/queues?search=${searchValue}&category=${selectedCategory}`);
     }
-    setIsSearching(false)
-  }
+    setIsSearching(false);
+  };
 
   const handleQrCodeScanned = (result) => {
     if (result) {
@@ -249,66 +251,16 @@ export default function Home() {
     router.push(`/user/queues?category=${category}`)
   }
 
-  const handleAddMember = (e) => {
-    e.preventDefault()
-    // Here you would typically make an API call to add the member
-    console.log(`Adding user ${userId} to queue ${queueId}`)
-    setIsAddMemberModalOpen(false)
-    setUserId('')
-    setQueueId('')
-  }
 
   useEffect(() => {
-    // Only request location if we don't have it in session storage
-    const storedLocation = sessionStorage.getItem('userLocation');
-    if (!storedLocation) {
+    if (!userLocation && !isLocationLoading) {
       // Small delay to ensure the page has loaded properly
-      setTimeout(() => {
-        requestAndStoreLocation();
+      const timer = setTimeout(() => {
+        refreshLocation();
       }, 1000);
-    } else {
-      setUserLocation(JSON.parse(storedLocation));
+      return () => clearTimeout(timer);
     }
-  }, []);
-
-  const requestAndStoreLocation = async () => {
-    try {
-      if (!navigator.geolocation) {
-        console.error('Geolocation not supported');
-        return null;
-      }
-
-      const position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        });
-      });
-
-      const location = {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-        accuracy: position.coords.accuracy,
-        city: getCityFromCoordinates(position.coords.latitude, position.coords.longitude),
-        timestamp: new Date().toISOString()
-      };
-
-      console.log('Location obtained:', {
-        lat: location.latitude.toFixed(6),
-        lng: location.longitude.toFixed(6),
-        city: location.city,
-        accuracy: `${Math.round(location.accuracy)}m`
-      });
-
-      sessionStorage.setItem('userLocation', JSON.stringify(location));
-      setUserLocation(location);
-      return location;
-    } catch (error) {
-      console.error('Location error:', error);
-      return null;
-    }
-  };
+  }, [userLocation, isLocationLoading, refreshLocation]);
 
   return (
     <div className="min-h-screen dark:bg-gray-900 dark:text-gray-100">
@@ -324,40 +276,17 @@ export default function Home() {
                 <p className="text-lg sm:text-xl text-orange-50">Find and join queues near you instantly.</p>
                 <div className="flex items-center gap-2 text-orange-50/80 text-sm">
                   <MapPin className="h-4 w-4" />
-                  {userLocation?.city || 'Loading location...'}
+                  <span suppressHydrationWarning>
+                    {userLocation?.city || 'Loading location...'}
+                  </span>
                 </div>
               </div>
               <div className="md:w-1/2 w-full">
-                <form onSubmit={handleSearch} className="flex items-center gap-2">
-                  <Button
-                    isIconOnly
-                    className="h-12 w-12 bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20 rounded-xl"
-                    onClick={toggleScanner}
-                  >
-                    <Scan className="text-white h-5 w-5" />
-                  </Button>
-                  <div className="relative flex-1">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-4">
-                      <Search className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      type="search"
-                      className="w-full h-12 pl-12 pr-4 rounded-xl text-gray-900 bg-white/95 backdrop-blur-md border border-white/20 focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all"
-                      placeholder="Search queues or enter 6-digit code..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    isIconOnly
-                    className="h-12 w-12 bg-white text-orange-500 hover:bg-orange-50 rounded-xl font-medium"
-                    disabled={isSearching}
-                  >
-                    {isSearching ? <div className="animate-spin">⌛</div> : <Search className="h-5 w-5" />}
-                  </Button>
-                </form>
-               
+                <SearchBar 
+                  onSearch={handleSearch}
+                  onScanClick={toggleScanner}
+                  isSearching={isSearching}
+                />
               </div>
             </div>
           </div>
@@ -507,35 +436,7 @@ export default function Home() {
           </section>
         )}
       </main>
-      <Modal isOpen={isAddMemberModalOpen} onClose={() => setIsAddMemberModalOpen(false)}>
-  <ModalContent>
-    <form onSubmit={handleAddMember}>
-      <ModalHeader>Add Member to Queue</ModalHeader>
-      <ModalBody>
-        <Input
-          label="User ID"
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-          required
-        />
-        <Input
-          label="Queue ID"
-          value={queueId}
-          onChange={(e) => setQueueId(e.target.value)}
-          required
-        />
-      </ModalBody>
-      <ModalFooter>
-        <Button color="danger" variant="light" onClick={() => setIsAddMemberModalOpen(false)}>
-          Cancel
-        </Button>
-        <Button color="primary" type="submit">
-          Add Member
-        </Button>
-      </ModalFooter>
-    </form>
-  </ModalContent>
-</Modal>
+     
 
 <Modal isOpen={isOpen} onClose={onClose}>
         <ModalContent>

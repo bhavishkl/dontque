@@ -24,7 +24,8 @@ export async function GET(request) {
       est_time_to_serve,
       opening_time,
       closing_time,
-      service_start_time
+      service_start_time,
+      description
     `)
     .eq('status', 'active')
     .order('current_queue', { ascending: false });
