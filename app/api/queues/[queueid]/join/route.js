@@ -2,33 +2,26 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../auth/[...nextauth]/route";
+import { NotificationService } from '@/services/NotificationService';
+import { PerformanceMonitor } from '@/utils/performance';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-export async function POST(request, { params }) {
-  console.log('🚀 Starting queue join process for queue:', params.queueid);
-  const metrics = {
-    startTime: performance.now(),
-    authTime: 0,
-    dbTransactionTime: 0,
-    totalTime: 0
-  };
+const notificationService = new NotificationService();
 
+export async function POST(request, { params }) {
+  const perf = new PerformanceMonitor('queue_join');
   let session;
 
   try {
-    // Auth check with timing
-    console.log('📝 Authenticating user...');
-    const authStart = performance.now();
+    // Auth check
     session = await getServerSession(authOptions);
-    metrics.authTime = performance.now() - authStart;
-    console.log('⏱️ Auth time:', metrics.authTime.toFixed(2) + 'ms');
+    perf.markStep('auth');
 
     if (!session) {
-      console.log('❌ Authentication failed');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -37,9 +30,10 @@ export async function POST(request, { params }) {
     // First, check if queue exists and has capacity
     const { data: queueData, error: queueError } = await supabase
       .from('queues')
-      .select('current_queue, max_capacity, est_time_to_serve')
+      .select('name, current_queue, max_capacity, est_time_to_serve')
       .eq('queue_id', queueid)
       .single();
+    perf.markStep('check_queue');
 
     if (queueError) {
       throw new Error('Queue not found');
@@ -57,15 +51,12 @@ export async function POST(request, { params }) {
       .eq('user_id', session.user.id)
       .eq('status', 'waiting')
       .single();
+    perf.markStep('check_existing');
 
     if (existingEntry) {
       return NextResponse.json({ error: 'Already in queue' }, { status: 400 });
     }
 
-    // Execute the database transaction
-    console.log('💾 Executing database transaction...');
-    const dbStart = performance.now();
-    
     const { data: newEntry, error: joinError } = await supabase
       .from('queue_entries')
       .insert({
@@ -77,6 +68,7 @@ export async function POST(request, { params }) {
       })
       .select()
       .single();
+    perf.markStep('insert_entry');
 
     if (joinError) throw joinError;
 
@@ -90,43 +82,81 @@ export async function POST(request, { params }) {
       .eq('queue_id', queueid)
       .select('current_queue, total_estimated_time')
       .single();
+    perf.markStep('update_queue');
 
     if (updateError) throw updateError;
 
-    metrics.dbTransactionTime = performance.now() - dbStart;
-    console.log('⏱️ Database transaction time:', metrics.dbTransactionTime.toFixed(2) + 'ms');
-
-    metrics.totalTime = performance.now() - metrics.startTime;
-    console.log('✅ Queue join complete! Final metrics:', {
-      ...metrics,
-      totalTime: metrics.totalTime.toFixed(2) + 'ms',
+    console.log('✅ Queue join complete!', {
       userId: session.user.id,
       queueId: queueid
     });
 
+    // After successful queue join and before returning response
+    const { data: userData } = await supabase
+      .from('user_profile')
+      .select('email, phone_number')
+      .eq('user_id', session.user.id)
+      .single();
+    perf.markStep('fetch_user_data');
+
+    // Format phone number to E.164 format if not already formatted
+    const formattedPhone = userData?.phone_number?.startsWith('+') 
+      ? userData.phone_number 
+      : userData?.phone_number ? `+${userData.phone_number?.replace(/\D/g, '')}` : null;
+
+    // After successful queue join and before sending notification
+    const { data: queueEntries } = await supabase
+      .from('queue_entries')
+      .select('user_id, join_time')
+      .eq('queue_id', queueid)
+      .eq('status', 'waiting')
+      .order('join_time', { ascending: true });
+    perf.markStep('fetch_queue_entries');
+
+    // Calculate actual position
+    let actualPosition = 0;
+    queueEntries.forEach((entry, index) => {
+      if (entry.user_id === session.user.id) {
+        actualPosition = index + 1;
+      }
+    });
+
+    // Calculate accurate estimated wait time
+    const accurateWaitTime = (actualPosition - 1) * queueData.est_time_to_serve;
+
+    // Send notification with accurate data
+    await notificationService.sendNotification(
+      'QUEUE_JOIN',
+      session.user.id,
+      {
+        email: userData?.email,
+        phone: formattedPhone
+      },
+      {
+        queueName: queueData.name,
+        position: actualPosition,
+        waitTime: accurateWaitTime
+      }
+    );
+    perf.markStep('send_notification');
+
+    perf.end();
     return NextResponse.json({
       message: 'Successfully joined the queue',
       entry: newEntry,
-      queue: updatedQueue,
-      metrics
+      queue: updatedQueue
     });
 
   } catch (error) {
-    metrics.totalTime = performance.now() - metrics.startTime;
     console.error('❌ Error joining queue:', {
       error: error.message,
-      metrics: {
-        ...metrics,
-        totalTime: metrics.totalTime.toFixed(2) + 'ms'
-      },
       userId: session?.user?.id,
       queueId: params.queueid
     });
     
     return NextResponse.json({ 
       error: 'An unexpected error occurred', 
-      details: error.message,
-      metrics
+      details: error.message
     }, { status: 500 });
   }
 }

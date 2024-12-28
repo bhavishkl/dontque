@@ -158,3 +158,11 @@ WHERE
 GROUP BY 
     q.queue_id;
 
+CREATE TABLE user_notification_preferences (
+    user_id VARCHAR(255) PRIMARY KEY REFERENCES user_profile(user_id),
+    email_enabled BOOLEAN DEFAULT true,
+    sms_enabled BOOLEAN DEFAULT true,
+    whatsapp_enabled BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

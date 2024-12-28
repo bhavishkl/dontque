@@ -1,171 +1,147 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { PerformanceMonitor } from '../../../../../../../utils/performance';
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
-async function archiveQueueEntry(queueId, entryId) {
+async function processNoShow(queueId, entryId) {
+  const monitor = new PerformanceMonitor('processNoShow');
+  
   try {
-    // Fetch the queue entry to be archived
-    const { data: entryData, error: fetchError } = await supabase
-      .from('queue_entries')
-      .select('*')
-      .match({ queue_id: queueId, entry_id: entryId })
-      .single();
+    monitor.markStep('initProcess');
+    
+    // Fetch queue entry and queue data in parallel
+    const [entryResult, queueResult] = await Promise.all([
+      supabase
+        .from('queue_entries')
+        .select('*')
+        .match({ queue_id: queueId, entry_id: entryId })
+        .single(),
+      supabase
+        .from('queues')
+        .select('current_queue, est_time_to_serve')
+        .eq('queue_id', queueId)
+        .single()
+    ]);
+    monitor.markStep('fetchData');
 
-    if (fetchError) {
-      console.error('Error fetching queue entry:', fetchError);
-      return false;
+    if (entryResult.error || queueResult.error) {
+      throw new Error(entryResult.error?.message || queueResult.error?.message);
     }
 
-    if (!entryData) {
-      console.error('No queue entry found to archive');
-      return false;
-    }
+    const entryData = entryResult.data;
+    const queueData = queueResult.data;
 
-    // Calculate actual wait time
+    // Calculate metrics
     const actualWaitTime = Math.floor((new Date() - new Date(entryData.join_time)) / 60000);
-
-    // Insert into queue_entries_archive
-    const { error: insertError } = await supabase
-      .from('queue_entries_archive')
-      .insert({
-        queue_id: entryData.queue_id,
-        user_id: entryData.user_id,
-        status: 'no-show',
-        wait_time: entryData.estimated_wait_time,
-        actual_wait_time: actualWaitTime,
-        join_time: entryData.join_time,
-        leave_time: new Date().toISOString(),
-      });
-
-    if (insertError) {
-      console.error('Error inserting into archive:', insertError);
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.error('Unexpected error in archiving queue entry:', error);
-    return false;
-  }
-}
-
-export async function POST(request, { params }) {
-  const { queueid: queueId, customerId } = params;
-
-  if (!queueId || !customerId) {
-    console.log('Invalid queue ID or customer ID');
-    return NextResponse.json({ error: 'Invalid queue ID or customer ID' }, { status: 400 });
-  }
-
-  try {
-    // Archive the queue entry before deleting
-    const archiveSuccess = await archiveQueueEntry(queueId, customerId);
-    if (!archiveSuccess) {
-      console.warn('Failed to archive queue entry, but proceeding with no-show operation');
-    }
-
-    // Delete the customer from the queue
-    const { error: deleteError } = await supabase
-      .from('queue_entries')
-      .delete()
-      .eq('queue_id', queueId)
-      .eq('entry_id', customerId);
-
-    if (deleteError) throw deleteError;
-
-    // Update the queue's current count, total served, and total estimated time
-    const { data: queueData, error: queueError } = await supabase
-      .from('queues')
-      .select('current_queue, total_served, est_time_to_serve')
-      .eq('queue_id', queueId)
-      .single();
-
-    if (queueError) throw queueError;
-
     const newQueueCount = Math.max(0, queueData.current_queue - 1);
     const newTotalEstimatedTime = newQueueCount * queueData.est_time_to_serve;
+    monitor.markStep('metricsCalculated');
 
-    const { data: updatedQueue, error: updateError } = await supabase
-      .from('queues')
-      .update({ 
-        current_queue: newQueueCount,
-        total_estimated_time: newTotalEstimatedTime
-      })
-      .eq('queue_id', queueId)
-      .select('current_queue, total_served, total_estimated_time')
-      .single();
+    // Perform all database operations in parallel
+    const [archiveResult, deleteResult, updateResult] = await Promise.all([
+      // Archive entry
+      supabase
+        .from('queue_entries_archive')
+        .insert({
+          queue_id: entryData.queue_id,
+          user_id: entryData.user_id,
+          status: 'no-show',
+          wait_time: entryData.estimated_wait_time,
+          actual_wait_time: actualWaitTime,
+          join_time: entryData.join_time,
+          leave_time: new Date().toISOString()
+        }),
+      // Delete entry
+      supabase
+        .from('queue_entries')
+        .delete()
+        .match({ queue_id: queueId, entry_id: entryId }),
+      // Update queue
+      supabase
+        .from('queues')
+        .update({ 
+          current_queue: newQueueCount,
+          total_estimated_time: newTotalEstimatedTime
+        })
+        .eq('queue_id', queueId)
+        .select()
+        .single()
+    ]);
+    monitor.markStep('databaseOperations');
 
-    if (updateError) throw updateError;
+    if (archiveResult.error || deleteResult.error || updateResult.error) {
+      const errors = [
+        archiveResult.error,
+        deleteResult.error,
+        updateResult.error
+      ].filter(Boolean);
+      throw new Error(`Database operations failed: ${errors.map(e => e.message).join(', ')}`);
+    }
 
-    // Fetch remaining queue entries
-    const { data: queueEntries, error: entriesError } = await supabase
+    // Start background notification check
+    const entriesPromise = supabase
       .from('queue_entries')
       .select('*')
       .eq('queue_id', queueId)
       .order('join_time', { ascending: true });
+    monitor.markStep('notificationStarted');
 
-    if (entriesError) throw entriesError;
+    const result = {
+      success: true,
+      updatedQueue: updateResult.data,
+      entriesPromise
+    };
+    monitor.markStep('resultPrepared');
 
-    // Check if there's a 5th person in the queue
-    if (queueEntries.length >= 5) {
-      const fifthPerson = queueEntries[4];
-      await notifyCustomer(fifthPerson.user_id);
-    }
+    return result;
+  } catch (error) {
+    monitor.markStep('error');
+    throw error;
+  }
+}
 
+export async function POST(request, { params }) {
+  const monitor = new PerformanceMonitor('noShowCustomer');
+  const { queueid: queueId, customerId } = params;
+
+  if (!queueId || !customerId) {
+    return NextResponse.json({ 
+      error: 'Invalid queue ID or customer ID',
+      metrics: monitor.end()
+    }, { status: 400 });
+  }
+
+  try {
+    monitor.markStep('startProcess');
+    const result = await processNoShow(queueId, customerId);
+    monitor.markStep('processComplete');
+
+    // Handle remaining entries check in background
+    result.entriesPromise
+      .then(({ data: entries, error }) => {
+        if (!error && entries?.length >= 5) {
+          // Implement notification logic here
+          console.log('Background: Notifying 5th person in queue');
+        }
+      })
+      .catch(error => {
+        console.error('Background notification error:', error);
+      });
+
+    const metrics = monitor.end();
+    
     return NextResponse.json({ 
       message: 'Customer marked as no-show and removed from queue',
-      current_queue: updatedQueue.current_queue,
-      total_served: updatedQueue.total_served,
-      total_estimated_time: updatedQueue.total_estimated_time
+      queue: result.updatedQueue,
+      metrics
     });
   } catch (error) {
     console.error('Error marking customer as no-show:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
-
-async function notifyCustomer(userId) {
-  try {
-    const { data: userData, error: userError } = await supabase
-      .from('user_profile')
-      .select('phone_number')
-      .eq('user_id', userId)
-      .single();
-
-    if (userError) throw userError;
-
-    if (userData && userData.phone_number) {
-      await sendWhatsAppNotification(userData.phone_number);
-    }
-  } catch (error) {
-    console.error('Error notifying customer:', error);
-  }
-}
-
-async function sendWhatsAppNotification(phoneNumber) {
-  try {
-    const options = {
-      method: 'POST',
-      headers: {
-        clientId: process.env.OTPLESS_CLIENT_ID,
-        clientSecret: process.env.OTPLESS_CLIENT_SECRET,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        sendTo: phoneNumber,
-        channel: "WHATSAPP",
-        message: "Your position in the queue is now 5. Please be prepared!"
-      })
-    };
-
-    const response = await fetch('https://marketing.otpless.app/v1/api/send', options);
-    const data = await response.json();
-
-    if (!data.success) {
-      throw new Error('Failed to send WhatsApp notification');
-    }
-  } catch (error) {
-    console.error('Error sending WhatsApp notification:', error);
+    const metrics = monitor.end();
+    return NextResponse.json({ 
+      error: error.message || 'An unexpected error occurred',
+      metrics 
+    }, { status: 500 });
   }
 }

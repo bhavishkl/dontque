@@ -1,16 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 import Script from 'next/script'
-import { signIn } from 'next-auth/react'
+import { signIn, useSession } from 'next-auth/react'
 import { toast } from 'sonner'
 
 export default function SignIn() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { data: session } = useSession()
   const callbackUrl = searchParams.get('callbackUrl') || '/user/home'
+
+  useEffect(() => {
+    if (session) {
+      router.push(callbackUrl)
+    }
+  }, [session, router, callbackUrl])
 
   const handleOTPlessSuccess = async (response) => {
     console.log('OTPless success:', response);

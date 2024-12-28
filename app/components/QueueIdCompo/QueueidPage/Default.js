@@ -18,6 +18,7 @@ const ReviewModal = lazy(() => import('@/app/components/ReviewModal'));
 const ReviewsList = lazy(() => import('@/app/components/ReviewsList'));
 const AddKnownUserModal = lazy(() => import('@/app/components/UniComp/AddKnownUserModal'));
 const QueueInfoSec = lazy(() => import('@/app/components/QueueIdCompo/QueueidPage/QueueInfoSec'));
+const NotificationPreferencesModal = lazy(() => import('@/app/components/NotificationPreferencesModal'));
 
 export default function QueueDetailsPage({ params }) {
   const { data: queueData, isLoading, isError, error, mutate } = useApi(`/api/queues/${params.queueid}`, {
@@ -45,6 +46,7 @@ export default function QueueDetailsPage({ params }) {
   const [expectedTurnTime, setExpectedTurnTime] = useState(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
+  const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false);
 
   if (isError) {
     return <div>Error: {error.message}</div>
@@ -75,11 +77,6 @@ export default function QueueDetailsPage({ params }) {
       expectedTurnTime: expectedTurnTime
     };
   };
-
-  const toggleNotifications = async () => {
-    setNotificationsEnabled(!notificationsEnabled)
-    toast.success(notificationsEnabled ? 'Notifications disabled' : 'Notifications enabled')
-  }
 
   const handleAddKnownSuccess = async () => {
     await mutate()
@@ -220,7 +217,11 @@ export default function QueueDetailsPage({ params }) {
   }
 
 
-  
+  const handlePreferencesSaved = (preferences) => {
+    const hasEnabledChannels = Object.values(preferences).some(value => value);
+    setNotificationsEnabled(hasEnabledChannels);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-orange-100 dark:bg-gray-900">
@@ -496,12 +497,11 @@ export default function QueueDetailsPage({ params }) {
                         <div className="flex gap-2">
                           <Button
                             className="flex-1"
-                            color={notificationsEnabled ? "success" : "primary"}
                             variant="flat"
                             startContent={<Bell className="h-4 w-4" />}
-                            onClick={toggleNotifications}
+                            onClick={() => setIsPreferencesModalOpen(true)}
                           >
-                            {notificationsEnabled ? "Notifications Enabled" : "Enable Notifications"}
+                            Notification Preferences
                           </Button>
 
                           <AddKnownUserModal queueId={params.queueid} onSuccess={handleAddKnownSuccess} />
@@ -543,6 +543,12 @@ export default function QueueDetailsPage({ params }) {
                           {isLeaving ? "Leaving Queue..." : "Leave Queue"}
                         </Button>
                       </div>
+
+                      <NotificationPreferencesModal 
+                        isOpen={isPreferencesModalOpen}
+                        onClose={() => setIsPreferencesModalOpen(false)}
+                        onSave={handlePreferencesSaved}
+                      />
                     </CardBody>
                   </Card>
 

@@ -11,6 +11,7 @@
   "dependencies": {
     "@nextui-org/react": "^2.4.6",
     "@reduxjs/toolkit": "^2.2.7",
+    "@sendgrid/mail": "^8.1.4",
     "@supabase/supabase-js": "^2.45.3",
     "@vercel/speed-insights": "^1.0.12",
     "@yudiel/react-qr-scanner": "^2.0.8",
