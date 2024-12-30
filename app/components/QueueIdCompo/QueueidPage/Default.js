@@ -68,6 +68,7 @@ export default function QueueDetailsPage({ params }) {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   if (isError) {
     return <div>Error: {error.message}</div>
@@ -77,6 +78,14 @@ export default function QueueDetailsPage({ params }) {
     await mutate()
     toast.success('Known user added to the queue successfully');
   };
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
  
   
@@ -261,6 +270,7 @@ export default function QueueDetailsPage({ params }) {
     )
   }
 
+ 
   return (
     <div className="min-h-screen bg-orange-100 dark:bg-gray-900">
       <header className="bg-orange-200 dark:bg-gray-800 shadow-sm">
@@ -472,7 +482,7 @@ export default function QueueDetailsPage({ params }) {
                             return <p className="text-center text-gray-600">Time not available</p>;
                           }
 
-                          const timeDifferenceInMinutes = (personalizedTime.getTime() - new Date().getTime()) / (1000 * 60);
+                          const timeDifferenceInMinutes = (personalizedTime.getTime() - currentTime.getTime()) / (1000 * 60);
 
                           if (timeDifferenceInMinutes < 15) {
                             return (
@@ -489,7 +499,7 @@ export default function QueueDetailsPage({ params }) {
 
                           const hours = Math.floor(timeDifferenceInMinutes / 60);
                           const minutes = Math.floor(timeDifferenceInMinutes % 60);
-                          const seconds = Math.floor((timeDifferenceInMinutes % 1) * 60);
+                          const seconds = Math.floor((timeDifferenceInMinutes * 60) % 60);
                           
                           return (
                             <div className="flex justify-center gap-4">
