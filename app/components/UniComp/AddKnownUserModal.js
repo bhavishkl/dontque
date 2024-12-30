@@ -22,7 +22,6 @@ const AddKnownUserModal = ({ queueId, onSuccess }) => {
         throw new Error(errorData.error || 'Failed to add known user to queue');
       }
 
-      toast.success('Known user added to queue successfully');
       onClose();
       setShortId('');
       if (onSuccess) onSuccess();

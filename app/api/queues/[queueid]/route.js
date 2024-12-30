@@ -59,11 +59,8 @@ export async function GET(request, { params }) {
     }
 
     // Calculate estimated wait time
-    // Calculate estimated wait time
-    let estimatedWaitTime = null;
-    if (userQueueEntry && queueData.est_time_to_serve) {
-        estimatedWaitTime = (userPosition - 1) * queueData.est_time_to_serve;
-    }
+   // Dummy estimated wait time
+let estimatedWaitTime = 15; // Fixed 15 minutes for everyone
 
     // Fetch join time of user in front
     let userInFrontJoinTime = null;
@@ -91,13 +88,13 @@ export async function GET(request, { params }) {
       userQueueEntry: userQueueEntry ? {
         ...userQueueEntry,
         position: userPosition,
-        estimated_wait_time: estimatedWaitTime
+        estimated_wait_time: 15 // Fixed dummy value
       } : null,
-      userInFrontJoinTime: userPosition > 1 ? queueEntries[userPosition - 2].join_time : null,
       total_reviews: ratingStats?.total_reviews || 0,
       rating: ratingStats?.avg_rating || 0
     };
 
+    
     console.log('Returning queue data:', responseData);
     return NextResponse.json(responseData);
   } catch (error) {

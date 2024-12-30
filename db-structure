@@ -58,6 +58,7 @@ CREATE TABLE queues (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     service_start_time TIME,
+    next_serve_at TIMESTAMP WITH TIME ZONE,
     avg_rating DECIMAL(3,1) GENERATED ALWAYS AS (
         (SELECT avg_rating FROM queue_rating_stats WHERE queue_id = queues.queue_id)
     ) STORED

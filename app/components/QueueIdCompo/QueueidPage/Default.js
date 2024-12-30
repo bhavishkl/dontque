@@ -20,6 +20,29 @@ const AddKnownUserModal = lazy(() => import('@/app/components/UniComp/AddKnownUs
 const QueueInfoSec = lazy(() => import('@/app/components/QueueIdCompo/QueueidPage/QueueInfoSec'));
 const NotificationPreferencesModal = lazy(() => import('@/app/components/NotificationPreferencesModal'));
 
+const calculatePersonalizedServeTime = (nextServeAt, position, estTimeToServe, serviceStartTime) => {
+  if (!nextServeAt || !position || !estTimeToServe) return null;
+  
+  const now = new Date();
+  const baseTime = new Date(nextServeAt);
+  
+  // Parse service start time
+  if (serviceStartTime) {
+    const [hours, minutes] = serviceStartTime.split(':').map(Number);
+    const serviceStart = new Date(now);
+    serviceStart.setHours(hours, minutes, 0, 0);
+    
+    // If current time is before service start time, use service start time as base
+    if (now < serviceStart) {
+      baseTime.setHours(hours, minutes, 0, 0);
+    }
+  }
+  
+  // Calculate wait time based on position
+  const waitTimeInMinutes = (position - 1) * estTimeToServe;
+  return new Date(baseTime.getTime() + waitTimeInMinutes * 60000);
+};
+
 export default function QueueDetailsPage({ params }) {
   const { data: queueData, isLoading, isError, error, mutate } = useApi(`/api/queues/${params.queueid}`, {
     revalidateOnMount: false, // Use prefetched data if available
@@ -42,8 +65,6 @@ export default function QueueDetailsPage({ params }) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const { data: session } = useSession();
   const [showAllInfo, setShowAllInfo] = useState(false);
-  const [countdown, setCountdown] = useState('');
-  const [expectedTurnTime, setExpectedTurnTime] = useState(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false);
@@ -52,61 +73,12 @@ export default function QueueDetailsPage({ params }) {
     return <div>Error: {error.message}</div>
   }
 
-  const calculateExpectedTurnTime = (queueData) => {
-    const now = new Date();
-    
-    if (!queueData.service_start_time) {
-      return { formattedTime: "Service start time not available", expectedTurnTime: null };
-    }
-
-    const [serviceHours, serviceMinutes] = queueData.service_start_time.split(':').map(Number);
-    
-    let serviceStartTime = new Date(now);
-    serviceStartTime.setHours(serviceHours, serviceMinutes, 0, 0);
-
-    let expectedTurnTime;
-    if (serviceStartTime < now) {
-      expectedTurnTime = new Date(now.getTime() + queueData.userQueueEntry.estimated_wait_time * 60000);
-    } else {
-      expectedTurnTime = new Date(serviceStartTime.getTime() + queueData.userQueueEntry.estimated_wait_time * 60000);
-    }
-
-    const formattedTime = expectedTurnTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    return { 
-      formattedTime: `Your turn is expected at ${formattedTime}`,
-      expectedTurnTime: expectedTurnTime
-    };
-  };
-
   const handleAddKnownSuccess = async () => {
     await mutate()
     toast.success('Known user added to the queue successfully');
   };
 
-  useEffect(() => {
-    if (queueData?.userQueueEntry) {
-      const { expectedTurnTime, formattedTime } = calculateExpectedTurnTime(queueData);
-      setExpectedTurnTime(expectedTurnTime);
-  
-      const timer = setInterval(() => {
-        const now = new Date().getTime();
-        const distance = expectedTurnTime.getTime() - now;
-  
-        if (distance < 0) {
-          clearInterval(timer);
-          setCountdown("It's your turn!");
-        } else {
-          const hours = Math.floor(distance / (1000 * 60 * 60));
-          const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-          const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-  
-          setCountdown(`${hours}h ${minutes}m ${seconds}s`);
-        }
-      }, 1000);
-  
-      return () => clearInterval(timer);
-    }
-  }, [queueData]);
+ 
   
   useEffect(() => {
     const subscription = supabase
@@ -221,6 +193,7 @@ export default function QueueDetailsPage({ params }) {
     const hasEnabledChannels = Object.values(preferences).some(value => value);
     setNotificationsEnabled(hasEnabledChannels);
   };
+
 
   if (isLoading) {
     return (
@@ -398,39 +371,39 @@ export default function QueueDetailsPage({ params }) {
               {queueData?.userQueueEntry ? (
                 <>
                   <Card className="bg-gradient-to-br from-orange-500 to-orange-700 text-white overflow-hidden mb-6">
-                    <CardBody className="p-6">
-                      <div className="flex items-center justify-between mb-6">
+                    <CardBody className="p-4 sm:p-6">
+                      <div className="flex items-center justify-between mb-4 sm:mb-6">
                         <div>
-                          <h2 className="text-2xl font-bold">Your Queue Status</h2>
-                          <p className="text-sm opacity-80">
+                          <h2 className="text-xl sm:text-2xl font-bold">Your Queue Status</h2>
+                          <p className="text-xs sm:text-sm opacity-80">
                             Joined at {new Date(queueData.userQueueEntry.join_time).toLocaleTimeString()}
                           </p>
                         </div>
                         <Badge content={queueData.userQueueEntry.position} color="warning">
-                          <div className="p-2 bg-white/20 rounded-full">
-                            <AlertCircle className="h-6 w-6" />
+                          <div className="p-1.5 sm:p-2 bg-white/20 rounded-full">
+                            <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6" />
                           </div>
                         </Badge>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-8">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
                         {/* Position Indicator */}
                         <div className="relative flex justify-center">
-                          <div className="w-40 h-40 relative">
+                          <div className="w-32 h-32 sm:w-40 sm:h-40 relative">
                             <div className="absolute inset-0 flex items-center justify-center">
                               {/* White background div with glow */}
-                              <div className="absolute inset-0 bg-white rounded-2xl shadow-[0_0_15px_rgba(255,255,255,0.7)]"></div>
+                              <div className="absolute inset-0 bg-white rounded-xl sm:rounded-2xl shadow-[0_0_15px_rgba(255,255,255,0.7)]"></div>
                               {/* Blur effect div */}
-                              <div className="relative w-full h-32 backdrop-blur-lg bg-white/40 p-4 border border-white/20 rounded-2xl shadow-[inset_0_0_15px_rgba(255,255,255,0.9)]">
+                              <div className="relative w-full h-28 sm:h-32 backdrop-blur-lg bg-white/40 p-3 sm:p-4 border border-white/20 rounded-xl sm:rounded-2xl shadow-[inset_0_0_15px_rgba(255,255,255,0.9)]">
                                 <div className="flex flex-col items-center justify-center h-full">
-                                  <span className="text-sm text-orange-600 mb-1">Your Position</span>
+                                  <span className="text-xs sm:text-sm text-orange-600 mb-1">Your Position</span>
                                   <div className="flex items-baseline">
-                                    <span className="text-5xl font-bold text-orange-600 drop-shadow-sm">#</span>
-                                    <span className="text-6xl font-bold text-orange-600 drop-shadow-sm">
+                                    <span className="text-4xl sm:text-5xl font-bold text-orange-600 drop-shadow-sm">#</span>
+                                    <span className="text-5xl sm:text-6xl font-bold text-orange-600 drop-shadow-sm">
                                       {queueData.userQueueEntry.position}
                                     </span>
                                   </div>
-                                  <span className="text-sm text-orange-600 mt-1">in queue</span>
+                                  <span className="text-xs sm:text-sm text-orange-600 mt-1">in queue</span>
                                 </div>
                               </div>
                             </div>
@@ -438,25 +411,44 @@ export default function QueueDetailsPage({ params }) {
                         </div>
 
                         {/* Queue Stats */}
-                        <div className="flex flex-col justify-center space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Timer className="h-5 w-5" />
-                              <span>Wait Time</span>
+                        <div className="flex flex-col justify-center space-y-4 sm:space-y-6">
+                          {/* Expected Time Card */}
+                          <div className="bg-white/30 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/40 shadow-lg">
+                            <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+                              <div className="p-1.5 sm:p-2 bg-white/20 rounded-full">
+                                <Calendar className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+                              </div>
+                              <h3 className="text-base sm:text-lg font-semibold text-white">Expected Service Time</h3>
                             </div>
-                            <span className="font-bold">{queueData.userQueueEntry.estimated_wait_time} min</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-5 w-5" />
-                              <span>Expected At</span>
+                            <div className="text-center">
+                              {(() => {
+                                const personalizedTime = calculatePersonalizedServeTime(
+                                  queueData.next_serve_at,
+                                  queueData.userQueueEntry.position,
+                                  queueData.est_time_to_serve,
+                                  queueData.service_start_time
+                                );
+                                return personalizedTime ? (
+                                  <div className="flex flex-col">
+                                    <span className="text-2xl sm:text-3xl font-bold text-white">
+                                      {personalizedTime.toLocaleTimeString([], {
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </span>
+                                    <span className="text-xs sm:text-sm text-white/80 mt-1">
+                                      {personalizedTime.toLocaleDateString([], {
+                                        weekday: 'long',
+                                        month: 'short',
+                                        day: 'numeric'
+                                      })}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-lg sm:text-xl text-white/80">Not available</span>
+                                );
+                              })()}
                             </div>
-                            <span className="font-bold">
-                              {expectedTurnTime?.toLocaleTimeString([], { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
-                            </span>
                           </div>
                         </div>
                       </div>
@@ -468,29 +460,66 @@ export default function QueueDetailsPage({ params }) {
                     <CardBody className="p-6">
                       <div className="mb-6">
                         <h3 className="text-lg font-semibold mb-4">Time Until Your Turn</h3>
-                        {queueData.userQueueEntry.position === 1 && queueData.userQueueEntry.estimated_wait_time === 0 ? (
-                          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 text-center">
-                            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                              It's your turn now!
-                            </div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                              Please proceed to the service point
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex justify-center gap-4">
-                            {countdown.split(' ').map((unit, index) => (
-                              <div key={index} className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 flex-1 text-center">
-                                <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
-                                  {unit.split(/([0-9]+)/)[1]}
+                        {(() => {
+                          const personalizedTime = calculatePersonalizedServeTime(
+                            queueData.next_serve_at,
+                            queueData.userQueueEntry.position,
+                            queueData.est_time_to_serve,
+                            queueData.service_start_time
+                          );
+
+                          if (!personalizedTime) {
+                            return <p className="text-center text-gray-600">Time not available</p>;
+                          }
+
+                          const timeDifferenceInMinutes = (personalizedTime.getTime() - new Date().getTime()) / (1000 * 60);
+
+                          if (timeDifferenceInMinutes < 15) {
+                            return (
+                              <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 text-center">
+                                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                                  It's almost your turn!
                                 </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                  {unit.split(/([a-z]+)/)[1]}
+                                <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                  Please stay nearby and be ready
                                 </div>
                               </div>
-                            ))}
-                          </div>
-                        )}
+                            );
+                          }
+
+                          const hours = Math.floor(timeDifferenceInMinutes / 60);
+                          const minutes = Math.floor(timeDifferenceInMinutes % 60);
+                          const seconds = Math.floor((timeDifferenceInMinutes % 1) * 60);
+                          
+                          return (
+                            <div className="flex justify-center gap-4">
+                              <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 flex-1 text-center">
+                                <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                                  {hours}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  hours
+                                </div>
+                              </div>
+                              <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 flex-1 text-center">
+                                <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                                  {minutes}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  minutes
+                                </div>
+                              </div>
+                              <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 flex-1 text-center">
+                                <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                                  {seconds}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  seconds
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                       {/* Action Buttons */}
                       <div className="space-y-3">
