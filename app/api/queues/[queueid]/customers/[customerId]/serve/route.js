@@ -32,9 +32,7 @@ async function processQueueEntry(queueId, entryId) {
 
     // Calculate metrics
     const actualWaitTime = Math.floor((new Date() - new Date(entryData.join_time)) / 60000);
-    const newQueueCount = Math.max(0, queueData.current_queue - 1);
     const newTotalServed = queueData.total_served + 1;
-    const newTotalEstimatedTime = newQueueCount * queueData.est_time_to_serve;
 
     const now = new Date();
     const nextServeAt = now; // Set next serve time to now since customer is being served
@@ -62,9 +60,7 @@ async function processQueueEntry(queueId, entryId) {
       supabase
         .from('queues')
         .update({ 
-          current_queue: newQueueCount,
           total_served: newTotalServed,
-          total_estimated_time: newTotalEstimatedTime,
           next_serve_at: nextServeAt.toISOString()
         })
         .eq('queue_id', queueId)
@@ -126,13 +122,11 @@ export async function POST(request, { params }) {
 
     // Calculate metrics
     const actualWaitTime = Math.floor((new Date() - new Date(entryData.join_time)) / 60000);
-    const newQueueCount = Math.max(0, queueData.current_queue - 1);
     const newTotalServed = queueData.total_served + 1;
-    const newTotalEstimatedTime = newQueueCount * queueData.est_time_to_serve;
     monitor.markStep('metricsCalculated');
 
     const now = new Date();
-const nextServeAt = now; // This is correct// This needs to change
+    const nextServeAt = now;
 
     // Perform all database operations in parallel
     const [archiveResult, deleteResult, updateResult] = await Promise.all([
@@ -154,9 +148,7 @@ const nextServeAt = now; // This is correct// This needs to change
       supabase
         .from('queues')
         .update({ 
-          current_queue: newQueueCount,
           total_served: newTotalServed,
-          total_estimated_time: newTotalEstimatedTime,
           next_serve_at: nextServeAt.toISOString()
         })
         .eq('queue_id', queueId)

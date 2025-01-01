@@ -72,20 +72,6 @@ export async function POST(request, { params }) {
 
     if (joinError) throw joinError;
 
-    // Update queue count
-    const { data: updatedQueue, error: updateError } = await supabase
-      .from('queues')
-      .update({ 
-        current_queue: queueData.current_queue + 1,
-        total_estimated_time: (queueData.current_queue + 1) * queueData.est_time_to_serve
-      })
-      .eq('queue_id', queueid)
-      .select('current_queue, total_estimated_time')
-      .single();
-    perf.markStep('update_queue');
-
-    if (updateError) throw updateError;
-
     console.log('✅ Queue join complete!', {
       userId: session.user.id,
       queueId: queueid
@@ -143,8 +129,7 @@ export async function POST(request, { params }) {
     perf.end();
     return NextResponse.json({
       message: 'Successfully joined the queue',
-      entry: newEntry,
-      queue: updatedQueue
+      entry: newEntry
     });
 
   } catch (error) {

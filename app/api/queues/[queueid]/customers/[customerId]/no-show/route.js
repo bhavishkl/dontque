@@ -34,12 +34,10 @@ async function processNoShow(queueId, entryId) {
 
     // Calculate metrics
     const actualWaitTime = Math.floor((new Date() - new Date(entryData.join_time)) / 60000);
-    const newQueueCount = Math.max(0, queueData.current_queue - 1);
-    const newTotalEstimatedTime = newQueueCount * queueData.est_time_to_serve;
     monitor.markStep('metricsCalculated');
 
     // Perform all database operations in parallel
-    const [archiveResult, deleteResult, updateResult] = await Promise.all([
+    const [archiveResult, deleteResult] = await Promise.all([
       // Archive entry
       supabase
         .from('queue_entries_archive')
@@ -56,25 +54,14 @@ async function processNoShow(queueId, entryId) {
       supabase
         .from('queue_entries')
         .delete()
-        .match({ queue_id: queueId, entry_id: entryId }),
-      // Update queue
-      supabase
-        .from('queues')
-        .update({ 
-          current_queue: newQueueCount,
-          total_estimated_time: newTotalEstimatedTime
-        })
-        .eq('queue_id', queueId)
-        .select()
-        .single()
+        .match({ queue_id: queueId, entry_id: entryId })
     ]);
     monitor.markStep('databaseOperations');
 
-    if (archiveResult.error || deleteResult.error || updateResult.error) {
+    if (archiveResult.error || deleteResult.error) {
       const errors = [
         archiveResult.error,
-        deleteResult.error,
-        updateResult.error
+        deleteResult.error
       ].filter(Boolean);
       throw new Error(`Database operations failed: ${errors.map(e => e.message).join(', ')}`);
     }
@@ -89,7 +76,6 @@ async function processNoShow(queueId, entryId) {
 
     const result = {
       success: true,
-      updatedQueue: updateResult.data,
       entriesPromise
     };
     monitor.markStep('resultPrepared');
@@ -133,7 +119,6 @@ export async function POST(request, { params }) {
     
     return NextResponse.json({ 
       message: 'Customer marked as no-show and removed from queue',
-      queue: result.updatedQueue,
       metrics
     });
   } catch (error) {
