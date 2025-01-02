@@ -18,7 +18,6 @@ export async function GET(request) {
       queue_id,
       name,
       category,
-      current_queue,
       avg_wait_time,
       image_url,
       est_time_to_serve,
@@ -27,8 +26,7 @@ export async function GET(request) {
       service_start_time,
       description
     `)
-    .eq('status', 'active')
-    .order('current_queue', { ascending: false });
+    .eq('status', 'active');
 
   if (city && city.trim()) {
     query = query.eq('location', city);
@@ -44,35 +42,47 @@ export async function GET(request) {
 
   query = query.limit(limit);
 
-  const { data, error } = await query;
+  const { data: queueData, error: queueError } = await query;
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (queueError) {
+    return NextResponse.json({ error: queueError.message }, { status: 500 });
   }
 
-  // Fetch queue entry lengths for each queue
-  const queueEntryLengths = await Promise.all(data.map(async (queue) => {
-    const { count, error: countError } = await supabase
-      .from('queue_entries')
-      .select('*', { count: 'exact', head: true })
-      .eq('queue_id', queue.queue_id);
+  // Fetch queue stats from the view
+  const { data: queueStats, error: statsError } = await supabase
+    .from('queue_current_stats')
+    .select('queue_id, current_queue_count, total_estimated_wait_time, avg_rating, capacity_percentage')
+    .in('queue_id', queueData.map(q => q.queue_id));
 
-    if (countError) {
-      console.error('Error fetching queue entry length:', countError);
-      return 0;
-    }
+  if (statsError) {
+    return NextResponse.json({ error: statsError.message }, { status: 500 });
+  }
 
-    return count;
-  }));
+  // Log queue stats
+  queueStats.forEach(stat => {
+    console.log(`Queue ${stat.queue_id} - Current Queue Count: ${stat.current_queue_count}, Average Rating: ${stat.avg_rating}`);
+  });
 
-  // Calculate total estimated wait time for each queue and add queue entry length
-  const queuesWithTotalWaitTime = data.map((queue, index) => ({
-    ...queue,
-    total_est_wait_time: queueEntryLengths[index] * queue.est_time_to_serve,
-    queue_entry_length: queueEntryLengths[index]
-  }));
+  // Merge queue data with stats
+  const queuesWithStats = queueData.map(queue => {
+    const stats = queueStats.find(stat => stat.queue_id === queue.queue_id) || {
+      current_queue_count: 0,
+      total_estimated_wait_time: 0,
+      avg_rating: null,
+      capacity_percentage: 0
+    };
+    
+    return {
+      ...queue,
+      current_queue: stats.current_queue_count,
+      queue_entry_length: stats.current_queue_count,
+      total_est_wait_time: stats.total_estimated_wait_time,
+      avg_rating: stats.avg_rating,
+      capacity_percentage: stats.capacity_percentage
+    };
+  });
 
-  return NextResponse.json(queuesWithTotalWaitTime);
+  return NextResponse.json(queuesWithStats);
 }
 
 export async function POST(request) {
