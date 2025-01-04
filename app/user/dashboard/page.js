@@ -88,11 +88,6 @@ export default function UserDashboard() {
     </Table>
   )
 
-  const handleTabChange = (key) => {
-    setActiveTab(key)
-    router.push(`/user/dashboard?tab=${key}`, undefined, { shallow: true })
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">

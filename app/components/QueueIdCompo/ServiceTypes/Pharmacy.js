@@ -1,39 +1,48 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Upload, X } from 'lucide-react'
 import { Button, Card, CardBody, CardHeader, Input, Textarea, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@nextui-org/react"
 import { toast } from 'sonner'
 import QueueInfoSec from '../QueueidPage/QueueInfoSec'
 
-// Dummy data for development
-const dummyPharmacyData = {
-  name: "QuickMeds Pharmacy",
-  location: "123 Main St, Anytown, USA",
-  category: "Pharmacy",
-  avg_rating: 4.5,
-  total_ratings: 120,
-  description: "Your trusted neighborhood pharmacy for all your medication needs.",
-  opening_time: "9:00 AM",
-  closing_time: "9:00 PM",
-  short_id: "QMP123",
-  medications: [
-    { id: 1, name: "Aspirin", description: "Pain reliever and fever reducer", price: 9.99 },
-    { id: 2, name: "Amoxicillin", description: "Antibiotic for bacterial infections", price: 15.99 },
-    { id: 3, name: "Lisinopril", description: "ACE inhibitor for high blood pressure", price: 12.99 },
-    { id: 4, name: "Metformin", description: "Oral diabetes medicine", price: 8.99 },
-    { id: 5, name: "Levothyroxine", description: "Thyroid hormone medication", price: 11.99 },
-  ]
-}
-
 export default function PharmacyPreOrder({ params }) {
+  const [queueData, setQueueData] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
   const [cart, setCart] = useState({})
   const [isOrdering, setIsOrdering] = useState(false)
   const [prescriptionNote, setPrescriptionNote] = useState('')
   const [prescriptionImage, setPrescriptionImage] = useState(null)
   const [placedOrder, setPlacedOrder] = useState(null)
+  const [medications, setMedications] = useState([
+    { id: 1, name: "Aspirin", description: "Pain reliever and fever reducer", price: 9.99 },
+    { id: 2, name: "Amoxicillin", description: "Antibiotic for bacterial infections", price: 15.99 },
+    { id: 3, name: "Lisinopril", description: "ACE inhibitor for high blood pressure", price: 12.99 },
+    { id: 4, name: "Metformin", description: "Oral diabetes medicine", price: 8.99 },
+    { id: 5, name: "Levothyroxine", description: "Thyroid hormone medication", price: 11.99 },
+  ])
   const { isOpen, onOpen, onClose } = useDisclosure()
+
+  useEffect(() => {
+    const fetchQueueData = async () => {
+      try {
+        const response = await fetch(`/api/queues/${params.queueid}`)
+        if (!response.ok) throw new Error('Failed to fetch queue data')
+        const data = await response.json()
+        setQueueData(data)
+      } catch (error) {
+        console.error('Error fetching queue data:', error)
+        toast.error('Failed to load queue data')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (params.queueid) {
+      fetchQueueData()
+    }
+  }, [params.queueid])
 
   const handleAddToCart = (itemId) => {
     setCart(prevCart => ({
@@ -62,13 +71,13 @@ export default function PharmacyPreOrder({ params }) {
       
       const order = {
         items: Object.entries(cart).map(([itemId, { quantity, packed }]) => {
-          const item = dummyPharmacyData.medications.find(i => i.id === parseInt(itemId))
+          const item = medications.find(i => i.id === parseInt(itemId))
           return { ...item, quantity, packed }
         }),
         prescriptionNote,
         prescriptionImage,
         total: Object.entries(cart).reduce((total, [itemId, { quantity }]) => {
-          const item = dummyPharmacyData.medications.find(i => i.id === parseInt(itemId))
+          const item = medications.find(i => i.id === parseInt(itemId))
           return total + (item.price * quantity)
         }, 0)
       }
@@ -119,11 +128,11 @@ export default function PharmacyPreOrder({ params }) {
       </div>
 
       <main className="container mx-auto px-4 py-2">
-        <QueueInfoSec queueData={dummyPharmacyData} isLoading={false} handleShare={handleShare} />
+        <QueueInfoSec queueData={queueData} isLoading={isLoading} handleShare={handleShare} />
         
         <h2 className="text-2xl font-bold mt-8 mb-4">Available Medications</h2>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {dummyPharmacyData.medications.map((item) => (
+          {medications.map((item) => (
             <Card key={item.id} className="dark:bg-gray-800">
               <CardBody>
                 <h3 className="text-xl font-semibold mb-2">{item.name}</h3>
@@ -153,7 +162,7 @@ export default function PharmacyPreOrder({ params }) {
             </CardHeader>
             <CardBody>
               {Object.entries(cart).map(([itemId, { quantity, packed }]) => {
-                const item = dummyPharmacyData.medications.find(i => i.id === parseInt(itemId))
+                const item = medications.find(i => i.id === parseInt(itemId))
                 return (
                   <div key={itemId} className="flex justify-between items-center mb-2">
                     <span>{item.name} x {quantity}</span>
@@ -170,7 +179,7 @@ export default function PharmacyPreOrder({ params }) {
               })}
               <div className="mt-4 text-xl font-bold">
                 Total: ${Object.entries(cart).reduce((total, [itemId, { quantity }]) => {
-                  const item = dummyPharmacyData.medications.find(i => i.id === parseInt(itemId))
+                  const item = medications.find(i => i.id === parseInt(itemId))
                   return total + (item.price * quantity)
                 }, 0).toFixed(2)}
               </div>

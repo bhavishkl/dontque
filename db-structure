@@ -88,20 +88,6 @@ CREATE INDEX idx_queue_entries_user_id ON queue_entries(user_id);
 CREATE INDEX idx_queue_entries_status ON queue_entries(status);
 CREATE INDEX idx_queue_entries_sort_time ON queue_entries(sort_time);
 
-
--- Queue Analytics Table (unchanged)
-CREATE TABLE queue_analytics (
-    analytics_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    queue_id UUID REFERENCES queues(queue_id),
-    date DATE,
-    total_served INTEGER,
-    peak_hour TIME,
-    avg_wait_time INTEGER,
-    customer_satisfaction DECIMAL(3,2)
-);
-
-CREATE INDEX idx_queue_analytics_queue_id_date ON queue_analytics(queue_id, date);
-
 -- Enhanced User Ratings & Reviews Table
 CREATE TABLE user_ratings (
     rating_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -167,3 +153,25 @@ CREATE TABLE user_notification_preferences (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Business Analytics View
+CREATE VIEW business_analytics_view AS
+SELECT 
+    q.queue_id,
+    q.name,
+    DATE(qea.join_time) as date,
+    EXTRACT(HOUR FROM qea.join_time) as hour,
+    COUNT(DISTINCT CASE WHEN qea.status = 'served' THEN qea.user_id END) as customers_served,
+    COUNT(DISTINCT CASE WHEN qea.status = 'left' THEN qea.user_id END) as customers_left,
+    AVG(qea.actual_wait_time) as avg_wait_time,
+    MAX(qea.actual_wait_time) as peak_wait_time,
+    COUNT(DISTINCT qea.user_id) as total_customers,
+    qrs.avg_rating as satisfaction_score
+FROM 
+    queues q
+LEFT JOIN 
+    queue_entries_archive qea ON q.queue_id = qea.queue_id
+LEFT JOIN 
+    queue_rating_stats qrs ON q.queue_id = qrs.queue_id
+GROUP BY 
+    q.queue_id, q.name, DATE(qea.join_time), EXTRACT(HOUR FROM qea.join_time), qrs.avg_rating;

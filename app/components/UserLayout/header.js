@@ -7,6 +7,7 @@ import {
   Users, PieChart, HelpCircle, Search,
   Clock, Star, Shield, ChevronDown, Copy, Share2
 } from 'lucide-react'
+import Image from 'next/image'
 import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { useUserInfo } from '../../hooks/useUserName'
@@ -14,6 +15,7 @@ import { usePathname } from 'next/navigation'
 import { Avatar, Button, Popover, PopoverTrigger, PopoverContent, Tooltip, Input } from "@nextui-org/react"
 import { ThemeToggle } from '../ThemeToggle'
 import { toast } from 'sonner'
+import { useTheme } from 'next-themes'
 
 const DynamicHeader = dynamic(() => import('./DynamicHeader'), { ssr: false })
 
@@ -23,7 +25,13 @@ const Header = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const sidebarRef = useRef(null)
   const { name: userName, role, image: userImage, short_id: shortid } = useUserInfo(session?.user?.id)
-  
+  const { theme } = useTheme()
+  const [currentLogo, setCurrentLogo] = useState('/logo.webp')
+
+  useEffect(() => {
+    setCurrentLogo(theme === 'dark' ? '/dark-mode-logo.webp' : '/logo.webp')
+  }, [theme])
+
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
 
   useEffect(() => {
@@ -88,7 +96,16 @@ const Header = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Left section */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Link href="/dashboard" className="flex items-center gap-2">
+                <Image
+                  src={currentLogo}
+                  alt="DontQ Logo"
+                  width={32}
+                  height={32}
+                  priority
+                />
+              </Link>
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                 Dontque
               </h1>
@@ -168,7 +185,7 @@ const Header = () => {
                   className="w-12 h-12 ring-2 ring-amber-200 dark:ring-amber-800"
                 />
                 <div className="flex-1 min-w-0">
-                  <h2 className="font-semibold text-gray-900 dark:text-white truncate">
+                  <h2 className="font-semibold text-gray-900 dark:text-white">
                     {userName || session.user?.name || 'Guest'}
                   </h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -219,7 +236,7 @@ const Header = () => {
                 <NavLink href="/user/queues" icon={Users}>Queues</NavLink>
                 <NavLink href="/user/dashboard" icon={PieChart}>Dashboard</NavLink>
               </NavGroup>
-              
+　　 　 　 　
               {role === 'business' && (
                 <NavGroup title="Business">
                   <NavLink href="/dashboard" icon={PieChart}>Business Dashboard</NavLink>
@@ -227,13 +244,13 @@ const Header = () => {
                   <NavLink href="/business/support" icon={HelpCircle}>Support</NavLink>
                 </NavGroup>
               )}
-              
+　　 　 　 　
               <NavGroup title="Personal">
                 <NavLink href="/user/dashboard?tab=my-queues" icon={Clock}>Active Queues</NavLink>
                 <NavLink href="/user/dashboard?tab=favorites" icon={Star}>Favorites</NavLink>
                 <NavLink href="/user/dashboard?tab=profile" icon={Shield}>Account Settings</NavLink>
               </NavGroup>
-              
+　　 　 　 　
               {/* Theme Toggle */}
               <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                 <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">

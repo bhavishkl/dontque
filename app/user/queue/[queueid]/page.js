@@ -1,12 +1,28 @@
 'use client'
 
-import QueueDetailsPage from '@/app/components/QueueIdCompo/QueueidPage/Default'
-import StreetFoodPreOrder from '@/app/components/QueueIdCompo/ServiceTypes/StreetFood'
-import PharmacyPreOrder from '@/app/components/QueueIdCompo/ServiceTypes/Pharmacy'
-import RestaurantPage from '@/app/components/QueueIdCompo/ServiceTypes/restaurant'
-import { useApi } from '@/app/hooks/useApi'
 import { Spinner } from "@nextui-org/react"
 import { SWRConfig } from 'swr'
+import { useApi } from '@/app/hooks/useApi'
+import dynamic from 'next/dynamic'
+
+// Dynamic imports with loading fallback
+const ServiceComponents = {
+  streetfood: dynamic(() => import('@/app/components/QueueIdCompo/ServiceTypes/StreetFood'), {
+    loading: () => <div className="flex justify-center items-center min-h-screen"><Spinner /></div>
+  }),
+  pharmacy: dynamic(() => import('@/app/components/QueueIdCompo/ServiceTypes/Pharmacy'), {
+    loading: () => <div className="flex justify-center items-center min-h-screen"><Spinner /></div>
+  }),
+  restaurant: dynamic(() => import('@/app/components/QueueIdCompo/ServiceTypes/restaurant'), {
+    loading: () => <div className="flex justify-center items-center min-h-screen"><Spinner /></div>
+  }),
+  advanced: dynamic(() => import('@/app/components/QueueIdCompo/ServiceTypes/Advanced'), {
+    loading: () => <div className="flex justify-center items-center min-h-screen"><Spinner /></div>
+  }),
+  default: dynamic(() => import('@/app/components/QueueIdCompo/QueueidPage/Default'), {
+    loading: () => <div className="flex justify-center items-center min-h-screen"><Spinner /></div>
+  })
+}
 
 // Prefetch configuration
 const fetcher = async (url) => {
@@ -15,55 +31,43 @@ const fetcher = async (url) => {
   return res.json()
 }
 
+function getServiceEndpoint(serviceType) {
+  switch(serviceType) {
+    case 'streetfood':
+      return 'menu'
+    case 'pharmacy':
+      return 'inventory'
+    case 'restaurant':
+      return 'tables'
+    case 'advanced':
+      return 'queue-status'
+    default:
+      return ''
+  }
+}
+
 export default function QueuePage({ params }) {
-  const { data: minimalQueueData, isLoading, isError, error } = useApi(`/api/queues/${params.queueid}/minimal`, {
-    onSuccess: (data) => {
-      // Prefetch full queue data based on service type
-      if (data?.service_type) {
-        // Prefetch detailed queue data
-        fetcher(`/api/queues/${params.queueid}`)
-        
-        // Prefetch service-specific data
-        switch(data.service_type) {
-          case 'streetfood':
-            fetcher(`/api/queues/${params.queueid}/menu`)
-            break
-          case 'pharmacy':
-            fetcher(`/api/queues/${params.queueid}/inventory`)
-            break
-          case 'restaurant':
-            fetcher(`/api/queues/${params.queueid}/tables`)
-            break
-        }
-      }
-    }
-  })
+  const { data: queueData, isLoading, isError: error } = useApi(`/api/queues/${params.queueid}`)
 
-  if (isError) {
-    return <div>Error: {error.message}</div>
+  if (error) {
+    return <div className="text-red-500">Error loading queue data</div>
   }
 
-  let content;
-  if (minimalQueueData?.service_type === 'streetfood') {
-    content = <StreetFoodPreOrder params={params} />
-  } else if (minimalQueueData?.service_type === 'pharmacy') {
-    content = <PharmacyPreOrder params={params} />
-  } else if (minimalQueueData?.service_type === 'restaurant') {
-    content = <RestaurantPage />
-  } else {
-    content = <QueueDetailsPage params={params} />
+  if (!queueData && isLoading) {
+    return <div className="flex justify-center items-center min-h-screen"><Spinner /></div>
   }
 
+  const ServiceComponent = ServiceComponents[queueData?.service_type] || ServiceComponents.default
   return (
-    <SWRConfig 
+    <SWRConfig
       value={{
         fetcher,
-        revalidateOnFocus: false,
-        dedupingInterval: 5000,
         suspense: false,
       }}
     >
-      {content}
+      <div>
+        <ServiceComponent params={params} />
+      </div>
     </SWRConfig>
   )
 }

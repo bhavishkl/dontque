@@ -74,9 +74,8 @@ export async function GET(request) {
     
     return {
       ...queue,
-      current_queue: stats.current_queue_count,
-      queue_entry_length: stats.current_queue_count,
-      total_est_wait_time: stats.total_estimated_wait_time,
+      current_queue_count: stats.current_queue_count,
+      total_estimated_wait_time: stats.total_estimated_wait_time,
       avg_rating: stats.avg_rating,
       capacity_percentage: stats.capacity_percentage
     };
