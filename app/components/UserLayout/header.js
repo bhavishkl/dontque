@@ -135,7 +135,7 @@ const Header = () => {
                       </div>
                       <div className="space-y-3 max-h-96 overflow-y-auto">
                         <p className="text-center text-gray-500 dark:text-gray-400 py-4">
-                          No notifications yet
+                          No notification yet
                         </p>
                       </div>
                     </div>
