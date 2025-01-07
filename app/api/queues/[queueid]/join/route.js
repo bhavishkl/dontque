@@ -64,7 +64,6 @@ export async function POST(request, { params }) {
         user_id: session.user.id,
         status: 'waiting',
         position: queueData.current_queue + 1,
-        estimated_wait_time: queueData.est_time_to_serve * (queueData.current_queue + 1)
       })
       .select()
       .single();
@@ -107,9 +106,6 @@ export async function POST(request, { params }) {
       }
     });
 
-    // Calculate accurate estimated wait time
-    const accurateWaitTime = (actualPosition - 1) * queueData.est_time_to_serve;
-
     // Send notification with accurate data
     await notificationService.sendNotification(
       'QUEUE_JOIN',
@@ -121,7 +117,6 @@ export async function POST(request, { params }) {
       {
         queueName: queueData.name,
         position: actualPosition,
-        waitTime: accurateWaitTime
       }
     );
     perf.markStep('send_notification');

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Scanner } from '@yudiel/react-qr-scanner';
 import { Modal, ModalContent, ModalHeader, ModalBody, Button, ModalFooter, useDisclosure, Card, CardBody, Skeleton, Input, Chip } from "@nextui-org/react"
 import Link from 'next/link'
 import Image from 'next/image'
@@ -16,6 +15,17 @@ import { memo } from 'react';
 import SaveButton from '@/app/components/UniComp/SaveButton';
 import { useLocation } from '../../hooks/useLocation';
 import SearchBar from '@/app/components/SearchBar';
+import dynamic from 'next/dynamic';
+
+const DynamicScanner = dynamic(
+  () => import('@yudiel/react-qr-scanner').then(mod => ({ default: mod.Scanner })),
+  {
+    loading: () => <div className="w-full h-64 flex items-center justify-center">
+      <div className="animate-pulse text-gray-500">Loading scanner...</div>
+    </div>,
+    ssr: false
+  }
+);
 
 const QueueItem = memo(({ queue }) => {
   const router = useRouter();
@@ -462,25 +472,35 @@ export default function Home() {
       </main>
      
 
-<Modal isOpen={isOpen} onClose={onClose}>
+      {isScannerActive && (
         <ModalContent>
           <ModalHeader>Scan QR Code</ModalHeader>
           <ModalBody>
-          {isOpen && (
-            <Scanner
-              onScan={handleQrCodeScanned}
-              onError={(error) => console.log(error)}
-              style={{ width: '100%' }}
-            />
-          )}
+            <div className="w-full">
+              <DynamicScanner
+                onResult={(result) => {
+                  if (result) {
+                    const url = result.getText();
+                    if (url.includes('/quick-join/')) {
+                      const id = url.split('/quick-join/')[1];
+                      router.push(`/quick-join/${id}`);
+                      onClose();
+                    } else {
+                      toast.error('Invalid QR Code');
+                    }
+                  }
+                }}
+                onError={(error) => {
+                  console.log(error?.message)
+                }}
+              />
+            </div>
           </ModalBody>
           <ModalFooter>
-            <Button color="danger" variant="light" onPress={onClose}>
-              Close
-            </Button>
+            <Button onClick={onClose}>Close</Button>
           </ModalFooter>
         </ModalContent>
-      </Modal>
+      )}
     </div>
   )
 }

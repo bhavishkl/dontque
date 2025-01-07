@@ -66,7 +66,7 @@ export default function QueuePage({ params }) {
       }}
     >
       <div>
-        <ServiceComponent params={params} />
+        <ServiceComponent params={params} queueData={queueData} />
       </div>
     </SWRConfig>
   )
