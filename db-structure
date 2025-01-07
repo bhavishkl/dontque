@@ -80,7 +80,7 @@ CREATE TABLE queue_entries (
     served_time TIMESTAMP WITH TIME ZONE,
     expected_at TIMESTAMP WITH TIME ZONE
     added_by VARCHAR(255)
-
+    entry_type VARCHAR(20) DEFAULT 'standard' CHECK (entry_type IN ('standard', 'advanced')),
 );
 
 CREATE INDEX idx_queue_entries_queue_id ON queue_entries(queue_id);
@@ -175,3 +175,67 @@ LEFT JOIN
     queue_rating_stats qrs ON q.queue_id = qrs.queue_id
 GROUP BY 
     q.queue_id, q.name, DATE(qea.join_time), EXTRACT(HOUR FROM qea.join_time), qrs.avg_rating;
+
+    -- Add new columns to queues table
+
+-- Create counters table
+CREATE TABLE counters (
+    counter_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    queue_id UUID REFERENCES queues(queue_id),
+    name VARCHAR(255) NOT NULL,
+    counter_type VARCHAR(20) DEFAULT 'standard' CHECK (counter_type IN ('standard', 'staff')),
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'paused')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    service_start_time TIME,
+    next_serve_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Create staff_details table for staff-type counters
+CREATE TABLE staff_details (
+    staff_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    counter_id UUID REFERENCES counters(counter_id),
+    name VARCHAR(255) NOT NULL,
+    image_url VARCHAR(255),
+    experience_years INTEGER,
+    specialization TEXT,
+    bio TEXT,
+    rating DECIMAL(3,2) DEFAULT 4.0 CHECK (rating >= 0 AND rating <= 5.0),
+    review_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create services table
+CREATE TABLE services (
+    service_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    queue_id UUID REFERENCES queues(queue_id),
+    counter_id UUID REFERENCES counters(counter_id),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    estimated_time INTEGER NOT NULL,
+    price DECIMAL(10,2),
+    status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create queue_entry_services table (many-to-many relationship)
+CREATE TABLE queue_entry_services (
+    entry_id UUID REFERENCES queue_entries(entry_id),
+    service_id UUID REFERENCES services(service_id),
+    PRIMARY KEY (entry_id, service_id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Modify queue_entries table to include counter assignment
+ALTER TABLE queue_entries 
+ADD COLUMN IF NOT EXISTS counter_id UUID REFERENCES counters(counter_id),
+ADD COLUMN IF NOT EXISTS personalized_serve_time TIMESTAMP WITH TIME ZONE;
+
+-- Create indexes for performance
+CREATE INDEX idx_counters_queue_id ON counters(queue_id);
+CREATE INDEX idx_services_queue_id ON services(queue_id);
+CREATE INDEX idx_services_counter_id ON services(counter_id);
+CREATE INDEX idx_queue_entries_counter_id ON queue_entries(counter_id);
+CREATE INDEX idx_staff_details_counter_id ON staff_details(counter_id);
