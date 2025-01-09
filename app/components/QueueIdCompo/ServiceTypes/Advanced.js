@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card, CardBody, Button, Spinner, Tabs, Tab, Chip, Badge, ScrollShadow, Avatar, Progress, Skeleton } from "@nextui-org/react"
 import { Clock, Star, ArrowRight, CheckCircle2, AlertCircle, User, Calendar, Bell, Timer, Share2, LogOut, Check, Circle } from 'lucide-react'
 import QueueInfoSec from '../QueueidPage/QueueInfoSec'
 import { toast } from 'sonner'
 import dynamic from 'next/dynamic'
+import * as htmlToImage from 'html-to-image'
 
 const NotificationPreferencesModal = dynamic(
   () => import('@/app/components/NotificationPreferencesModal'),
@@ -33,7 +34,7 @@ const calculatePersonalizedServeTime = (nextServeAt, position, totalWaitTime, se
     }
   }
   
-  // Add the total wait time in minutes
+  // Add only the wait time for users ahead in the queue
   if (totalWaitTime) {
     return new Date(baseTime.getTime() + (totalWaitTime * 60000));
   }
@@ -51,6 +52,8 @@ export default function Advanced({ params, queueData }) {
   const [counters, setCounters] = useState([])
   const [isCountersLoading, setIsCountersLoading] = useState(true)
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false)
+  const queueStatusRef = useRef(null)
+  const [isSharing, setIsSharing] = useState(false)
 
   // Add timer effect
   useEffect(() => {
@@ -65,38 +68,51 @@ export default function Advanced({ params, queueData }) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setIsLoading(true)
-        setIsCountersLoading(true)
+        setIsLoading(true);
+        setIsCountersLoading(true);
         
         // Check for existing queue entry
-        const entryResponse = await fetch(`/api/queues/${params.queueid}/advanced-queues/entries`)
-        if (entryResponse.ok) {
-          const entryData = await entryResponse.json()
-          if (entryData.entry) {
-            setUserQueueEntry(entryData.entry)
-            // Set selected services from existing entry
-            setSelectedServices(new Set(entryData.entry.queue_entry_services.map(s => s.service_id)))
-          }
+        const entryResponse = await fetch(`/api/queues/${params.queueid}/advanced-queues/entries`);
+        const entryData = await entryResponse.json();
+        
+        if (!entryResponse.ok) {
+          throw new Error(entryData.error || 'Failed to fetch queue entry');
+        }
+
+        // Only set userQueueEntry if entry exists and has required data
+        if (entryData.entry && entryData.entry.entry_id) {
+          setUserQueueEntry(entryData.entry);
+          setSelectedServices(new Set(entryData.entry.queue_entry_services?.map(s => s.service_id) || []));
+        } else {
+          setUserQueueEntry(null);
+          setSelectedServices(new Set());
         }
 
         // Fetch counters data
-        const countersResponse = await fetch(`/api/queues/${params.queueid}/counters`)
-        if (!countersResponse.ok) throw new Error('Failed to fetch counters data')
-        const countersData = await countersResponse.json()
-        setCounters(countersData)
-
-        // Set initial selected counter if available
-        if (countersData.length > 0) {
-          setSelectedCounter(countersData[0].id.toString())
+        const countersResponse = await fetch(`/api/queues/${params.queueid}/counters`);
+        const countersData = await countersResponse.json();
+        
+        if (!countersResponse.ok) {
+          throw new Error(countersData.error || 'Failed to fetch counters data');
         }
+
+        if (!Array.isArray(countersData) || countersData.length === 0) {
+          throw new Error('No counters available');
+        }
+
+        setCounters(countersData);
+        setSelectedCounter(countersData[0].id.toString());
+        
       } catch (error) {
-        console.error('Error fetching data:', error)
-        toast.error('Failed to load data')
+        console.error('Error fetching data:', error);
+        toast.error(error.message || 'Failed to load data');
+        setUserQueueEntry(null);
+        setCounters([]);
       } finally {
-        setIsLoading(false)
-        setIsCountersLoading(false)
+        setIsLoading(false);
+        setIsCountersLoading(false);
       }
-    }
+    };
 
     if (params.queueid) {
       fetchData()
@@ -153,16 +169,17 @@ export default function Advanced({ params, queueData }) {
 
       const data = await response.json();
       
-      // Update local state with queue entry data
-      setUserQueueEntry({
-        ...data.entry,
-        selectedServices: data.entry.queue_entry_services.map(s => ({
-          id: s.service_id,
-          name: s.services.name,
-          estimatedTime: s.services.estimated_time,
-          price: s.services.price
-        }))
-      });
+      // Immediately fetch updated queue entry data to get position and timing info
+      const entryResponse = await fetch(`/api/queues/${params.queueid}/advanced-queues/entries`);
+      const entryData = await entryResponse.json();
+      
+      if (!entryResponse.ok) {
+        throw new Error(entryData.error || 'Failed to fetch queue entry');
+      }
+
+      // Update local state with complete queue entry data
+      setUserQueueEntry(entryData.entry);
+      setSelectedServices(new Set(entryData.entry.queue_entry_services?.map(s => s.service_id) || []));
       
       toast.success('Successfully joined the queue!');
     } catch (error) {
@@ -175,15 +192,27 @@ export default function Advanced({ params, queueData }) {
 
   const handleLeaveQueue = async () => {
     try {
-      const response = await fetch(`/api/queues/${params.queueid}/leave`, {
-        method: 'POST'
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to leave queue');
+      if (!userQueueEntry?.entry_id) {
+        throw new Error('Invalid queue entry');
       }
 
+      const response = await fetch(`/api/queues/${params.queueid}/advanced-queues/leave`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          entry_id: userQueueEntry.entry_id
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to leave queue');
+      }
+
+      // Reset local state
       setUserQueueEntry(null);
       setSelectedServices(new Set());
       toast.success('Successfully left the queue');
@@ -191,7 +220,7 @@ export default function Advanced({ params, queueData }) {
       toast.error(error.message || 'Failed to leave queue');
       console.error('Error leaving queue:', error);
     }
-  }
+  };
 
   const handleTabChange = (key) => {
     setSelectedCounter(key)
@@ -203,6 +232,53 @@ export default function Advanced({ params, queueData }) {
     const hasEnabledChannels = Object.values(preferences).some(value => value);
     setNotificationsEnabled(hasEnabledChannels);
   };
+
+  const handleShareStatus = async () => {
+    if (!queueStatusRef.current) {
+      toast.error('Nothing to share')
+      return
+    }
+
+    setIsSharing(true)
+    try {
+      // Create a clone of the element to modify for sharing
+      const element = queueStatusRef.current
+      
+      // Capture the element as an image
+      const dataUrl = await htmlToImage.toPng(element, {
+        quality: 1,
+        backgroundColor: '#ffffff',
+        style: {
+          transform: 'none'
+        }
+      })
+
+      // Try native share API first
+      if (navigator.share) {
+        const blob = await (await fetch(dataUrl)).blob()
+        const file = new File([blob], 'queue-status.png', { type: 'image/png' })
+        
+        await navigator.share({
+          title: `${queueData?.name || 'Queue'} Status`,
+          text: `My position in queue: #${userQueueEntry?.position}`,
+          files: [file]
+        })
+      } else {
+        // Fallback to download
+        const link = document.createElement('a')
+        link.download = 'queue-status.png'
+        link.href = dataUrl
+        link.click()
+      }
+      
+      toast.success('Queue status shared successfully!')
+    } catch (error) {
+      console.error('Error sharing queue status:', error)
+      toast.error('Failed to share queue status')
+    } finally {
+      setIsSharing(false)
+    }
+  }
 
   const renderQueueStatus = (counter) => {
     if (!userQueueEntry) return null;
@@ -304,8 +380,11 @@ export default function Advanced({ params, queueData }) {
 
     return (
       <div className="space-y-6">
-        {/* Queue Status Card */}
-        <Card className="bg-gradient-to-br from-orange-500 to-orange-700 text-white overflow-hidden">
+        {/* Queue Status Card with ref */}
+        <Card 
+          ref={queueStatusRef}
+          className="bg-gradient-to-br from-orange-500 to-orange-700 text-white overflow-hidden"
+        >
           <CardBody className="p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <div>
@@ -413,9 +492,10 @@ export default function Advanced({ params, queueData }) {
                   color="secondary"
                   variant="flat"
                   startContent={<Share2 className="h-4 w-4" />}
-                  onClick={handleShare}
+                  onClick={handleShareStatus}
+                  isLoading={isSharing}
                 >
-                  Share Status
+                  {isSharing ? 'Sharing...' : 'Share Status'}
                 </Button>
 
                 <Button
@@ -456,11 +536,11 @@ export default function Advanced({ params, queueData }) {
               <Skeleton className="h-8 w-3/4" />
               <Skeleton className="h-32 w-full" />
             </div>
-          ) : userQueueEntry ? (
-            // Show queue status when user is in queue
+          ) : userQueueEntry && userQueueEntry.entry_id ? (
+            // Show queue status when user is in queue and has valid entry_id
             renderQueueStatus(counters.find(c => c.id.toString() === userQueueEntry.counter_id))
-          ) : (
-            // Show counter selection and join UI when not in queue
+          ) : counters.length > 0 ? (
+            // Show counter selection and join UI when not in queue and counters are available
             <Tabs 
               selectedKey={selectedCounter} 
               onSelectionChange={handleTabChange}
@@ -646,6 +726,13 @@ export default function Advanced({ params, queueData }) {
                 </Tab>
               ))}
             </Tabs>
+          ) : (
+            // Show error state when no counters are available
+            <div className="text-center py-8">
+              <AlertCircle className="h-12 w-12 text-warning mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No Counters Available</h3>
+              <p className="text-gray-500">Please try again later or contact support.</p>
+            </div>
           )}
         </CardBody>
       </Card>

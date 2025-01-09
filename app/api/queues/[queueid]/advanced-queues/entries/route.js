@@ -78,7 +78,7 @@ export async function GET(request, { params }) {
           entry.join_time === userEntry.join_time
         ) + 1;
 
-        // Calculate total wait time from entries ahead including their selected services
+        // Only calculate total wait time from entries ahead
         const entriesAhead = entries.slice(0, position - 1);
         totalEstimatedTime = entriesAhead.reduce((total, entry) => {
           const entryServicesTime = entry.queue_entry_services?.reduce((serviceTotal, service) => {
@@ -86,23 +86,22 @@ export async function GET(request, { params }) {
           }, 0) || 0;
           return total + entryServicesTime;
         }, 0);
-
-        // Add current user's service time to total
-        const currentUserServiceTime = userEntry.queue_entry_services?.reduce((total, service) => {
-          return total + (service.services?.estimated_time || 0);
-        }, 0) || 0;
-        
-        totalEstimatedTime += currentUserServiceTime;
       }
     }
+
+    // Get current user's service time separately for display purposes
+    const currentUserServiceTime = userEntry?.queue_entry_services?.reduce((total, service) => {
+      return total + (service.services?.estimated_time || 0);
+    }, 0) || 0;
 
     return NextResponse.json({ 
       entry: {
         ...userEntry,
         position,
-        totalEstimatedTime, // Include totalEstimatedTime in the entry object
-        currentTime: new Date().toISOString(), // Add current server time
-        expectedServeTime: userEntry?.counters?.next_serve_at // Include next_serve_at
+        totalEstimatedTime, // Only includes time for users ahead
+        currentUserServiceTime, // Separate field for current user's service time
+        currentTime: new Date().toISOString(),
+        expectedServeTime: userEntry?.counters?.next_serve_at
       }
     })
 
