@@ -30,16 +30,12 @@ export async function POST(request, { params }) {
     // Get the current queue information
     const { data: queueData, error: queueError } = await supabase
       .from('queues')
-      .select('current_queue, max_capacity, avg_wait_time')
+      .select('max_capacity')
       .eq('queue_id', queueid)
       .single();
 
     if (queueError) {
       return NextResponse.json({ error: queueError.message }, { status: 500 });
-    }
-
-    if (queueData.current_queue >= queueData.max_capacity) {
-      return NextResponse.json({ error: 'Queue is full' }, { status: 400 });
     }
 
     // Check if the user is already in the queue
@@ -65,9 +61,7 @@ export async function POST(request, { params }) {
       .insert({
         queue_id: queueid,
         user_id: userData.user_id,
-        position: queueData.current_queue + 1,
         status: 'waiting',
-        estimated_wait_time: queueData.avg_wait_time,
         added_by: session.user.id
       })
       .select()
@@ -75,16 +69,6 @@ export async function POST(request, { params }) {
 
     if (insertError) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });
-    }
-
-    // Update the queue count
-    const { error: updateError } = await supabase
-      .from('queues')
-      .update({ current_queue: queueData.current_queue + 1 })
-      .eq('queue_id', queueid);
-
-    if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
     // Update the known_users in the user_profile of the session user

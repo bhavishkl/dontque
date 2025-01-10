@@ -31,20 +31,6 @@ const fetcher = async (url) => {
   return res.json()
 }
 
-function getServiceEndpoint(serviceType) {
-  switch(serviceType) {
-    case 'streetfood':
-      return 'menu'
-    case 'pharmacy':
-      return 'inventory'
-    case 'restaurant':
-      return 'tables'
-    case 'advanced':
-      return 'queue-status'
-    default:
-      return ''
-  }
-}
 
 export default function QueuePage({ params }) {
   const { data: queueData, isLoading, isError: error } = useApi(`/api/queues/${params.queueid}`)

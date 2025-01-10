@@ -1,18 +1,37 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { Card, CardBody, Button, Spinner, Tabs, Tab, Chip, Badge, ScrollShadow, Avatar, Progress, Skeleton } from "@nextui-org/react"
 import { Clock, Star, ArrowRight, CheckCircle2, AlertCircle, User, Calendar, Bell, Timer, Share2, LogOut, Check, Circle } from 'lucide-react'
 import QueueInfoSec from '../QueueidPage/QueueInfoSec'
 import { toast } from 'sonner'
 import dynamic from 'next/dynamic'
 import * as htmlToImage from 'html-to-image'
+import { useApi } from '@/app/hooks/useApi'
+
+// Dynamic import with loading fallback
+const AddKnownUserModal = dynamic(
+  () => import('@/app/components/UniComp/AddKnownUserModal'),
+  {
+    loading: () => (
+      <Button
+        className="flex-1"
+        color="success"
+        variant="flat"
+        disabled
+      >
+        Loading...
+      </Button>
+    ),
+    ssr: false // Disable server-side rendering for this component
+  }
+)
 
 const NotificationPreferencesModal = dynamic(
   () => import('@/app/components/NotificationPreferencesModal'),
   {
     loading: () => null,
-    ssr: false // Since it's a modal, we don't need SSR
+    ssr: false
   }
 )
 
@@ -43,14 +62,12 @@ const calculatePersonalizedServeTime = (nextServeAt, position, totalWaitTime, se
 };
 
 export default function Advanced({ params, queueData }) {
-  const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedCounter, setSelectedCounter] = useState("1")
   const [selectedServices, setSelectedServices] = useState(new Set())
   const [userQueueEntry, setUserQueueEntry] = useState(null)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [counters, setCounters] = useState([])
-  const [isCountersLoading, setIsCountersLoading] = useState(true)
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false)
   const queueStatusRef = useRef(null)
   const [isSharing, setIsSharing] = useState(false)
@@ -64,60 +81,72 @@ export default function Advanced({ params, queueData }) {
     return () => clearInterval(timer);
   }, []);
 
-  // Modify the useEffect to fetch both queue data and counters
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        setIsCountersLoading(true);
-        
-        // Check for existing queue entry
-        const entryResponse = await fetch(`/api/queues/${params.queueid}/advanced-queues/entries`);
-        const entryData = await entryResponse.json();
-        
-        if (!entryResponse.ok) {
-          throw new Error(entryData.error || 'Failed to fetch queue entry');
-        }
-
-        // Only set userQueueEntry if entry exists and has required data
-        if (entryData.entry && entryData.entry.entry_id) {
-          setUserQueueEntry(entryData.entry);
-          setSelectedServices(new Set(entryData.entry.queue_entry_services?.map(s => s.service_id) || []));
-        } else {
-          setUserQueueEntry(null);
-          setSelectedServices(new Set());
-        }
-
-        // Fetch counters data
-        const countersResponse = await fetch(`/api/queues/${params.queueid}/counters`);
-        const countersData = await countersResponse.json();
-        
-        if (!countersResponse.ok) {
-          throw new Error(countersData.error || 'Failed to fetch counters data');
-        }
-
-        if (!Array.isArray(countersData) || countersData.length === 0) {
-          throw new Error('No counters available');
-        }
-
-        setCounters(countersData);
-        setSelectedCounter(countersData[0].id.toString());
-        
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast.error(error.message || 'Failed to load data');
-        setUserQueueEntry(null);
-        setCounters([]);
-      } finally {
-        setIsLoading(false);
-        setIsCountersLoading(false);
-      }
-    };
-
-    if (params.queueid) {
-      fetchData()
+  // Replace fetch with useApi
+  const { 
+    data: queueEntry, 
+    isLoading: isQueueEntryLoading,
+    mutate: mutateQueueEntry 
+  } = useApi(
+    params.queueid ? `/api/queues/${params.queueid}/advanced-queues/entries` : null,
+    {
+      refreshInterval: 5000 // Refresh every 5 seconds
     }
-  }, [params.queueid])
+  )
+
+  const { 
+    data: countersData, 
+    isLoading: isCountersLoading,
+    mutate: mutateCounters 
+  } = useApi(
+    params.queueid ? `/api/queues/${params.queueid}/counters` : null,
+    {
+      refreshInterval: 5000 // Refresh every 5 seconds
+    }
+  )
+
+  // Update userQueueEntry when queueEntry data changes
+  useEffect(() => {
+    if (queueEntry?.entry && queueEntry.entry.entry_id) {
+      setUserQueueEntry(queueEntry.entry)
+      setSelectedServices(new Set(queueEntry.entry.queue_entry_services?.map(s => s.service_id) || []))
+    } else {
+      setUserQueueEntry(null)
+      setSelectedServices(new Set())
+    }
+  }, [queueEntry])
+
+  // Update counters when countersData changes
+  useEffect(() => {
+    if (Array.isArray(countersData) && countersData.length > 0) {
+      setCounters(countersData)
+      setSelectedCounter(countersData[0].id.toString())
+    } else {
+      setCounters([])
+    }
+  }, [countersData])
+
+  // Only show loading state when both data fetches are loading and no data is available
+  const isInitialLoading = (isQueueEntryLoading || isCountersLoading) && !countersData && !queueEntry;
+
+  // Update the render logic
+  if (isInitialLoading) {
+    return (
+      <div className="space-y-4 p-4">
+        <Card>
+          <CardBody>
+            <div className="space-y-3">
+              <Skeleton className="rounded-lg">
+                <div className="h-24 rounded-lg bg-default-300"></div>
+              </Skeleton>
+              <Skeleton className="rounded-lg">
+                <div className="h-24 rounded-lg bg-default-300"></div>
+              </Skeleton>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
 
   const handleShare = async () => {
     try {
@@ -160,40 +189,32 @@ export default function Advanced({ params, queueData }) {
           counter_id: selectedCounter,
           services: Array.from(selectedServices)
         })
-      });
+      })
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to join queue');
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to join queue')
       }
 
-      const data = await response.json();
+      // Mutate both queue entry and counters data
+      await Promise.all([
+        mutateQueueEntry(),
+        mutateCounters()
+      ])
       
-      // Immediately fetch updated queue entry data to get position and timing info
-      const entryResponse = await fetch(`/api/queues/${params.queueid}/advanced-queues/entries`);
-      const entryData = await entryResponse.json();
-      
-      if (!entryResponse.ok) {
-        throw new Error(entryData.error || 'Failed to fetch queue entry');
-      }
-
-      // Update local state with complete queue entry data
-      setUserQueueEntry(entryData.entry);
-      setSelectedServices(new Set(entryData.entry.queue_entry_services?.map(s => s.service_id) || []));
-      
-      toast.success('Successfully joined the queue!');
+      toast.success('Successfully joined the queue!')
     } catch (error) {
-      toast.error(error.message || 'Failed to join queue');
-      console.error('Error joining queue:', error);
+      toast.error(error.message || 'Failed to join queue')
+      console.error('Error joining queue:', error)
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
   }
 
   const handleLeaveQueue = async () => {
     try {
       if (!userQueueEntry?.entry_id) {
-        throw new Error('Invalid queue entry');
+        throw new Error('Invalid queue entry')
       }
 
       const response = await fetch(`/api/queues/${params.queueid}/advanced-queues/leave`, {
@@ -204,23 +225,29 @@ export default function Advanced({ params, queueData }) {
         body: JSON.stringify({
           entry_id: userQueueEntry.entry_id
         })
-      });
+      })
 
-      const data = await response.json();
+      const data = await response.json()
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to leave queue');
+        throw new Error(data.error || 'Failed to leave queue')
       }
 
+      // Mutate both queue entry and counters data
+      await Promise.all([
+        mutateQueueEntry(),
+        mutateCounters()
+      ])
+
       // Reset local state
-      setUserQueueEntry(null);
-      setSelectedServices(new Set());
-      toast.success('Successfully left the queue');
+      setUserQueueEntry(null)
+      setSelectedServices(new Set())
+      toast.success('Successfully left the queue')
     } catch (error) {
-      toast.error(error.message || 'Failed to leave queue');
-      console.error('Error leaving queue:', error);
+      toast.error(error.message || 'Failed to leave queue')
+      console.error('Error leaving queue:', error)
     }
-  };
+  }
 
   const handleTabChange = (key) => {
     setSelectedCounter(key)
@@ -476,6 +503,22 @@ export default function Advanced({ params, queueData }) {
                   Notification Preferences
                 </Button>
 
+                <Suspense fallback={
+                  <Button className="flex-1" color="success" variant="flat" disabled>
+                    Loading...
+                  </Button>
+                }>
+                  <AddKnownUserModal 
+                    queueId={params.queueid} 
+                    onSuccess={mutateQueueEntry}
+                    isAdvanced={true}
+                    selectedServices={selectedServices}
+                    counterId={selectedCounter}
+                  />
+                </Suspense>
+              </div>
+
+              <div className="flex gap-2">
                 <Button
                   className="flex-1"
                   color="warning"
@@ -484,9 +527,7 @@ export default function Advanced({ params, queueData }) {
                 >
                   Request More Time
                 </Button>
-              </div>
 
-              <div className="flex gap-2">
                 <Button
                   className="flex-1"
                   color="secondary"
@@ -508,6 +549,14 @@ export default function Advanced({ params, queueData }) {
                   Leave Queue
                 </Button>
               </div>
+
+              <Suspense fallback={null}>
+                <NotificationPreferencesModal 
+                  isOpen={isPreferencesModalOpen}
+                  onClose={() => setIsPreferencesModalOpen(false)}
+                  onSave={handlePreferencesSaved}
+                />
+              </Suspense>
             </div>
           </CardBody>
         </Card>
@@ -515,23 +564,19 @@ export default function Advanced({ params, queueData }) {
     );
   };
 
-  if (isLoading || isCountersLoading) {
-    return <div className="flex justify-center items-center min-h-screen"><Spinner size="lg" /></div>
-  }
-
   const selectedCounterData = counters.find(c => c.id.toString() === selectedCounter)
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
       <QueueInfoSec
         queueData={queueData}
-        isLoading={isLoading}
+        isLoading={isInitialLoading}
         handleShare={handleShare}
       />
       
       <Card className="w-full">
         <CardBody>
-          {isLoading ? (
+          {isInitialLoading ? (
             <div className="space-y-4">
               <Skeleton className="h-8 w-3/4" />
               <Skeleton className="h-32 w-full" />

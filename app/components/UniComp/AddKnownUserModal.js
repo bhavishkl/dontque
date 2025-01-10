@@ -3,7 +3,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input
 import { UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 
-const AddKnownUserModal = ({ queueId, onSuccess }) => {
+const AddKnownUserModal = ({ queueId, onSuccess, isAdvanced, selectedServices, counterId }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [shortId, setShortId] = useState('');
   const [isAdding, setIsAdding] = useState(false);
@@ -11,10 +11,22 @@ const AddKnownUserModal = ({ queueId, onSuccess }) => {
   const handleAddKnown = async () => {
     setIsAdding(true);
     try {
-      const response = await fetch(`/api/queues/${queueId}/add-known`, {
+      const endpoint = isAdvanced 
+        ? `/api/queues/${queueId}/advanced-queues/add-known`
+        : `/api/queues/${queueId}/add-known`;
+
+      const body = isAdvanced 
+        ? { 
+            shortId,
+            services: Array.from(selectedServices),
+            counterId
+          }
+        : { shortId };
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shortId }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
