@@ -2,9 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { Users, Clock, Settings, Plus, Search, MoreVertical, PieChart } from 'lucide-react'
-import { Button, Input, Card, CardBody, CardHeader, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Progress, Chip, Skeleton } from "@nextui-org/react"
+import { Button } from "@nextui-org/button"
+import { Input } from "@nextui-org/input"
+import { Card, CardBody, CardHeader } from "@nextui-org/card"
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@nextui-org/dropdown"
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@nextui-org/table"
+import { Chip } from "@nextui-org/chip"
+import { Skeleton } from "@nextui-org/skeleton"
 import { useSession } from "next-auth/react"
 import { useRouter } from 'next/navigation'
 import { useApi } from '../hooks/useApi'
