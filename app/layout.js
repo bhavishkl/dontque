@@ -33,6 +33,12 @@ export default async function RootLayout({ children }) {
 
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta 
+          name="google-site-verification" 
+          content="N4FxqHbSvySNNCTrB03INB_j9KrcdSmEUPhhlh-UQsA" 
+        />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Providers session={session}>
