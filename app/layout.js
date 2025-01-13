@@ -10,6 +10,7 @@ import { ThemeProvider } from 'next-themes';
 import Script from 'next/script';
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import OfflineAlert from './components/OfflineAlert';
+import { WebVitalsTracker } from './components/WebVitalsTracker';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -23,8 +24,41 @@ const geistMono = localFont({
 });
 
 export const metadata = {
-  title: "dontq",
-  description: "Revolutionizing queue management",
+  title: "DontQ - AI-Powered Queue Management System",
+  description: "Revolutionize your queue management with DontQ. Reduce wait times, enhance customer satisfaction, and optimize operations with our AI-powered solution.",
+  keywords: "queue management, virtual queue, AI queue system, wait time management, customer flow optimization",
+  openGraph: {
+    title: 'DontQ - AI-Powered Queue Management System',
+    description: 'Transform your customer queuing experience with AI-powered solutions',
+    url: 'https://dontq.vercel.app',
+    siteName: 'DontQ',
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'DontQ - AI-Powered Queue Management System',
+    description: 'Transform your customer queuing experience with AI-powered solutions',
+    images: ['/twitter-image.jpg'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 
@@ -62,6 +96,7 @@ export default async function RootLayout({ children }) {
             richColors
           />
           <OfflineAlert />
+          <WebVitalsTracker />
         </ThemeProvider>
         <Script
           src="https://checkout.razorpay.com/v1/checkout.js"

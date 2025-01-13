@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Disallow private routes
+Disallow: /api/*
+Disallow: /user/*
+Disallow: /dashboard/*
+
+# Sitemap location
+Sitemap: https://dontq.vercel.app/sitemap.xml 
