@@ -2,15 +2,20 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route";
+import { PerformanceMonitor } from '@/utils/performance';
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
 export async function GET(request) {
+  const monitor = new PerformanceMonitor('GET /api/queues');
+  
   const { searchParams } = new URL(request.url);
   const category = searchParams.get('category');
   const city = searchParams.get('city');
   const limit = searchParams.get('limit') || 10;
   const search = searchParams.get('search');
+
+  monitor.markStep('params-parsed');
 
   let query = supabase
     .from('queues')
@@ -42,9 +47,14 @@ export async function GET(request) {
 
   query = query.limit(limit);
 
+  monitor.markStep('query-built');
+
   const { data: queueData, error: queueError } = await query;
 
+  monitor.markStep('queues-fetched');
+
   if (queueError) {
+    monitor.end();
     return NextResponse.json({ error: queueError.message }, { status: 500 });
   }
 
@@ -54,7 +64,10 @@ export async function GET(request) {
     .select('queue_id, current_queue_count, total_estimated_wait_time, avg_rating, capacity_percentage')
     .in('queue_id', queueData.map(q => q.queue_id));
 
+  monitor.markStep('stats-fetched');
+
   if (statsError) {
+    monitor.end();
     return NextResponse.json({ error: statsError.message }, { status: 500 });
   }
 
@@ -80,6 +93,9 @@ export async function GET(request) {
       capacity_percentage: stats.capacity_percentage
     };
   });
+
+  monitor.markStep('data-merged');
+  monitor.end();
 
   return NextResponse.json(queuesWithStats);
 }

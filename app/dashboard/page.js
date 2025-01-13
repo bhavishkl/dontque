@@ -183,7 +183,16 @@ export default function QueueOwnerDashboard() {
                 ) : (
                   filteredQueues.map((queue) => (
                     <TableRow key={queue.queue_id} className="dark:bg-gray-800 dark:text-white">
-                      <TableCell>{queue.name}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {queue.name}
+                          {queue.service_type === 'advanced' && (
+                            <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-purple-400 rounded-full border border-purple-400/20">
+                              PRO
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>{queue.current_queue}</TableCell>
                       <TableCell>{queue.avg_wait_time} min</TableCell>
                       <TableCell>{queue.total_served}</TableCell>

@@ -13,7 +13,15 @@ export async function GET(request) {
 
     const { data, error } = await supabase
       .from('queues')
-      .select('*')
+      .select(`
+        queue_id,
+        name,
+        current_queue,
+        avg_wait_time,
+        total_served,
+        status,
+        service_type
+      `)
       .eq('owner_id', session.user.id)
 
     if (error) {

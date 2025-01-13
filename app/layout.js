@@ -9,6 +9,7 @@ import BottomBar from './components/UserLayout/bottombar';
 import { ThemeProvider } from 'next-themes';
 import Script from 'next/script';
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import OfflineAlert from './components/OfflineAlert';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -54,6 +55,7 @@ export default async function RootLayout({ children }) {
             className="!top-[72px] sm:!top-20 !px-4"
             richColors
           />
+          <OfflineAlert />
         </ThemeProvider>
         <Script
           src="https://checkout.razorpay.com/v1/checkout.js"
