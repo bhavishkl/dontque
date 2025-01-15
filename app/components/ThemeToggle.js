@@ -12,13 +12,20 @@ export function ThemeToggle() {
     setMounted(true)
   }, [])
 
+  const handleThemeChange = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark'
+    setTheme(newTheme)
+    // Dispatch custom event for theme change
+    window.dispatchEvent(new Event('themeChange'))
+  }
+
   if (!mounted) {
     return null
   }
 
   return (
     <button 
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      onClick={handleThemeChange}
       className="p-2 rounded-full bg-gray-200 dark:bg-gray-800"
     >
       {theme === 'dark' ? (
