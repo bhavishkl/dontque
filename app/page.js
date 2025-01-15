@@ -1,29 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button, Card, CardBody, Navbar, NavbarBrand, NavbarContent, NavbarItem } from "@nextui-org/react";
 import { useRouter } from 'next/navigation';
 import { useSession } from "next-auth/react";
-import { useUserInfo } from './hooks/useUserName';
 import PerformanceMetrics from './components/PerformanceMetrics';
 
 export default function LandingPage() {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { role } = useUserInfo(session?.user?.id);
-
-  useEffect(() => {
-    if (session) {
-      if (role === 'business') {
-        router.push('/dashboard');
-      } else {
-        router.push('/user/home');
-      }
-    }
-  }, [session, router, role]);
 
   const handleStartFreeTrial = () => {
     router.push('/signin');
