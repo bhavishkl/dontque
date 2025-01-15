@@ -3,16 +3,16 @@
 import Link from 'next/link'
 import { useSession, signOut } from "next-auth/react"
 import { 
-  Bell, Home, Settings, LogOut, User, 
-  PieChart, HelpCircle, Search,
-  Clock, Star, Copy, Share2
+  Bell, X, Home, Settings, LogOut, User, 
+  Users, PieChart, HelpCircle, Search,
+  Clock, Star, Shield, ChevronDown, Copy, Share2
 } from 'lucide-react'
 import Image from 'next/image'
 import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { useUserInfo } from '../../hooks/useUserName'
 import { usePathname } from 'next/navigation'
-import { Avatar, Button, Popover, PopoverTrigger, PopoverContent, Tooltip } from "@nextui-org/react"
+import { Avatar, Button, Popover, PopoverTrigger, PopoverContent, Tooltip, Input } from "@nextui-org/react"
 import { ThemeToggle } from '../ThemeToggle'
 import { toast } from 'sonner'
 import { useTheme } from 'next-themes'
@@ -26,23 +26,11 @@ const Header = () => {
   const sidebarRef = useRef(null)
   const { name: userName, role, image: userImage, short_id: shortid } = useUserInfo(session?.user?.id)
   const { theme } = useTheme()
-  const [currentLogo, setCurrentLogo] = useState(() => {
-    const storedTheme = localStorage.getItem('theme')
-    if (storedTheme) {
-      return storedTheme === 'dark' ? '/dark-mode-logo.webp' : '/logo.webp'
-    }
-    return '/logo.webp'
-  })
+  const [currentLogo, setCurrentLogo] = useState('/logo.webp')
 
   useEffect(() => {
-    const handleThemeChange = () => {
-      const newTheme = localStorage.getItem('theme')
-      setCurrentLogo(newTheme === 'dark' ? '/dark-mode-logo.webp' : '/logo.webp')
-    }
-
-    window.addEventListener('themeChange', handleThemeChange)
-    return () => window.removeEventListener('themeChange', handleThemeChange)
-  }, [])
+    setCurrentLogo(theme === 'dark' ? '/dark-mode-logo.webp' : '/logo.webp')
+  }, [theme])
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
 
@@ -69,7 +57,7 @@ const Header = () => {
   const NavLink = ({ href, icon: Icon, children }) => {
     const pathname = usePathname()
     const isActive = pathname === href || pathname.startsWith(`${href}?`)
-    
+
     return (
       <Tooltip content={children} placement="right" delay={300}>
         <Link 
@@ -110,15 +98,13 @@ const Header = () => {
             {/* Left section */}
             <div className="flex items-center gap-2">
               <Link href="/dashboard" className="flex items-center gap-2">
-                {currentLogo && (
-                  <Image
-                    src={currentLogo}
-                    alt="DontQ Logo"
-                    width={32}
-                    height={32}
-                    priority
-                  />
-                )}
+                <Image
+                  src={currentLogo}
+                  alt="DontQ Logo"
+                  width={32}
+                  height={32}
+                  priority
+                />
               </Link>
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                 Dontque
@@ -247,25 +233,24 @@ const Header = () => {
             <nav className="p-4 space-y-6 overflow-y-auto max-h-[calc(100vh-250px)]">
               <NavGroup title="Main">
                 <NavLink href="/user/home" icon={Home}>Home</NavLink>
-                <NavLink href="/user/queues" icon={Search}>Explore</NavLink>
-                <NavLink href="/user/notifications" icon={Bell}>Notifications</NavLink>
+                <NavLink href="/user/queues" icon={Users}>Queues</NavLink>
+                <NavLink href="/user/dashboard" icon={PieChart}>Dashboard</NavLink>
               </NavGroup>
-
+　　 　 　 　
               {role === 'business' && (
                 <NavGroup title="Business">
-                  <NavLink href="/dashboard" icon={PieChart}>Dashboard</NavLink>
+                  <NavLink href="/dashboard" icon={PieChart}>Business Dashboard</NavLink>
                   <NavLink href="/business/profile" icon={User}>Business Profile</NavLink>
                   <NavLink href="/business/support" icon={HelpCircle}>Support</NavLink>
                 </NavGroup>
               )}
-
-              <NavGroup title="Account">
-                <NavLink href="/user/dashboard" icon={User}>Profile</NavLink>
+　　 　 　 　
+              <NavGroup title="Personal">
                 <NavLink href="/user/dashboard?tab=my-queues" icon={Clock}>Active Queues</NavLink>
-                <NavLink href="/user/dashboard?tab=favorites" icon={Star}>Saved Queues</NavLink>
-                <NavLink href="/user/settings" icon={Settings}>Settings</NavLink>
+                <NavLink href="/user/dashboard?tab=favorites" icon={Star}>Favorites</NavLink>
+                <NavLink href="/user/dashboard?tab=profile" icon={Shield}>Account Settings</NavLink>
               </NavGroup>
-
+　　 　 　 　
               {/* Theme Toggle */}
               <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                 <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">

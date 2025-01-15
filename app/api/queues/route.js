@@ -9,95 +9,78 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.
 export async function GET(request) {
   const monitor = new PerformanceMonitor('GET /api/queues');
   
-  const { searchParams } = new URL(request.url);
-  const category = searchParams.get('category');
-  const city = searchParams.get('city');
-  const limit = searchParams.get('limit') || 10;
-  const search = searchParams.get('search');
+  try {
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get('category');
+    const city = searchParams.get('city');
+    const limit = Math.min(parseInt(searchParams.get('limit') || 10), 50);
+    const search = searchParams.get('search')?.trim();
 
-  monitor.markStep('params-parsed');
+    monitor.markStep('params-parsed');
 
-  let query = supabase
-    .from('queues')
-    .select(`
-      queue_id,
-      name,
-      category,
-      avg_wait_time,
-      image_url,
-      est_time_to_serve,
-      opening_time,
-      closing_time,
-      service_start_time,
-      description
-    `)
-    .eq('status', 'active');
+    // Using the new view
+    let query = supabase
+      .from('queue_stats_extended')  // Using the new view
+      .select('*')
+      .eq('status', 'active');
 
-  if (city && city.trim()) {
-    query = query.eq('location', city);
-  }
+    if (category && category !== 'All') {
+      query = query.eq('category', category);
+    }
 
-  if (search && search.trim()) {
-    query = query.or(`name.ilike.%${search.trim()}%, description.ilike.%${search.trim()}%, location.ilike.%${search.trim()}%`);
-  }
+    if (city) {
+      query = query.eq('location', city.trim());
+    }
 
-  if (category && category !== 'All') {
-    query = query.eq('category', category);
-  }
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+    }
 
-  query = query.limit(limit);
+    query = query
+      .order('name', { ascending: true })
+      .limit(limit);
 
-  monitor.markStep('query-built');
+    monitor.markStep('query-built');
 
-  const { data: queueData, error: queueError } = await query;
+    const { data: queueData, error: queueError } = await query;
 
-  monitor.markStep('queues-fetched');
+    monitor.markStep('data-fetched');
 
-  if (queueError) {
+    if (queueError) {
+      console.error('Query error:', queueError);
+      monitor.end();
+      return NextResponse.json({ error: 'Failed to fetch queues' }, { status: 500 });
+    }
+
+    // The view already returns data in the correct format, but let's ensure all fields are present
+    const formattedQueues = queueData?.map(queue => ({
+      queue_id: queue.queue_id,
+      name: queue.name,
+      category: queue.category,
+      avg_wait_time: queue.avg_wait_time,
+      image_url: queue.image_url,
+      est_time_to_serve: queue.est_time_to_serve,
+      opening_time: queue.opening_time,
+      closing_time: queue.closing_time,
+      service_start_time: queue.service_start_time,
+      description: queue.description,
+      location: queue.location,
+      current_queue_count: queue.current_queue_count || 0,
+      total_estimated_wait_time: queue.total_estimated_wait_time || 0,
+      avg_rating: queue.avg_rating || 0,
+      capacity_percentage: queue.capacity_percentage || 0
+    })) || [];
+
+    monitor.markStep('data-transformed');
     monitor.end();
-    return NextResponse.json({ error: queueError.message }, { status: 500 });
-  }
 
-  // Fetch queue stats from the view
-  const { data: queueStats, error: statsError } = await supabase
-    .from('queue_current_stats')
-    .select('queue_id, current_queue_count, total_estimated_wait_time, avg_rating, capacity_percentage')
-    .in('queue_id', queueData.map(q => q.queue_id));
+    return NextResponse.json(formattedQueues);
 
-  monitor.markStep('stats-fetched');
-
-  if (statsError) {
+  } catch (error) {
+    console.error('Unexpected error:', error);
     monitor.end();
-    return NextResponse.json({ error: statsError.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-
-  // Log queue stats
-  queueStats.forEach(stat => {
-    console.log(`Queue ${stat.queue_id} - Current Queue Count: ${stat.current_queue_count}, Average Rating: ${stat.avg_rating}`);
-  });
-
-  // Merge queue data with stats
-  const queuesWithStats = queueData.map(queue => {
-    const stats = queueStats.find(stat => stat.queue_id === queue.queue_id) || {
-      current_queue_count: 0,
-      total_estimated_wait_time: 0,
-      avg_rating: null,
-      capacity_percentage: 0
-    };
-    
-    return {
-      ...queue,
-      current_queue_count: stats.current_queue_count,
-      total_estimated_wait_time: stats.total_estimated_wait_time,
-      avg_rating: stats.avg_rating,
-      capacity_percentage: stats.capacity_percentage
-    };
-  });
-
-  monitor.markStep('data-merged');
-  monitor.end();
-
-  return NextResponse.json(queuesWithStats);
 }
 
 export async function POST(request) {
