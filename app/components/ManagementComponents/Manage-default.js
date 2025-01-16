@@ -465,7 +465,10 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
               </div>
             </CardHeader>
             <CardBody className="flex justify-center items-center">
-              <QueueQRCode queueId={params.queueId} />
+              <QueueQRCode 
+                queueId={params.queueId} 
+                queueName={queueData?.queueData?.name} 
+              />
             </CardBody>
           </Card>
         </Tab>

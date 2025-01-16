@@ -4,15 +4,16 @@ import Link from 'next/link'
 import { useSession, signOut } from "next-auth/react"
 import { 
   Bell, X, Home, Settings, LogOut, User, 
-  Users, PieChart, HelpCircle, Search,
-  Clock, Star, Shield, ChevronDown, Copy, Share2
+  Users, PieChart, HelpCircle,
+  Clock, Copy, Share2, History,
+  Bookmark
 } from 'lucide-react'
 import Image from 'next/image'
 import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { useUserInfo } from '../../hooks/useUserName'
 import { usePathname } from 'next/navigation'
-import { Avatar, Button, Popover, PopoverTrigger, PopoverContent, Tooltip, Input } from "@nextui-org/react"
+import { Avatar, Button, Popover, PopoverTrigger, PopoverContent, Tooltip } from "@nextui-org/react"
 import { ThemeToggle } from '../ThemeToggle'
 import { toast } from 'sonner'
 import { useTheme } from 'next-themes'
@@ -147,13 +148,13 @@ const Header = () => {
                   onClick={toggleSidebar}
                 >
                   <Avatar
-                    src={userImage || ''}
-                    name={userName || 'User'}
+                    src={userImage}
+                    name={userName}
                     size="sm"
                     className="w-8 h-8 ring-1 ring-amber-200 dark:ring-amber-800"
                   />
                   <span className="hidden sm:block text-sm font-medium text-gray-700 dark:text-gray-200">
-                    {userName || 'Set Name'}
+                    {userName}
                   </span>
                 </div>
               </div>
@@ -211,7 +212,7 @@ const Header = () => {
                           try {
                             await navigator.share({
                               title: 'My Queue Shortid',
-                              text: `My queue shortid: ${shortid}`,
+                              text: `My DontQue id: ${shortid}`,
                             });
                           } catch (err) {
                             navigator.clipboard.writeText(shortid);
@@ -234,7 +235,12 @@ const Header = () => {
               <NavGroup title="Main">
                 <NavLink href="/user/home" icon={Home}>Home</NavLink>
                 <NavLink href="/user/queues" icon={Users}>Queues</NavLink>
-                <NavLink href="/user/dashboard" icon={PieChart}>Dashboard</NavLink>
+                <NavLink href="/user/saved-queues" icon={Bookmark}>Saved Queues</NavLink>
+              </NavGroup>
+
+              <NavGroup title="Queue Management">
+                <NavLink href="/user/current-queues" icon={Clock}>Current Queues</NavLink>
+                <NavLink href="/user/queue-history" icon={History}>Queue History</NavLink>
               </NavGroup>
 　　 　 　 　
               {role === 'business' && (
@@ -245,12 +251,11 @@ const Header = () => {
                 </NavGroup>
               )}
 　　 　 　 　
-              <NavGroup title="Personal">
-                <NavLink href="/user/dashboard?tab=my-queues" icon={Clock}>Active Queues</NavLink>
-                <NavLink href="/user/dashboard?tab=favorites" icon={Star}>Favorites</NavLink>
-                <NavLink href="/user/dashboard?tab=profile" icon={Shield}>Account Settings</NavLink>
+              <NavGroup title="Account">
+                <NavLink href="/user/dashboard" icon={User}>Profile</NavLink>
+                <NavLink href="/user/settings" icon={Settings}>Settings</NavLink>
               </NavGroup>
-　　 　 　 　
+
               {/* Theme Toggle */}
               <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                 <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
