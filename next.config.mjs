@@ -7,15 +7,7 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'nextjs.org',
-      },
-      {
-        protocol: 'https',
-        hostname: 'placeholder.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'via.placeholder.com',
-      },
+      }
     ],
   },
   webpack: (config) => {

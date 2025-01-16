@@ -39,7 +39,7 @@ const QueueItem = memo(({ queue }) => {
       {/* Image Container */}
       <div className="relative h-40">
         <Image
-          src={queue.image_url || 'https://via.placeholder.com/400x200'}
+          src={queue.image_url || '/default.jpg'}
           alt={queue.name}
           width={400}
           height={200}

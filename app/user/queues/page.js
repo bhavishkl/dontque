@@ -42,9 +42,14 @@ export default function QueueListPage() {
     []
   )
 
-  const { data: queues, isLoading, isError } = useApi(
-    `/api/queues?category=${selectedCategory}&search=${search}&sortBy=${sortBy}&city=${userLocation?.city || ''}`
+  const { data: queues, isLoading, isError, mutate } = useApi(
+    `/api/queues?category=${selectedCategory}&search=${search}&sortBy=${sortBy}&city=${userLocation?.city || ''}&limit=20`
   )
+
+  const debouncedMutate = useMemo(
+    () => debounce(() => mutate(), 300),
+    [mutate]
+  );
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search)
@@ -55,7 +60,9 @@ export default function QueueListPage() {
     if (categoryParam) setSelectedCategory(categoryParam)
     if (searchParam) setSearch(searchParam)
     if (sortParam) setSortBy(sortParam)
-  }, [])
+
+    debouncedMutate()
+  }, [selectedCategory, search, sortBy, debouncedMutate])
 
   const handleSearchChange = (e) => {
     const sanitizedValue = e.target.value.replace(/[^\w\s]/gi, '');
@@ -87,10 +94,9 @@ export default function QueueListPage() {
   const filteredQueues = queues
     ? queues.sort((a, b) => {
         if (sortBy === 'wait') {
-          return a.avg_wait_time - b.avg_wait_time
+          return (a.total_estimated_wait_time || 0) - (b.total_estimated_wait_time || 0)
         } else if (sortBy === 'distance') {
-          // Assuming distance is added to the queue object in the future
-          return a.distance - b.distance
+          return (a.distance || 0) - (b.distance || 0)
         }
         return 0
       })
@@ -192,36 +198,36 @@ export default function QueueListPage() {
             filteredQueues.map((queue) => (
               <Card key={queue.queue_id} className="hover:shadow-lg transition-shadow duration-300 dark:bg-neutral-800">
                 <CardBody>
-                  <div className="flex flex-col md:flex-row">
-                    <div className="w-full md:w-1/3 lg:w-1/4 relative">
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="w-full md:w-1/3 lg:w-1/4 relative h-[200px] md:h-[250px]">
                       <Image
-                        src={queue.image_url || 'https://via.placeholder.com/200x100'}
+                        src={queue.image_url || '/default.jpg'}
                         alt={queue.name}
-                        width={400}
-                        height={300}
-                        className="w-full h-48 md:h-full object-cover rounded-lg"
+                        fill={true}
+                        className="object-cover rounded-lg"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 25vw"
                       />
-                      <Chip className="absolute top-2 left-2" color="default" variant="flat">
+                      <Chip className="absolute top-2 left-2 z-10" color="default" variant="flat">
                         {queue.category}
                       </Chip>
                     </div>
-                    <div className="w-full md:w-2/3 lg:w-3/4 p-6 flex flex-col justify-between">
+                    <div className="w-full md:w-2/3 lg:w-3/4 flex flex-col justify-between">
                       <div>
                         <div className="flex justify-between items-start mb-2">
                           <h3 className="text-xl font-semibold">{queue.name}</h3>
                           <div className="flex items-center">
                             <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                            <span className="font-medium">{queue.rating || 'N/A'}</span>
+                            <span className="font-medium">{queue.avg_rating?.toFixed(1) || 'N/A'}</span>
                           </div>
                         </div>
                         <div className="flex flex-wrap gap-4 text-sm mb-4">
                           <div className="flex items-center text-neutral-600 dark:text-neutral-400">
                             <Clock className="h-4 w-4 mr-1" />
-                            <span>{queue.avg_wait_time} mins wait</span>
+                            <span>{queue.total_estimated_wait_time || 0} mins wait</span>
                           </div>
                           <div className="flex items-center text-neutral-600 dark:text-neutral-400">
                             <Users className="h-4 w-4 mr-1" />
-                            <span>{queue.current_queue} in queue</span>
+                            <span>{queue.current_queue_count || 0} in queue</span>
                           </div>
                           <div className="flex items-center text-neutral-600 dark:text-neutral-400">
                             <MapPin className="h-4 w-4 mr-1" />
@@ -231,11 +237,11 @@ export default function QueueListPage() {
                         <div className="mb-4">
                           <div className="flex justify-between text-sm mb-1">
                             <span>Queue capacity</span>
-                            <span>{Math.round((queue.current_queue / queue.max_capacity) * 100)}%</span>
+                            <span>{queue.capacity_percentage || 0}%</span>
                           </div>
                           <Progress 
-                            value={(queue.current_queue / queue.max_capacity) * 100} 
-                            color="default"
+                            value={queue.capacity_percentage || 0} 
+                            color={queue.capacity_percentage > 80 ? "danger" : "default"}
                             className="h-2"
                           />
                         </div>

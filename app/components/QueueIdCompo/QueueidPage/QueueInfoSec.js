@@ -29,7 +29,7 @@ const QueueInfoSec = ({ queueData, isLoading, handleShare }) => {
       <Skeleton isLoaded={!isLoading} className="rounded-lg">
         <div className="relative h-48 overflow-hidden rounded-t-xl">
           <Image
-            src={queueData?.image_url || '/default-queue.jpg'}
+            src={queueData?.image_url || '/default.jpg'}
             alt={queueData?.name}
             layout="fill"
             objectFit="cover"
