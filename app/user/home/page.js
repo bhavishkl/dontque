@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Modal, ModalContent, ModalHeader, ModalBody, Button, ModalFooter, useDisclosure, Card, CardBody, Skeleton, Input, Chip } from "@nextui-org/react"
 import Link from 'next/link'
 import Image from 'next/image'
@@ -285,8 +285,89 @@ export default function Home() {
     }
   }, [userLocation, isLocationLoading, refreshLocation]);
 
+  // Add these new states and refs
+  const [pullStartY, setPullStartY] = useState(0);
+  const [pullMoveY, setPullMoveY] = useState(0);
+  const [isPulling, setIsPulling] = useState(false);
+  const pullThreshold = 150; // pixels to trigger refresh
+  const refreshRef = useRef(null);
+
+  // Add these new handlers
+  const handleTouchStart = (e) => {
+    // Only enable pull to refresh when at the top of the page
+    if (window.scrollY === 0) {
+      setPullStartY(e.touches[0].clientY);
+      setIsPulling(true);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isPulling) return;
+
+    const touchY = e.touches[0].clientY;
+    const pullDistance = touchY - pullStartY;
+    
+    if (pullDistance > 0 && window.scrollY === 0) {
+      setPullMoveY(pullDistance);
+      if (refreshRef.current) {
+        refreshRef.current.style.transform = `translateY(${Math.min(pullDistance * 0.4, pullThreshold)}px)`;
+      }
+      e.preventDefault();
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!isPulling) return;
+
+    if (pullMoveY > pullThreshold) {
+      // Navigate to queues page
+      router.push('/user/queues');
+    }
+
+    // Reset pull state
+    setPullStartY(0);
+    setPullMoveY(0);
+    setIsPulling(false);
+    if (refreshRef.current) {
+      refreshRef.current.style.transform = 'translateY(0)';
+    }
+  };
+
+  // Add touch event listeners
+  useEffect(() => {
+    const element = document.documentElement;
+    element.addEventListener('touchstart', handleTouchStart);
+    element.addEventListener('touchmove', handleTouchMove, { passive: false });
+    element.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      element.removeEventListener('touchstart', handleTouchStart);
+      element.removeEventListener('touchmove', handleTouchMove);
+      element.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isPulling, pullStartY]);
+
   return (
     <div className="min-h-screen dark:bg-gray-900 dark:text-gray-100">
+      {/* Add pull to refresh indicator */}
+      <div 
+        ref={refreshRef}
+        className="fixed top-0 left-0 w-full z-50 flex justify-center items-center transition-transform duration-200"
+        style={{ transform: 'translateY(0)' }}
+      >
+        {isPulling && pullMoveY > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-full p-2 shadow-lg">
+            <div 
+              className={`transition-transform ${
+                pullMoveY > pullThreshold ? 'rotate-180' : ''
+              }`}
+            >
+              <ChevronRight className="h-6 w-6 text-gray-400" />
+            </div>
+          </div>
+        )}
+      </div>
+
       <main>
         {/* Hero Section with Search */}
         <section className="bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 dark:from-gray-800 dark:via-gray-900 dark:to-black text-white py-8 sm:py-12 rounded-b-[2.5rem] shadow-lg">
@@ -390,14 +471,8 @@ export default function Home() {
         {/* Popular Queues */}
         <section className="py-4 sm:py-8 bg-gray-50 dark:bg-gray-900">
           <div className="container mx-auto px-4">
-            <div className="flex justify-between items-center mb-2 sm:mb-4">
-              <h3 className="text-lg sm:text-xl font-semibold">Popular Queues</h3>
-              <Link href="/user/queues" className="inline-flex items-center px-3 sm:px-4 py-1 sm:py-2 rounded-full text-xs sm:text-sm font-medium bg-orange-100 text-orange-600 hover:bg-orange-200 dark:bg-orange-700 dark:text-orange-50 dark:hover:bg-orange-600 transition-colors duration-200 ease-in-out">
-                View all
-                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
-              </Link>
-            </div>
-            <div className="overflow-x-auto custom-scrollbar">
+            <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-4">Popular Queues</h3>
+            <div className="overflow-x-auto custom-scrollbar mb-4">
               <div className="flex gap-3 sm:gap-4 pb-2 sm:pb-4" style={{ width: 'max-content' }}>
                 {isLoading ? (
   // Skeleton loading state
@@ -423,41 +498,18 @@ export default function Home() {
 )}
               </div>
             </div>
+            {/* Centered View All Button */}
+            <div className="flex justify-center">
+              <Link 
+                href="/user/queues" 
+                className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-orange-100 text-orange-600 hover:bg-orange-200 dark:bg-orange-700 dark:text-orange-50 dark:hover:bg-orange-600 transition-colors duration-200 ease-in-out"
+              >
+                View all queues
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Link>
+            </div>
           </div>
         </section>
-
-        {/* Saved Queues */}
-        {savedQueues?.length > 0 && (
-          <section className="py-4 sm:py-8 bg-white dark:bg-gray-800">
-            <div className="container mx-auto px-4">
-              <div className="flex justify-between items-center mb-2 sm:mb-4">
-                <h3 className="text-lg sm:text-xl font-semibold">Saved Queues</h3>
-              </div>
-              <div className="overflow-x-auto custom-scrollbar">
-                <div className="flex gap-3 sm:gap-4 pb-2 sm:pb-4" style={{ width: 'max-content' }}>
-                  {isSavedLoading ? (
-                    // Skeleton loading state
-                    Array(3).fill().map((_, index) => (
-                      <div key={index} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden" style={{ width: '250px', maxWidth: '100%' }}>
-                        <Skeleton className="w-full h-32 sm:h-40" />
-                        <div className="p-2 sm:p-4">
-                          <Skeleton className="w-3/4 h-4 sm:h-6 mb-1 sm:mb-2" />
-                          <Skeleton className="w-1/2 h-3 sm:h-4 mb-1" />
-                          <Skeleton className="w-2/3 h-3 sm:h-4 mb-2 sm:mb-3" />
-                          <Skeleton className="w-full h-8 sm:h-10 rounded-md" />
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    savedQueues.map((queue) => (
-                      <QueueItem key={queue.queue_id} queue={queue} />
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
       </main>
      
 
