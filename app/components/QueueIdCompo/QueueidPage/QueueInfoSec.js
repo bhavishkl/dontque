@@ -80,7 +80,7 @@ const QueueInfoSec = ({ queueData, isLoading, handleShare }) => {
           <div className="grid grid-cols-2 gap-4">
             <StatsCard
               icon={<Star className="h-5 w-5 text-yellow-400" />}
-              value={queueData?.rating?.toFixed(1) || 'N/A'}
+              value={queueData?.avg_rating || 'N/A'}
               label={`${queueData?.total_reviews || '0'} reviews`}
             />
             <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl">
