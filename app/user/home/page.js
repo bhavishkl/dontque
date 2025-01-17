@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Modal, ModalContent, ModalHeader, ModalBody, Button, ModalFooter, useDisclosure, Card, CardBody, Skeleton, Input, Chip } from "@nextui-org/react"
 import Link from 'next/link'
 import Image from 'next/image'
@@ -285,89 +285,8 @@ export default function Home() {
     }
   }, [userLocation, isLocationLoading, refreshLocation]);
 
-  // Add these new states and refs
-  const [pullStartY, setPullStartY] = useState(0);
-  const [pullMoveY, setPullMoveY] = useState(0);
-  const [isPulling, setIsPulling] = useState(false);
-  const pullThreshold = 150; // pixels to trigger refresh
-  const refreshRef = useRef(null);
-
-  // Add these new handlers
-  const handleTouchStart = (e) => {
-    // Only enable pull to refresh when at the top of the page
-    if (window.scrollY === 0) {
-      setPullStartY(e.touches[0].clientY);
-      setIsPulling(true);
-    }
-  };
-
-  const handleTouchMove = (e) => {
-    if (!isPulling) return;
-
-    const touchY = e.touches[0].clientY;
-    const pullDistance = touchY - pullStartY;
-    
-    if (pullDistance > 0 && window.scrollY === 0) {
-      setPullMoveY(pullDistance);
-      if (refreshRef.current) {
-        refreshRef.current.style.transform = `translateY(${Math.min(pullDistance * 0.4, pullThreshold)}px)`;
-      }
-      e.preventDefault();
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (!isPulling) return;
-
-    if (pullMoveY > pullThreshold) {
-      // Navigate to queues page
-      router.push('/user/queues');
-    }
-
-    // Reset pull state
-    setPullStartY(0);
-    setPullMoveY(0);
-    setIsPulling(false);
-    if (refreshRef.current) {
-      refreshRef.current.style.transform = 'translateY(0)';
-    }
-  };
-
-  // Add touch event listeners
-  useEffect(() => {
-    const element = document.documentElement;
-    element.addEventListener('touchstart', handleTouchStart);
-    element.addEventListener('touchmove', handleTouchMove, { passive: false });
-    element.addEventListener('touchend', handleTouchEnd);
-
-    return () => {
-      element.removeEventListener('touchstart', handleTouchStart);
-      element.removeEventListener('touchmove', handleTouchMove);
-      element.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [isPulling, pullStartY]);
-
   return (
     <div className="min-h-screen dark:bg-gray-900 dark:text-gray-100">
-      {/* Add pull to refresh indicator */}
-      <div 
-        ref={refreshRef}
-        className="fixed top-0 left-0 w-full z-50 flex justify-center items-center transition-transform duration-200"
-        style={{ transform: 'translateY(0)' }}
-      >
-        {isPulling && pullMoveY > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-full p-2 shadow-lg">
-            <div 
-              className={`transition-transform ${
-                pullMoveY > pullThreshold ? 'rotate-180' : ''
-              }`}
-            >
-              <ChevronRight className="h-6 w-6 text-gray-400" />
-            </div>
-          </div>
-        )}
-      </div>
-
       <main>
         {/* Hero Section with Search */}
         <section className="bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 dark:from-gray-800 dark:via-gray-900 dark:to-black text-white py-8 sm:py-12 rounded-b-[2.5rem] shadow-lg">
