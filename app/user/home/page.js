@@ -155,20 +155,9 @@ const QueueItem = memo(({ queue }) => {
   );
 });
 
-// Helper functions for formatting data
+// Simplify the formatOperatingHours helper function
 const formatOperatingHours = (queue) => {
-  if (!queue.opening_time || !queue.closing_time) return 'Hours not available';
-  
-  const formatTime = (timeStr) => {
-    if (!timeStr) return '';
-    const [hours, minutes] = timeStr.split(':');
-    const hour = parseInt(hours);
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const formattedHour = hour % 12 || 12;
-    return `${formattedHour}${minutes !== '00' ? ':' + minutes : ''} ${period}`;
-  };
-
-  return `${formatTime(queue.opening_time)} - ${formatTime(queue.closing_time)}`;
+  return queue?.operating_hours || 'Hours not available';
 };
 
 

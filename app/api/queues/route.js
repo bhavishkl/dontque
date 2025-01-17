@@ -20,8 +20,11 @@ export async function GET(request) {
 
     // Using the new view
     let query = supabase
-      .from('queue_stats_extended')  // Using the new view
-      .select('*')
+      .from('queue_stats_extended')
+      .select(`
+        *,
+        operating_hours)
+      `)
       .eq('status', 'active');
 
     if (category && category !== 'All') {
@@ -62,6 +65,7 @@ export async function GET(request) {
       est_time_to_serve: queue.est_time_to_serve,
       opening_time: queue.opening_time,
       closing_time: queue.closing_time,
+      operating_hours: queue.operating_hours,
       service_start_time: queue.service_start_time,
       description: queue.description,
       location: queue.location,

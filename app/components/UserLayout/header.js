@@ -231,7 +231,7 @@ const Header = () => {
             </div>
 
             {/* Navigation Links */}
-            <nav className="p-4 space-y-6 overflow-y-auto max-h-[calc(100vh-250px)]">
+            <nav className="p-4 space-y-6 overflow-y-auto max-h-[calc(100vh-250px)] custom-scrollbar">
               <NavGroup title="Main">
                 <NavLink href="/user/home" icon={Home}>Home</NavLink>
                 <NavLink href="/user/queues" icon={Users}>Queues</NavLink>
