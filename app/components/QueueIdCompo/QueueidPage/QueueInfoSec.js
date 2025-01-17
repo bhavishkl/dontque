@@ -118,11 +118,7 @@ const QueueInfoSec = ({ queueData, isLoading, handleShare }) => {
               <div className="flex justify-between items-center">
                 <span className="text-gray-600 dark:text-gray-300">Operating Hours</span>
                 <span className="font-medium">
-                  {queueData?.opening_time && queueData?.closing_time ? (
-                    `${formatTime(queueData.opening_time)} - ${formatTime(queueData.closing_time)}`
-                  ) : (
-                    'Hours not specified'
-                  )}
+                  {queueData?.operating_hours || 'Hours not specified'}
                 </span>
               </div>
 

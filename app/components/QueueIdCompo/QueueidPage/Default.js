@@ -41,21 +41,11 @@ const calculatePersonalizedServeTime = (nextServeAt, position, estTimeToServe, s
   return new Date(baseTime.getTime() + waitTimeInMinutes * 60000);
 };
 
-export default function QueueDetailsPage({ params }) {
+export default function QueueDetailsPage({ params, queueData: initialQueueData }) {
   const { data: queueData, isLoading, isError, error, mutate } = useApi(`/api/queues/${params.queueid}`, {
-    revalidateOnMount: false, // Use prefetched data if available
+    fallbackData: initialQueueData, // Use the data passed from parent as initial data
+    revalidateOnMount: false, // Don't fetch again on mount since we have initial data
     dedupingInterval: 5000,
-    onSuccess: (data) => {
-      // Prefetch related data
-      if (data?.id) {
-        // Prefetch queue statistics
-        fetch(`/api/queues/${params.queueid}/stats`)
-        // Prefetch user position if in queue
-        if (data.userQueueEntry) {
-          fetch(`/api/queues/${params.queueid}/position`)
-        }
-      }
-    }
   })
   const router = useRouter();
   const [isJoining, setIsJoining] = useState(false);
@@ -200,72 +190,6 @@ export default function QueueDetailsPage({ params }) {
   };
 
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-orange-100 dark:bg-gray-900">
-        <header className="sticky top-0 bg-orange-200 dark:bg-gray-800 shadow-sm z-10">
-          <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-            <div className="w-32 h-6">
-              <Skeleton className="rounded-lg" />
-            </div>
-            <div className="w-24 h-10">
-              <Skeleton className="rounded-lg" />
-            </div>
-          </div>
-        </header>
-
-        <main className="container mx-auto px-4 py-8">
-          <div className="grid gap-8 md:grid-cols-2">
-            <div>
-              <Card className="mb-6">
-                <CardHeader>
-                  <Skeleton className="w-48 h-8 rounded-lg" />
-                </CardHeader>
-                <CardBody>
-                  <Skeleton className="w-full h-60 rounded-lg" />
-                  <Skeleton className="w-full h-6 mt-4 rounded-lg" />
-                  <Skeleton className="w-3/4 h-6 mt-2 rounded-lg" />
-                  <div className="flex items-center mt-4">
-                    <Skeleton className="w-8 h-8 rounded-full mr-2" />
-                    <Skeleton className="w-24 h-6 rounded-lg" />
-                  </div>
-                  <Skeleton className="w-full h-10 mt-4 rounded-lg" />
-                </CardBody>
-              </Card>
-            </div>
-
-            <div>
-              <Card className="mb-6">
-                <CardHeader>
-                  <Skeleton className="w-48 h-8 rounded-lg" />
-                </CardHeader>
-                <CardBody>
-                  <Skeleton className="w-full h-40 rounded-lg" />
-                  <div className="flex justify-between mt-4">
-                    <Skeleton className="w-1/3 h-6 rounded-lg" />
-                    <Skeleton className="w-1/3 h-6 rounded-lg" />
-                  </div>
-                  <Skeleton className="w-full h-4 mt-2 rounded-lg" />
-                  <div className="flex items-center justify-between mt-4">
-                    <Skeleton className="w-8 h-8 rounded-full" />
-                    <Skeleton className="w-24 h-6 rounded-lg" />
-                    <Skeleton className="w-16 h-6 rounded-lg" />
-                  </div>
-                  <div className="flex items-center justify-between mt-4">
-                    <Skeleton className="w-8 h-8 rounded-full" />
-                    <Skeleton className="w-32 h-6 rounded-lg" />
-                    <Skeleton className="w-20 h-6 rounded-lg" />
-                  </div>
-                  <Skeleton className="w-full h-10 mt-6 rounded-lg" />
-                </CardBody>
-              </Card>
-            </div>
-          </div>
-        </main>
-      </div>
-    )
-  }
-
  
   return (
     <div className="min-h-screen bg-orange-100 dark:bg-gray-900">
@@ -299,9 +223,10 @@ export default function QueueDetailsPage({ params }) {
                       <div>
                         <div className="flex justify-between text-sm mb-1">
                           <span>Queue Capacity</span>
-                          <span>{queueData.queueEntries?.length || 0} / {queueData.max_capacity}</span>
+                          <span>{queueData?.current_queue_count || 0} people waiting</span>
                         </div>
-                        <Progress value={((queueData.queueEntries?.length || 0) / queueData.max_capacity) * 100} 
+                        <Progress 
+                          value={queueData?.capacity_percentage || 0}
                           className="h-2"
                           classNames={{
                             indicator: "bg-orange-500 dark:bg-orange-400",
@@ -311,17 +236,10 @@ export default function QueueDetailsPage({ params }) {
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
-                          <Users className="w-5 h-5 mr-2 text-orange-600 dark:text-orange-400" />
-                          <span>People ahead</span>
-                        </div>
-                        <span className="font-semibold">{queueData.queueEntries.length}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
                           <Clock className="w-5 h-5 mr-2 text-orange-600 dark:text-orange-400" />
-                          <span>Estimated wait time</span>
+                          <span>Total Wait Time</span>
                         </div>
-                        <span className="font-semibold">{queueData.queueEntries.length * queueData.est_time_to_serve} minutes</span>
+                        <span className="font-semibold">{queueData?.total_estimated_wait_time || 0} minutes</span>
                       </div>
                     </div>
                   </CardBody>

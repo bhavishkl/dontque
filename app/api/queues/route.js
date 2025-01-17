@@ -22,8 +22,17 @@ export async function GET(request) {
     let query = supabase
       .from('queue_stats_extended')
       .select(`
-        *,
-        operating_hours)
+        queue_id,
+        name,
+        category,
+        image_url,
+        description,
+        location,
+        operating_hours,
+        current_queue_count,
+        total_estimated_wait_time,
+        avg_rating,
+        capacity_percentage
       `)
       .eq('status', 'active');
 
@@ -60,15 +69,10 @@ export async function GET(request) {
       queue_id: queue.queue_id,
       name: queue.name,
       category: queue.category,
-      avg_wait_time: queue.avg_wait_time,
       image_url: queue.image_url,
-      est_time_to_serve: queue.est_time_to_serve,
-      opening_time: queue.opening_time,
-      closing_time: queue.closing_time,
-      operating_hours: queue.operating_hours,
-      service_start_time: queue.service_start_time,
       description: queue.description,
       location: queue.location,
+      operating_hours: queue.operating_hours,
       current_queue_count: queue.current_queue_count || 0,
       total_estimated_wait_time: queue.total_estimated_wait_time || 0,
       avg_rating: queue.avg_rating || 0,

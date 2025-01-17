@@ -128,26 +128,6 @@ export default function Advanced({ params, queueData }) {
   // Only show loading state when both data fetches are loading and no data is available
   const isInitialLoading = (isQueueEntryLoading || isCountersLoading) && !countersData && !queueEntry;
 
-  // Update the render logic
-  if (isInitialLoading) {
-    return (
-      <div className="space-y-4 p-4">
-        <Card>
-          <CardBody>
-            <div className="space-y-3">
-              <Skeleton className="rounded-lg">
-                <div className="h-24 rounded-lg bg-default-300"></div>
-              </Skeleton>
-              <Skeleton className="rounded-lg">
-                <div className="h-24 rounded-lg bg-default-300"></div>
-              </Skeleton>
-            </div>
-          </CardBody>
-        </Card>
-      </div>
-    );
-  }
-
   const handleShare = async () => {
     try {
       await navigator.share({
@@ -310,6 +290,21 @@ export default function Advanced({ params, queueData }) {
   const renderQueueStatus = (counter) => {
     if (!userQueueEntry) return null;
 
+    // Add safety check for counter
+    if (!counter || !counter.services) {
+      console.warn('Counter or services data is missing');
+      return (
+        <Card className="bg-gradient-to-br from-orange-500 to-orange-700 text-white">
+          <CardBody className="p-4">
+            <div className="text-center">
+              <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+              <p>Counter information unavailable</p>
+            </div>
+          </CardBody>
+        </Card>
+      );
+    }
+
     // Use the total estimated time from all selected services
     const totalEstimatedTime = userQueueEntry.queue_entry_services?.reduce((total, entry) => {
       return total + (entry.services?.estimated_time || 0)
@@ -431,12 +426,16 @@ export default function Advanced({ params, queueData }) {
               <div className="flex flex-wrap gap-2">
                 <p className="text-sm font-medium">Selected Services:</p>
                 {Array.from(selectedServices).map(serviceId => {
-                  const service = counter.services.find(s => s.id === serviceId)
+                  // Add null check for service
+                  const service = counter?.services?.find(s => s.id === serviceId) || {
+                    name: 'Service Unavailable',
+                    id: serviceId
+                  };
                   return (
                     <Chip key={serviceId} variant="flat" className="bg-white/20">
-                      {service?.name}
+                      {service.name}
                     </Chip>
-                  )
+                  );
                 })}
               </div>
 
@@ -790,4 +789,5 @@ export default function Advanced({ params, queueData }) {
     </div>
   )
 }
+
 

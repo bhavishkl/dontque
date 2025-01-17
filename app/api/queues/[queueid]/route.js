@@ -2,111 +2,78 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/route";
+import { PerformanceMonitor } from '@/utils/performance';
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
 export async function GET(request, { params }) {
+  const monitor = new PerformanceMonitor('GET queue details');
   try {
     const { queueid } = params;
     const session = await getServerSession(authOptions);
+    monitor.markStep('auth check');
 
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('Fetching queue data for queue ID:', queueid);
-    const { data: queueData, error: queueError } = await supabase
-      .from('queues')
-      .select('*')
-      .eq('queue_id', queueid)
-      .single();
-
-    if (queueError) {
-      console.error('Error fetching queue data:', queueError);
-      return NextResponse.json({ error: queueError.message }, { status: 500 });
-    }
-
-    const { data: ratingStats, error } = await supabase
-      .from('queue_rating_stats')
-      .select('total_reviews, avg_rating')
-      .eq('queue_id', queueid)
-      .single();
-
-    console.log('Fetching queue entries for queue ID:', queueid);
-    const { data: queueEntries, error: queueEntriesError } = await supabase
-      .from('queue_entries')
-      .select('*')
-      .eq('queue_id', queueid)
-      .order('join_time', { ascending: true });
-
-    if (queueEntriesError) {
-      console.error('Error fetching queue entries:', queueEntriesError);
-      return NextResponse.json({ error: queueEntriesError.message }, { status: 500 });
-    }
-
-    let userQueueEntry = null;
-    let userPosition = null;
-
-    queueEntries.forEach((entry, index) => {
-      if (entry.user_id === session.user.id) {
-        userQueueEntry = entry;
-        userPosition = index + 1;
-      }
-    });
-
-    if (userQueueEntry) {
-      userQueueEntry.position = userPosition;
-    }
-
-    // Calculate estimated wait time
-   // Dummy estimated wait time
-let estimatedWaitTime = 15; // Fixed 15 minutes for everyone
-
-    // Fetch join time of user in front
-    let userInFrontJoinTime = null;
-    if (userQueueEntry) {
-      const { data: frontUser, error: frontUserError } = await supabase
-        .from('queue_entries')
-        .select('join_time')
+    // Fetch both queue data and entries in parallel
+    const [queueResponse, entriesResponse] = await Promise.all([
+      supabase
+        .from('queue_stats_extended')
+        .select('*')
         .eq('queue_id', queueid)
-        .lt('join_time', userQueueEntry.join_time)
-        .order('join_time', { ascending: false })
-        .limit(1)
-        .single();
+        .single(),
+      
+      supabase
+        .from('queue_entries')
+        .select('entry_id, user_id, join_time')  // Select only needed fields
+        .eq('queue_id', queueid)
+        .eq('status', 'waiting')
+        .order('join_time', { ascending: true })
+    ]);
+    monitor.markStep('fetch data');
 
-      if (frontUserError && frontUserError.code !== 'PGRST116') {
-        console.error('Error fetching front user:', frontUserError);
-      } else if (frontUser) {
-        userInFrontJoinTime = frontUser.join_time;
-      }
+    if (queueResponse.error) {
+      console.error('Error fetching queue data:', queueResponse.error);
+      return NextResponse.json({ error: queueResponse.error.message }, { status: 500 });
     }
+
+    if (entriesResponse.error) {
+      console.error('Error fetching queue entries:', entriesResponse.error);
+      return NextResponse.json({ error: entriesResponse.error.message }, { status: 500 });
+    }
+
+    // Find user's position
+    const userPosition = entriesResponse.data.findIndex(entry => entry.user_id === session.user.id) + 1;
+    const userEntry = userPosition > 0 ? entriesResponse.data[userPosition - 1] : null;
+    monitor.markStep('process position');
 
     const responseData = {
-      ...queueData,
-      queueEntries,
-      short_id: queueData.short_id,
-      userQueueEntry: userQueueEntry ? {
-        ...userQueueEntry,
+      ...queueResponse.data,
+      queueEntries: entriesResponse.data,
+      userQueueEntry: userEntry ? {
+        ...userEntry,
         position: userPosition,
-        estimated_wait_time: 15 // Fixed dummy value
+        estimated_wait_time: queueResponse.data.est_time_to_serve * userPosition
       } : null,
-      total_reviews: ratingStats?.total_reviews || 0,
-      rating: ratingStats?.avg_rating || 0
     };
 
-    
-    console.log('Returning queue data:', responseData);
+    monitor.end();
     return NextResponse.json(responseData);
   } catch (error) {
     console.error('Unexpected error in GET function:', error);
+    monitor.end();
     return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 });
   }
 }
 
 export async function PATCH(request, { params }) {
+  const monitor = new PerformanceMonitor('PATCH queue details');
   try {
     const { queueid } = params;
     const session = await getServerSession(authOptions);
+    monitor.markStep('auth check');
 
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -125,15 +92,18 @@ export async function PATCH(request, { params }) {
       .eq('queue_id', queueid)
       .select()
       .single();
+    monitor.markStep('update queue');
 
     if (error) {
       console.error('Error updating queue:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    monitor.end();
     return NextResponse.json(data);
   } catch (error) {
     console.error('Unexpected error in PATCH function:', error);
+    monitor.end();
     return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 });
   }
 }
