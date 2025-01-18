@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Users, Clock, Settings, Plus, Search, MoreVertical, PieChart } from 'lucide-react'
+import { Users, Clock, Settings, Plus, Search, MoreVertical, PieChart, Activity, DollarSign } from 'lucide-react'
 import { Button } from "@nextui-org/button"
 import { Input } from "@nextui-org/input"
 import { Card, CardBody, CardHeader } from "@nextui-org/card"
@@ -44,10 +44,43 @@ export default function QueueOwnerDashboard() {
   ) : []
 
   const overallStats = queuesData ? {
+    // Basic Queue Stats
     totalQueues: queuesData.length,
+    activeQueues: queuesData.filter(q => q.status === 'active').length,
     totalCustomers: queuesData.reduce((sum, queue) => sum + queue.current_queue, 0),
+    
+    // Time & Efficiency Metrics
     avgWaitTime: Math.round(queuesData.reduce((sum, queue) => sum + queue.avg_wait_time, 0) / queuesData.length),
-  } : { totalQueues: 0, totalCustomers: 0, avgWaitTime: 0 }
+    peakHours: calculatePeakHours(queuesData),
+    
+    // Customer Flow Metrics
+    totalServedToday: queuesData.reduce((sum, queue) => sum + queue.total_served, 0),
+    dropoutRate: calculateDropoutRate(queuesData),
+    
+    // Customer Satisfaction
+    customerSatisfaction: calculateCustomerSatisfaction(queuesData),
+    
+    // Updated ROI metrics
+    businessValue: calculateBusinessValue(queuesData),
+  } : {
+    totalQueues: 0,
+    activeQueues: 0,
+    totalCustomers: 0,
+    avgWaitTime: 0,
+    peakHours: '---',
+    totalServedToday: 0,
+    dropoutRate: 0,
+    customerSatisfaction: 0,
+    
+    // New business value defaults
+    businessValue: {
+      subscriptionCost: 0,
+      additionalCustomers: 0,
+      revenuePerCustomer: 0,
+      totalExtraRevenue: 0,
+      roi: 0
+    }
+  }
 
   const handleDeleteQueue = async (queueId) => {
     if (window.confirm('Are you sure you want to delete this queue?')) {
@@ -114,29 +147,40 @@ export default function QueueOwnerDashboard() {
             <>
               <Card className="dark:bg-gray-800">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <h3 className="text-sm font-medium dark:text-gray-200">Total Queues</h3>
+                  <h3 className="text-sm font-medium dark:text-gray-200">Queue Status</h3>
                   <PieChart className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                 </CardHeader>
                 <CardBody>
-                  <div className="text-2xl font-bold dark:text-white">{overallStats.totalQueues}</div>
+                  <div className="text-2xl font-bold dark:text-white">{overallStats.activeQueues}/{overallStats.totalQueues}</div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Active Queues</p>
                 </CardBody>
               </Card>
+
               <Card className="dark:bg-gray-800">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <h3 className="text-sm font-medium dark:text-gray-200">Total Customers in Queue</h3>
+                  <h3 className="text-sm font-medium dark:text-gray-200">Customer Flow</h3>
                   <Users className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                 </CardHeader>
                 <CardBody>
-                  <div className="text-2xl font-bold dark:text-white">{overallStats.totalCustomers}</div>
+                  <div className="text-2xl font-bold dark:text-white">{overallStats.totalServedToday}</div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Customers Served Today</p>
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                    Current: {overallStats.totalCustomers} waiting
+                  </div>
                 </CardBody>
               </Card>
+
               <Card className="dark:bg-gray-800">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <h3 className="text-sm font-medium dark:text-gray-200">Average Wait Time</h3>
+                  <h3 className="text-sm font-medium dark:text-gray-200">Wait Time</h3>
                   <Clock className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                 </CardHeader>
                 <CardBody>
                   <div className="text-2xl font-bold dark:text-white">{overallStats.avgWaitTime} min</div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Average Wait Time</p>
+                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                    Peak: {overallStats.peakHours}
+                  </div>
                 </CardBody>
               </Card>
             </>
@@ -166,6 +210,7 @@ export default function QueueOwnerDashboard() {
                 <TableColumn className="dark:text-gray-200">Avg. Wait Time</TableColumn>
                 <TableColumn className="dark:text-gray-200">Total Served Today</TableColumn>
                 <TableColumn className="dark:text-gray-200">Status</TableColumn>
+                <TableColumn className="dark:text-gray-200">Rating</TableColumn>
                 <TableColumn className="dark:text-gray-200">Actions</TableColumn>
               </TableHeader>
               <TableBody>
@@ -176,7 +221,8 @@ export default function QueueOwnerDashboard() {
                       <TableCell><Skeleton className="h-4 w-1/2" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-1/2" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-1/2" /></TableCell>
-                      <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-6 rounded-full" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                       <TableCell><Skeleton className="h-8 w-full" /></TableCell>
                     </TableRow>
                   ))
@@ -197,9 +243,18 @@ export default function QueueOwnerDashboard() {
                       <TableCell>{queue.avg_wait_time} min</TableCell>
                       <TableCell>{queue.total_served}</TableCell>
                       <TableCell>
-                        <Chip color={queue.status === 'active' ? 'success' : 'warning'}>
-                          {queue.status}
+                        <Chip 
+                          className="w-3 h-3 min-w-0 p-0" 
+                          color={queue.status === 'active' ? 'success' : 'warning'}
+                          variant="solid"
+                        >
+                          &nbsp;
                         </Chip>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-yellow-500 flex items-center gap-1">
+                          ★ {queue.avg_rating?.toFixed(1) || '0.0'}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
@@ -233,4 +288,45 @@ export default function QueueOwnerDashboard() {
       </main>
     </div>
   )
+}
+
+// Helper functions
+function calculatePeakHours(queues) {
+  return "14:00-16:00" // Placeholder
+}
+
+function calculateDropoutRate(queues) {
+  return 5 // Placeholder percentage
+}
+
+function calculateCustomerSatisfaction(queues) {
+  return 92 // Placeholder percentage
+}
+
+function calculateBusinessValue(queues) {
+  // These values should come from your actual data
+  const subscriptionCost =4999; // Monthly subscription cost
+  
+  // Calculate additional customers gained after implementing QMS
+  const beforeQMS = 100; // Average customers per month before QMS
+  const afterQMS = 150;  // Current customers per month with QMS
+  const additionalCustomers = afterQMS - beforeQMS;
+  
+  // Average revenue per customer (should come from business data)
+  const revenuePerCustomer = 300; // Average spend per customer
+  
+  // Calculate total extra revenue
+  const totalExtraRevenue = additionalCustomers * revenuePerCustomer;
+  
+  // Calculate ROI
+  // ROI = ((Gain from Investment - Cost of Investment) / Cost of Investment) * 100
+  const roi = Math.round(((totalExtraRevenue - subscriptionCost) / subscriptionCost) * 100);
+
+  return {
+    subscriptionCost,
+    additionalCustomers,
+    revenuePerCustomer,
+    totalExtraRevenue,
+    roi
+  }
 }
