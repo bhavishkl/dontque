@@ -26,10 +26,10 @@ const geistMono = localFont({
 export const metadata = {
   title: "DontQue - AI-Powered Queue Management System",
   description: "Revolutionize your queue management with DontQue. Reduce wait times, enhance customer satisfaction, and optimize operations with our AI-powered solution.",
-  keywords: "queue management, virtual queue, AI queue system, wait time management, customer flow optimization",
+  keywords: "queue management system, virtual queue, line management, wait time reduction, AI queue system, digital queuing, appointment scheduling, DontQue",
   openGraph: {
     title: 'DontQue - AI-Powered Queue Management System',
-    description: 'Transform your customer queuing experience with AI-powered solutions',
+    description: 'Transform your waiting experience with AI-powered queue management',
     url: 'https://dontque.vercel.app',
     siteName: 'DontQue',
     images: [
@@ -45,7 +45,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'DontQue - AI-Powered Queue Management System',
-    description: 'Transform your customer queuing experience with AI-powered solutions',
+    description: 'Transform your waiting experience with AI-powered queue management',
     images: ['/twitter-image.jpg'],
   },
   robots: {
