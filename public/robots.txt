@@ -7,4 +7,4 @@ Disallow: /user/*
 Disallow: /dashboard/*
 
 # Sitemap location
-Sitemap: https://dontq.vercel.app/sitemap.xml 
+Sitemap: https://dontque.vercel.app/sitemap.xml 
