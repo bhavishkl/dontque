@@ -1,20 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { Button, Card, CardBody, Navbar, NavbarBrand, NavbarContent, NavbarItem } from "@nextui-org/react";
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';import { useRouter } from 'next/navigation';
 import { useSession } from "next-auth/react";
 import { useUserInfo } from './hooks/useUserName';
 import PerformanceMetrics from './components/PerformanceMetrics';
-import PricingSection from './components/pricing/PricingSection'
-import TestimonialSection from './components/testimonials/TestimonialSection'
-import FeaturesSection from './components/features/FeaturesSection'
-import FaqSection from './components/faq/FaqSection'
-import Footer from './components/footer/Footer'
-import Hero from './components/hero/Hero'
-import Header from './components/header/Header'
+import PricingSection from './components/LandingPageCompo/pricing/PricingSection'
+import TestimonialSection from './components/LandingPageCompo/testimonials/TestimonialSection'
+import FeaturesSection from './components/LandingPageCompo/features/FeaturesSection'
+import FaqSection from './components/LandingPageCompo/faq/FaqSection'
+import Footer from './components/LandingPageCompo/Footer'
+import Hero from './components/LandingPageCompo/hero/Hero'
+import Header from './components/LandingPageCompo/Header'
 
 export default function LandingPage() {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
@@ -31,10 +27,6 @@ export default function LandingPage() {
       }
     }
   }, [session, router, role]);
-
-  const handleStartFreeTrial = () => {
-    router.push('/signin');
-  };
 
   if (status === "loading") {
     return <div>Loading...</div>;

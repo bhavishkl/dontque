@@ -115,7 +115,7 @@ export default function Footer() {
         <div className="border-t border-gray-200 pt-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div>
-              <h3 className="text-xl font-semibold text-orange-600 mb-2">
+              <h3 className="text-xl font-semibold mb-2">
                 Subscribe to our newsletter
               </h3>
               <p className="text-gray-600">

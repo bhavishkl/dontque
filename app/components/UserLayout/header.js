@@ -107,7 +107,7 @@ const Header = () => {
                 />
               </Link>
               <span className="ml-2 text-xl sm:text-2xl font-bold text-black dark:text-white">
-            Dont<span className="text-orange-600">Que</span>
+            Dont<span className="text-orange-500">Que</span>
           </span>
             </div>
 

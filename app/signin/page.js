@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase'
 import Script from 'next/script'
 import { signIn, useSession } from 'next-auth/react'
 import { toast } from 'sonner'
-import Header from '../components/header/Header'
+import Header from '../components/LandingPageCompo/Header'
 
 export default function SignIn() {
   const router = useRouter()

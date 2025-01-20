@@ -24,12 +24,12 @@ export default function Header({ showNavLinks = true }) {
           <Image 
             src="/logo.webp" 
             alt="DontQue Logo" 
-            width={32} 
-            height={32} 
-            className="w-8 h-8 sm:w-10 sm:h-10"
+            width={24} 
+            height={24} 
+            className="w-6 h-6 sm:w-8 sm:h-8"
           />
           <span className="ml-2 text-xl sm:text-2xl font-bold text-black dark:text-white">
-            Dont<span className="text-orange-600">Que</span>
+            Dont<span className="text-orange-500">Que</span>
           </span>
         </Link>
       </NavbarBrand>

@@ -1,5 +1,5 @@
 export default async function sitemap() {
-  const baseUrl = 'https://dontq.vercel.app';
+  const baseUrl = 'https://dontque.vercel.app';
 
   // Core pages
   const routes = [
