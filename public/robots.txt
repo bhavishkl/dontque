@@ -6,8 +6,5 @@ Disallow: /api/*
 Disallow: /user/*
 Disallow: /dashboard/*
 
-# Google site verification
-google-site-verification: lCc3gju6m-FlvUnbW-oon-rOqH85kouFZGyw7BwQefw
-
 # Sitemap location
 Sitemap: https://dontque.vercel.app/sitemap.xml 
