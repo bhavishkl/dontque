@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 import Script from 'next/script'
 import { signIn, useSession } from 'next-auth/react'
 import { toast } from 'sonner'
+import Header from '../components/header/Header'
 
 export default function SignIn() {
   const router = useRouter()
@@ -150,18 +151,22 @@ export default function SignIn() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Script
-        id="otpless-sdk"
-        src="https://otpless.com/v2/auth.js"
-        data-appid="F2MITR92JXCX7PJTCMPP"
-        onLoad={() => {
-          window.otpless = (otplessUser) => {
-            handleOTPlessSuccess({ otplessUser });
-          };
-        }}
-      />
-      <div id="otpless-login-page"></div>
+    <div className="min-h-screen bg-gray-50">
+      <Header showNavLinks={false} />
+      
+      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <Script
+          id="otpless-sdk"
+          src="https://otpless.com/v2/auth.js"
+          data-appid="F2MITR92JXCX7PJTCMPP"
+          onLoad={() => {
+            window.otpless = (otplessUser) => {
+              handleOTPlessSuccess({ otplessUser });
+            };
+          }}
+        />
+        <div id="otpless-login-page"></div>
+      </div>
     </div>
   );
 }

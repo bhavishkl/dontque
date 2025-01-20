@@ -19,6 +19,7 @@ export async function GET(request) {
       .from('queue_dashboard_stats')
       .select(`
         queue_id,
+        name,
         status,
         service_type,
         current_queue,
@@ -33,28 +34,15 @@ export async function GET(request) {
       throw error
     }
 
-    const { data: queueNames, error: namesError } = await supabase
-      .from('queues')
-      .select('queue_id, name')
-      .eq('owner_id', session.user.id)
-    monitor.markStep('fetch_names')
-
-    if (namesError) {
-      throw namesError
-    }
-
-    const combinedData = data.map(queue => {
-      const queueInfo = queueNames.find(q => q.queue_id === queue.queue_id)
-      return {
-        ...queue,
-        name: queueInfo.name,
-        total_served: queue.total_served_today
-      }
-    })
-    monitor.markStep('combine_data')
+    // Transform the data to match existing frontend expectations
+    const transformedData = data.map(queue => ({
+      ...queue,
+      total_served: queue.total_served_today
+    }))
+    monitor.markStep('transform_data')
 
     monitor.end()
-    return NextResponse.json(combinedData)
+    return NextResponse.json(transformedData)
   } catch (error) {
     console.error('Error fetching queues:', error)
     monitor.end()

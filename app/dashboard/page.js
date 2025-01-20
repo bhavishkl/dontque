@@ -118,100 +118,134 @@ export default function QueueOwnerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <header className="sticky top-0 bg-white dark:bg-gray-800 shadow-sm z-10">
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 bg-background/70 backdrop-blur-lg border-b border-divider z-10">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold dark:text-white">Queue Owner Dashboard</h1>
-          <div className="flex items-center space-x-4">
-            <Button variant="bordered" startContent={<Settings />}>
+          <h1 className="text-2xl font-bold">Queue Owner Dashboard</h1>
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="light" 
+              startContent={<Settings className="w-4 h-4" />}
+              className="hidden sm:flex"
+            >
               Settings
             </Button>
             <Link href="/dashboard/create-queue">
-              <Button color="primary" startContent={<Plus />}>
-                Create New Queue
+              <Button 
+                color="primary" 
+                startContent={<Plus className="w-4 h-4" />}
+                className="font-medium"
+              >
+                New Queue
               </Button>
             </Link>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid gap-6 md:grid-cols-3 mb-8">
-          {isLoading ? (
-            <>
-              <Skeleton className="h-24 rounded-lg" />
-              <Skeleton className="h-24 rounded-lg" />
-              <Skeleton className="h-24 rounded-lg" />
-            </>
-          ) : (
-            <>
-              <Card className="dark:bg-gray-800">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <h3 className="text-sm font-medium dark:text-gray-200">Queue Status</h3>
-                  <PieChart className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                </CardHeader>
-                <CardBody>
-                  <div className="text-2xl font-bold dark:text-white">{overallStats.activeQueues}/{overallStats.totalQueues}</div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Active Queues</p>
-                </CardBody>
-              </Card>
-
-              <Card className="dark:bg-gray-800">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <h3 className="text-sm font-medium dark:text-gray-200">Customer Flow</h3>
-                  <Users className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                </CardHeader>
-                <CardBody>
-                  <div className="text-2xl font-bold dark:text-white">{overallStats.totalServedToday}</div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Customers Served Today</p>
-                  <div className="text-sm text-gray-600 dark:text-gray-300">
-                    Current: {overallStats.totalCustomers} waiting
+      <main className="container mx-auto px-4 py-6">
+        <div className="grid gap-4 md:grid-cols-4 mb-8">
+          <Card className="bg-background/60 shadow-md hover:shadow-xl transition-all duration-200 border border-divider">
+            <CardBody className="gap-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm text-default-500">Active Queues</p>
+                  <div className="text-2xl font-semibold mt-1">
+                    {overallStats.activeQueues}/{overallStats.totalQueues}
                   </div>
-                </CardBody>
-              </Card>
+                </div>
+                <div className="p-2 rounded-full bg-primary/10">
+                  <PieChart className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+              <div className="h-1 w-full bg-default-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary rounded-full transition-all" 
+                  style={{ width: `${(overallStats.activeQueues/overallStats.totalQueues) * 100}%` }}
+                />
+              </div>
+            </CardBody>
+          </Card>
 
-              <Card className="dark:bg-gray-800">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <h3 className="text-sm font-medium dark:text-gray-200">Wait Time</h3>
-                  <Clock className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                </CardHeader>
-                <CardBody>
-                  <div className="text-2xl font-bold dark:text-white">{overallStats.avgWaitTime} min</div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Average Wait Time</p>
-                  <div className="text-sm text-gray-600 dark:text-gray-300">
-                    Peak: {overallStats.peakHours}
+          <Card className="bg-background/60 shadow-md hover:shadow-xl transition-all duration-200 border border-divider">
+            <CardBody className="gap-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm text-default-500">Customers Today</p>
+                  <div className="text-2xl font-semibold mt-1">{overallStats.totalServedToday}</div>
+                </div>
+                <div className="p-2 rounded-full bg-success/10">
+                  <Users className="h-5 w-5 text-success" />
+                </div>
+              </div>
+              <p className="text-sm text-default-400">
+                Currently waiting: {overallStats.totalCustomers}
+              </p>
+            </CardBody>
+          </Card>
+
+          <Card className="bg-background/60 shadow-md hover:shadow-xl transition-all duration-200 border border-divider">
+            <CardBody className="gap-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm text-default-500">Avg. Wait Time</p>
+                  <div className="text-2xl font-semibold mt-1">{overallStats.avgWaitTime} min</div>
+                </div>
+                <div className="p-2 rounded-full bg-warning/10">
+                  <Clock className="h-5 w-5 text-warning" />
+                </div>
+              </div>
+              <p className="text-sm text-default-400">
+                Peak hours: {overallStats.peakHours}
+              </p>
+            </CardBody>
+          </Card>
+
+          <Card className="bg-background/60 shadow-md hover:shadow-xl transition-all duration-200 border border-divider">
+            <CardBody className="gap-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm text-default-500">Revenue Impact</p>
+                  <div className="text-2xl font-semibold mt-1">
+                    {overallStats.businessValue.roi}%
                   </div>
-                </CardBody>
-              </Card>
-            </>
-          )}
+                </div>
+                <div className="p-2 rounded-full bg-secondary/10">
+                  <DollarSign className="h-5 w-5 text-secondary" />
+                </div>
+              </div>
+              <p className="text-sm text-default-400">
+                +₹{overallStats.businessValue.totalExtraRevenue.toLocaleString()}
+              </p>
+            </CardBody>
+          </Card>
         </div>
 
-        <div className="mb-4 flex justify-between items-center">
-          <h2 className="text-xl font-semibold dark:text-white">Your Queues</h2>
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-400" />
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h2 className="text-xl font-semibold">Your Queues</h2>
+          <div className="w-full sm:w-auto max-w-sm">
             <Input
               type="search"
               placeholder="Search queues..."
-              className="pl-8 dark:bg-gray-700 dark:text-white"
+              startContent={<Search className="w-4 h-4 text-default-400" />}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full"
             />
           </div>
         </div>
 
-        <Card className="dark:bg-gray-800">
+        <Card className="bg-background/60 shadow-sm">
           <CardBody>
-            <Table>
+            <Table aria-label="Queues table" className="min-h-[400px]">
               <TableHeader>
-                <TableColumn className="dark:text-gray-200">Queue Name</TableColumn>
-                <TableColumn className="dark:text-gray-200">Current Queue</TableColumn>
-                <TableColumn className="dark:text-gray-200">Avg. Wait Time</TableColumn>
-                <TableColumn className="dark:text-gray-200">Total Served Today</TableColumn>
-                <TableColumn className="dark:text-gray-200">Status</TableColumn>
-                <TableColumn className="dark:text-gray-200">Rating</TableColumn>
-                <TableColumn className="dark:text-gray-200">Actions</TableColumn>
+                <TableColumn>QUEUE NAME</TableColumn>
+                <TableColumn>CURRENT</TableColumn>
+                <TableColumn>WAIT TIME</TableColumn>
+                <TableColumn>SERVED TODAY</TableColumn>
+                <TableColumn className="text-center">STATUS</TableColumn>
+                <TableColumn>RATING</TableColumn>
+                <TableColumn className="text-right">ACTIONS</TableColumn>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
@@ -243,18 +277,23 @@ export default function QueueOwnerDashboard() {
                       <TableCell>{queue.avg_wait_time} min</TableCell>
                       <TableCell>{queue.total_served}</TableCell>
                       <TableCell>
-                        <Chip 
-                          className="w-3 h-3 min-w-0 p-0" 
-                          color={queue.status === 'active' ? 'success' : 'warning'}
-                          variant="solid"
-                        >
-                          &nbsp;
-                        </Chip>
+                        <div>
+                          <div 
+                            className={`w-2 h-2 rounded-full ${
+                              queue.status === 'active' 
+                                ? 'bg-success-500' 
+                                : 'bg-warning-500'
+                            }`}
+                          />
+                        </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-yellow-500 flex items-center gap-1">
-                          ★ {queue.avg_rating?.toFixed(1) || '0.0'}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-yellow-400 text-lg">★</span>
+                          <span className="text-sm text-default-600">
+                            {queue.avg_rating?.toFixed(1) || '0.0'}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">

@@ -14,9 +14,8 @@ import dynamic from 'next/dynamic'
 import { useUserInfo } from '../../hooks/useUserName'
 import { usePathname } from 'next/navigation'
 import { Avatar, Button, Popover, PopoverTrigger, PopoverContent, Tooltip } from "@nextui-org/react"
-import { ThemeToggle } from '../ThemeToggle'
 import { toast } from 'sonner'
-import { useTheme } from 'next-themes'
+import { ThemeToggle } from '../ThemeToggle'
 
 const DynamicHeader = dynamic(() => import('./DynamicHeader'), { ssr: false })
 
@@ -26,12 +25,11 @@ const Header = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const sidebarRef = useRef(null)
   const { name: userName, role, image: userImage, short_id: shortid } = useUserInfo(session?.user?.id)
-  const { theme } = useTheme()
-  const [currentLogo, setCurrentLogo] = useState('/logo.webp')
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    setCurrentLogo(theme === 'dark' ? '/dark-mode-logo.webp' : '/logo.webp')
-  }, [theme])
+    if (userName) setIsLoading(false)
+  }, [userName])
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
 
@@ -53,7 +51,7 @@ const Header = () => {
     await signOut({ redirect: true, callbackUrl: '/' })
   }
 
-  if (pathname === '/') return null
+  if (pathname === '/signin' || pathname === '/') return null
 
   const NavLink = ({ href, icon: Icon, children }) => {
     const pathname = usePathname()
@@ -93,23 +91,24 @@ const Header = () => {
     <>
       <DynamicHeader session={session} />
       {/* Header */}
-      <header className="sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 z-20">
+      <header className="sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 z-20 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Left section */}
-            <div className="flex items-center gap-2">
-              <Link href="/dashboard" className="flex items-center gap-2">
+            {/* Left section with hover effect */}
+            <div className="flex items-center gap-2 group">
+              <Link href="/dashboard" className="flex items-center gap-2 transition-transform duration-200 hover:scale-105">
                 <Image
-                  src={currentLogo}
+                  src="/logo.webp"
                   alt="DontQ Logo"
                   width={32}
                   height={32}
                   priority
+                  className="transition-opacity duration-200"
                 />
               </Link>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                Dontque
-              </h1>
+              <span className="ml-2 text-xl sm:text-2xl font-bold text-black dark:text-white">
+            Dont<span className="text-orange-600">Que</span>
+          </span>
             </div>
 
             {/* Right section */}
@@ -242,7 +241,7 @@ const Header = () => {
                 <NavLink href="/user/current-queues" icon={Clock}>Current Queues</NavLink>
                 <NavLink href="/user/queue-history" icon={History}>Queue History</NavLink>
               </NavGroup>
-　　 　 　 　
+
               {role === 'business' && (
                 <NavGroup title="Business">
                   <NavLink href="/dashboard" icon={PieChart}>Business Dashboard</NavLink>
@@ -250,18 +249,15 @@ const Header = () => {
                   <NavLink href="/business/support" icon={HelpCircle}>Support</NavLink>
                 </NavGroup>
               )}
-　　 　 　 　
+
               <NavGroup title="Account">
                 <NavLink href="/user/dashboard" icon={User}>Profile</NavLink>
                 <NavLink href="/user/settings" icon={Settings}>Settings</NavLink>
               </NavGroup>
 
-              {/* Theme Toggle */}
-              <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
-                  <span>Theme Mode</span>
-                  <ThemeToggle />
-                </div>
+              {/* Theme Toggle section - hidden with CSS */}
+              <div className="hidden">
+                <ThemeToggle />
               </div>
             </nav>
 

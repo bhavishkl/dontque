@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, cloneElement } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -149,12 +149,12 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
 
   const CustomerCard = ({ customer, index, onServed, onNoShow, loadingActions }) => {
     return (
-      <Card className="w-full dark:bg-gray-800 shadow-lg p-6">
+      <Card className="w-full dark:bg-gray-800/50 shadow-lg hover:shadow-xl transition-all">
         <CardBody>
           <div className="flex flex-col space-y-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center space-x-4">
-                <div className="bg-blue-500 text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold">
+                <div className="bg-gradient-to-br from-primary to-primary-500 text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold shadow-sm">
                   {customer.user_profile?.name?.[0] || customer.name?.[0] || 'W'}
                 </div>
                 <div>
@@ -166,22 +166,24 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-2 gap-6 text-sm bg-default-50 dark:bg-gray-700/50 p-4 rounded-lg">
               <div>
-                <p className="text-gray-500 dark:text-gray-400">Waiting time</p>
+                <p className="text-gray-500 dark:text-gray-400 mb-1">Waiting time</p>
                 <p className="font-semibold dark:text-white">{customer.waitingTime || '15m 20s'}</p>
               </div>
               <div>
-                <p className="text-gray-500 dark:text-gray-400">Estimated service time</p>
+                <p className="text-gray-500 dark:text-gray-400 mb-1">Est. service time</p>
                 <p className="font-semibold dark:text-white">{customer.estimatedServiceTime || '20m'}</p>
               </div>
               <div>
-                <p className="text-gray-500 dark:text-gray-400">Joined at</p>
+                <p className="text-gray-500 dark:text-gray-400 mb-1">Joined at</p>
                 <p className="font-semibold dark:text-white">{customer.formattedJoinTime}</p>
               </div>
               <div>
-                <p className="text-gray-500 dark:text-gray-400">Status</p>
-                <p className="font-semibold dark:text-white">{customer.status || 'Waiting'}</p>
+                <p className="text-gray-500 dark:text-gray-400 mb-1">Status</p>
+                <Chip size="sm" color="primary" variant="flat">
+                  {customer.status || 'Waiting'}
+                </Chip>
               </div>
             </div>
   
@@ -190,7 +192,8 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
               <Input 
                 placeholder="Add notes here..." 
                 variant="bordered" 
-                className="dark:bg-gray-700 dark:text-white"
+                className="dark:bg-gray-700/50"
+                size="sm"
               />
             </div>
   
@@ -202,6 +205,7 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
                   variant="flat" 
                   onClick={() => onServed(customer.entry_id)}
                   isLoading={loadingActions[customer.entry_id]?.serve}
+                  className="font-medium"
                 >
                   <Check className="mr-1 h-4 w-4" />
                   Served
@@ -212,12 +216,18 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
                   variant="flat" 
                   onClick={() => onNoShow(customer.entry_id)}
                   isLoading={loadingActions[customer.entry_id]?.noShow}
+                  className="font-medium"
                 >
                   <X className="mr-1 h-4 w-4" />
                   No Show
                 </Button>
               </div>
-              <Button size="sm" color="primary" variant="ghost">
+              <Button 
+                size="sm" 
+                color="primary" 
+                variant="light"
+                className="font-medium"
+              >
                 <MessageSquare className="mr-1 h-4 w-4" />
                 Notify
               </Button>
@@ -255,16 +265,20 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
   };
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <header className="sticky top-0 bg-white dark:bg-gray-800 shadow-sm z-10">
+      <header className="sticky top-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg border-b border-divider z-10">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="flex items-center text-blue-600 dark:text-blue-400">
-            <ArrowLeft className="mr-2" />
-            <span className="font-semibold">Back to Dashboard</span>
+          <Link href="/dashboard" className="flex items-center text-primary hover:text-primary-500 transition-colors">
+            <ArrowLeft className="mr-2 h-5 w-5" />
+            <span className="font-medium">Back to Dashboard</span>
           </Link>
           <h1 className="text-2xl font-bold dark:text-white">
             {isLoading ? <Skeleton className="w-40 h-8" /> : queueData?.queueData?.name || 'Error'}
           </h1>
-          <Button variant="bordered" startContent={<Settings />}>
+          <Button 
+            variant="bordered" 
+            startContent={<Settings className="h-4 w-4" />}
+            className="hover:bg-default-100 transition-colors"
+          >
             Queue Settings
           </Button>
         </div>
@@ -283,35 +297,51 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
     </>
   ) : queueData ? (
     <>
-      <Card className="mb-8 dark:bg-gray-800">
+      <Card className="mb-8 dark:bg-gray-800/50 shadow-md hover:shadow-lg transition-all">
         <CardBody>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
             <div className="flex items-center space-x-4">
-              <Chip color={queueData.queueData.status === 'active' ? "success" : "default"}>
+              <Chip 
+                color={queueData.queueData.status === 'active' ? "success" : "warning"}
+                variant="dot"
+                className="capitalize"
+              >
                 {queueData.queueData.status === 'active' ? "Active" : "Paused"}
               </Chip>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
                 <Switch
                   checked={queueData.queueData.status === 'active'}
                   onChange={handleToggleQueue}
                   isDisabled={isToggling}
+                  size="lg"
+                  color="success"
                 />
-                <span className="dark:text-gray-300">
+                <span className="dark:text-gray-300 text-sm">
                   {isToggling ? "Updating..." : (queueData.queueData.status === 'active' ? "Pause Queue" : "Activate Queue")}
                 </span>
               </div>
             </div>
-            <div className="flex flex-wrap items-center space-x-2 sm:space-x-4">
+            <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center space-x-2">
                 <Input
                   type="number"
                   value={serviceTime}
                   onChange={(e) => setServiceTime(e.target.value)}
-                  className="w-20"
+                  className="w-24"
+                  size="sm"
+                  labelPlacement="outside"
+                  label="Service Time"
+                  endContent={<span className="text-default-400 text-sm">min</span>}
                 />
-                <span className="dark:text-gray-300">min</span>
               </div>
-              <Button onClick={handleUpdateServiceTime} className="mt-2 sm:mt-0">Update Service Time</Button>
+              <Button 
+                onClick={handleUpdateServiceTime} 
+                color="primary"
+                size="sm"
+                className="font-medium"
+              >
+                Update Time
+              </Button>
               <AddKnownUserModal queueId={params.queueId} onSuccess={handleAddKnownSuccess} />
             </div>
           </div>
@@ -380,78 +410,68 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
         </Tab>
         <Tab key="stats" title="Queue Analytics">
           <div className="grid gap-6 md:grid-cols-4 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <h3 className="text-sm font-medium">Current Queue</h3>
-                <Users className="h-4 w-4 text-gray-400" />
-              </CardHeader>
-              <CardBody>
-                <div className="text-2xl font-bold">{customersInQueue.length}</div>
-              </CardBody>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <h3 className="text-sm font-medium">Current Avg. Wait Time</h3>
-                <Clock className="h-4 w-4 text-gray-400" />
-              </CardHeader>
-              <CardBody>
-                <div className="text-2xl font-bold">{queueData.currentAvgWaitTime} min</div>
-              </CardBody>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <h3 className="text-sm font-medium">Served in Last Hour</h3>
-                <TrendingUp className="h-4 w-4 text-gray-400" />
-              </CardHeader>
-              <CardBody>
-                <div className="text-2xl font-bold">{queueData.servedLastHour}</div>
-              </CardBody>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <h3 className="text-sm font-medium">Current Service Time</h3>
-                <RefreshCw className="h-4 w-4 text-gray-400" />
-              </CardHeader>
-              <CardBody>
-                <div className="text-2xl font-bold">{queueData.currentServiceTime} min</div>
-              </CardBody>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <h3 className="text-sm font-medium">Queue Efficiency</h3>
-                <BarChart2 className="h-4 w-4 text-gray-400" />
-              </CardHeader>
-              <CardBody>
-                <div className="text-2xl font-bold">{queueData.queueEfficiency}%</div>
-              </CardBody>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <h3 className="text-sm font-medium">Longest Wait</h3>
-                <AlertCircle className="h-4 w-4 text-gray-400" />
-              </CardHeader>
-              <CardBody>
-                <div className="text-2xl font-bold">{queueData.longestWait} min</div>
-              </CardBody>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <h3 className="text-sm font-medium">No-Show Rate</h3>
-                <UserMinus className="h-4 w-4 text-gray-400" />
-              </CardHeader>
-              <CardBody>
-                <div className="text-2xl font-bold">{queueData.noShowRate}%</div>
-              </CardBody>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <h3 className="text-sm font-medium">Peak Time</h3>
-                <Activity className="h-4 w-4 text-gray-400" />
-              </CardHeader>
-              <CardBody>
-                <div className="text-2xl font-bold">{queueData.isPeakTime ? 'Yes' : 'No'}</div>
-              </CardBody>
-            </Card>
+            {[
+              {
+                title: "Current Queue",
+                value: customersInQueue.length,
+                icon: <Users className="h-4 w-4" />,
+                color: "primary"
+              },
+              {
+                title: "Current Avg. Wait Time",
+                value: `${queueData.currentAvgWaitTime} min`,
+                icon: <Clock className="h-4 w-4" />,
+                color: "warning"
+              },
+              {
+                title: "Served in Last Hour",
+                value: queueData.servedLastHour,
+                icon: <TrendingUp className="h-4 w-4" />,
+                color: "success"
+              },
+              {
+                title: "Current Service Time",
+                value: `${queueData.currentServiceTime} min`,
+                icon: <RefreshCw className="h-4 w-4" />,
+                color: "primary"
+              },
+              {
+                title: "Queue Efficiency",
+                value: `${queueData.queueEfficiency}%`,
+                icon: <BarChart2 className="h-4 w-4" />,
+                color: "success"
+              },
+              {
+                title: "Longest Wait",
+                value: `${queueData.longestWait} min`,
+                icon: <AlertCircle className="h-4 w-4" />,
+                color: "warning"
+              },
+              {
+                title: "No-Show Rate",
+                value: `${queueData.noShowRate}%`,
+                icon: <UserMinus className="h-4 w-4" />,
+                color: "danger"
+              },
+              {
+                title: "Peak Time",
+                value: queueData.isPeakTime ? 'Yes' : 'No',
+                icon: <Activity className="h-4 w-4" />,
+                color: "primary"
+              }
+            ].map((stat, index) => (
+              <Card key={index} className="bg-background/60 shadow-md hover:shadow-xl transition-all duration-200 border border-divider">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <h3 className="text-sm font-medium text-default-600">{stat.title}</h3>
+                  <div className={`p-2 rounded-full bg-${stat.color}/10`}>
+                    {cloneElement(stat.icon, { className: `text-${stat.color}` })}
+                  </div>
+                </CardHeader>
+                <CardBody>
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                </CardBody>
+              </Card>
+            ))}
           </div>
         </Tab>
         <Tab key="qr" title="Quick Join QR">
