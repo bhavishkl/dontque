@@ -175,7 +175,6 @@ const Header = () => {
               sidebarOpen ? 'translate-x-0' : 'translate-x-full'
             }`}
           >
-            {/* Sidebar Header */}
             <div className="p-6 border-b border-gray-200 dark:border-gray-800">
               <div className="flex items-center gap-4">
                 <Avatar
