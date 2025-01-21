@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Users, Clock, Settings, Plus, Search, MoreVertical, PieChart, Activity, DollarSign } from 'lucide-react'
+import { Users, Clock, Settings, Plus, Search, MoreVertical, PieChart, DollarSign } from 'lucide-react'
 import { Button } from "@nextui-org/button"
 import { Input } from "@nextui-org/input"
 import { Card, CardBody, CardHeader } from "@nextui-org/card"
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@nextui-org/dropdown"
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@nextui-org/table"
-import { Chip } from "@nextui-org/chip"
 import { Skeleton } from "@nextui-org/skeleton"
 import { useSession } from "next-auth/react"
 import { useRouter } from 'next/navigation'
@@ -50,7 +49,11 @@ export default function QueueOwnerDashboard() {
     totalCustomers: queuesData.reduce((sum, queue) => sum + queue.current_queue, 0),
     
     // Time & Efficiency Metrics
-    avgWaitTime: Math.round(queuesData.reduce((sum, queue) => sum + queue.avg_wait_time, 0) / queuesData.length),
+    // Option 2: Exclude zero values (might be more accurate)
+    avgWaitTime: Math.round(
+      queuesData.reduce((sum, queue) => sum + (queue.seven_day_avg_wait_time || 0), 0) / 
+      (queuesData.filter(queue => queue.seven_day_avg_wait_time > 0).length || 1)
+    ),
     peakHours: calculatePeakHours(queuesData),
     
     // Customer Flow Metrics
@@ -241,11 +244,11 @@ export default function QueueOwnerDashboard() {
               <TableHeader>
                 <TableColumn>QUEUE NAME</TableColumn>
                 <TableColumn>CURRENT</TableColumn>
-                <TableColumn>WAIT TIME</TableColumn>
+                <TableColumn>7-DAY AVG WAIT TIME</TableColumn>
                 <TableColumn>SERVED TODAY</TableColumn>
-                <TableColumn className="text-center">STATUS</TableColumn>
+                <TableColumn>STATUS</TableColumn>
                 <TableColumn>RATING</TableColumn>
-                <TableColumn className="text-right">ACTIONS</TableColumn>
+                <TableColumn >ACTIONS</TableColumn>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
@@ -274,7 +277,7 @@ export default function QueueOwnerDashboard() {
                         </div>
                       </TableCell>
                       <TableCell>{queue.current_queue}</TableCell>
-                      <TableCell>{queue.avg_wait_time} min</TableCell>
+                      <TableCell>{queue.seven_day_avg_wait_time?.toFixed(1) || '0'} min</TableCell>
                       <TableCell>{queue.total_served}</TableCell>
                       <TableCell>
                         <div>
@@ -297,7 +300,7 @@ export default function QueueOwnerDashboard() {
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
-                          <Button size="sm" onClick={() => router.push(`/dashboard/manage/${queue.queue_id}`)}>Manage Queue</Button>
+                          <Link href={`/dashboard/manage/${queue.queue_id}`} className="inline-flex items-center justify-center gap-1 px-4 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary-500">Manage Queue</Link>
                           <Button size="sm" variant="bordered" onClick={() => handlePauseQueue(queue.queue_id, queue.status)}>
                             {queue.status === 'active' ? 'Pause' : 'Activate'}
                           </Button>

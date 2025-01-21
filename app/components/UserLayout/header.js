@@ -147,7 +147,7 @@ const Header = () => {
                   className="flex items-center gap-3 cursor-pointer p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
                   onClick={toggleSidebar}
                 >
-                  <div className="relative w-8 h-8 rounded-lg overflow-hidden ring-1 ring-amber-200 dark:ring-amber-800">
+                  <div className="relative w-8 h-8 rounded-lg overflow-hidden ring-1 ">
                     {isLoading ? (
                       <div className="animate-pulse w-full h-full bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800" />
                     ) : userImage ? (
@@ -185,11 +185,12 @@ const Header = () => {
         }`}>
           <div
             ref={sidebarRef}
-            className={`absolute right-0 top-0 h-full w-72 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-xl transform transition-transform duration-300 ease-in-out ${
+            className={`absolute right-0 top-0 h-screen w-72 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col ${
               sidebarOpen ? 'translate-x-0' : 'translate-x-full'
             }`}
           >
-            <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+            {/* Profile Section */}
+            <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
               <div className="flex items-center gap-4">
                 <div className="relative w-12 h-12 rounded-lg overflow-hidden ring-2 ring-amber-200 dark:ring-amber-800">
                   {isLoading ? (
@@ -252,7 +253,7 @@ const Header = () => {
             </div>
 
             {/* Navigation Links */}
-            <nav className="p-4 space-y-6 overflow-y-auto max-h-[calc(100vh-250px)] custom-scrollbar">
+            <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
               <NavGroup title="Main">
                 <NavLink href="/user/home" icon={Home}>Home</NavLink>
                 <NavLink href="/user/queues" icon={Users}>Queues</NavLink>
@@ -268,31 +269,15 @@ const Header = () => {
                 <NavGroup title="Business">
                   <NavLink href="/dashboard" icon={PieChart}>Business Dashboard</NavLink>
                   <NavLink href="/business/profile" icon={User}>Business Profile</NavLink>
-                  <NavLink href="/business/support" icon={HelpCircle}>Support</NavLink>
                 </NavGroup>
               )}
 
               <NavGroup title="Account">
                 <NavLink href="/user/dashboard" icon={User}>Profile</NavLink>
                 <NavLink href="/user/settings" icon={Settings}>Settings</NavLink>
+              <NavLink href="/business/support" icon={HelpCircle}>Support</NavLink>
               </NavGroup>
-
-              {/* Theme Toggle section - hidden with CSS */}
-              <div className="hidden">
-                <ThemeToggle />
-              </div>
             </nav>
-
-            {/* Sidebar Footer */}
-            <div className="absolute bottom-0 w-full p-4 border-t border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-              <button 
-                onClick={handleLogout}
-                className="flex items-center gap-3 w-full px-4 py-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors duration-200"
-              >
-                <LogOut className="w-5 h-5" />
-                <span className="font-medium">Logout</span>
-              </button>
-            </div>
           </div>
         </div>
       )}

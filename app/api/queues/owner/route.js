@@ -24,7 +24,7 @@ export async function GET(request) {
         service_type,
         current_queue,
         total_served_today,
-        avg_wait_time,
+        seven_day_avg_wait_time,
         avg_rating
       `)
       .eq('owner_id', session.user.id)
