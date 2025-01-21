@@ -74,7 +74,6 @@ export default function SignIn() {
         const { data, error: updateError } = await supabase
           .from('user_profile')
           .update({
-            image: `https://api.dicebear.com/6.x/initials/svg?seed=${identityValue}`,
             country_code: otplessUser.country_code,
             otpless_token: token,
             city: city
@@ -95,7 +94,6 @@ export default function SignIn() {
             email: identityType === 'EMAIL' ? identityValue : null,
             phone_number: identityType === 'MOBILE' ? identityValue : null,
             name: userName || (identityType === 'EMAIL' ? identityValue.split('@')[0] : ''),
-            image: `https://api.dicebear.com/6.x/initials/svg?seed=${identityValue}`,
             country_code: otplessUser.country_code,
             otpless_token: token,
             city: city

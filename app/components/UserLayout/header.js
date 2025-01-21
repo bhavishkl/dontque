@@ -24,12 +24,14 @@ const Header = () => {
   const { data: session } = useSession()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const sidebarRef = useRef(null)
-  const { name: userName, role, image: userImage, short_id: shortid } = useUserInfo(session?.user?.id)
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    if (userName) setIsLoading(false)
-  }, [userName])
+  const { 
+    name: userName, 
+    role, 
+    image: userImage, 
+    short_id: shortid,
+    isLoading,
+    isError 
+  } = useUserInfo(session?.user?.id)
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
 
@@ -47,7 +49,6 @@ const Header = () => {
   }, [])
 
   const handleLogout = async () => {
-    localStorage.removeItem(`userName_${session?.user?.id}`)
     await signOut({ redirect: true, callbackUrl: '/' })
   }
 
@@ -146,15 +147,28 @@ const Header = () => {
                   className="flex items-center gap-3 cursor-pointer p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
                   onClick={toggleSidebar}
                 >
-                  <Avatar
-                    src={userImage}
-                    name={userName}
-                    size="sm"
-                    className="w-8 h-8 ring-1 ring-amber-200 dark:ring-amber-800"
-                  />
-                  <span className="hidden sm:block text-sm font-medium text-gray-700 dark:text-gray-200">
-                    {userName}
-                  </span>
+                  <div className="relative w-8 h-8 rounded-lg overflow-hidden ring-1 ring-amber-200 dark:ring-amber-800">
+                    {isLoading ? (
+                      <div className="animate-pulse w-full h-full bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800" />
+                    ) : userImage ? (
+                      <img
+                        src={userImage}
+                        alt={userName || 'User avatar'}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                        <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  {isLoading ? (
+                    <div className="hidden sm:block w-24 h-4 animate-pulse bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded" />
+                  ) : (
+                    <span className="hidden sm:block text-sm font-medium text-gray-700 dark:text-gray-200">
+                      {userName}
+                    </span>
+                  )}
                 </div>
               </div>
             )}
@@ -177,20 +191,29 @@ const Header = () => {
           >
             <div className="p-6 border-b border-gray-200 dark:border-gray-800">
               <div className="flex items-center gap-4">
-                <Avatar
-                  src={userImage || ''}
-                  name={userName || 'User'}
-                  size="lg"
-                  className="w-12 h-12 ring-2 ring-amber-200 dark:ring-amber-800"
-                />
+                <div className="relative w-12 h-12 rounded-lg overflow-hidden ring-2 ring-amber-200 dark:ring-amber-800">
+                  {isLoading ? (
+                    <div className="w-full h-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                  ) : userImage ? (
+                    <img
+                      src={userImage}
+                      alt={userName || 'User avatar'}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                      <User className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="font-semibold text-gray-900 dark:text-white">
-                    {userName || session.user?.name || 'Guest'}
+                    {isLoading ? 'Loading...' : (userName || session.user?.name || 'Guest')}
                   </h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {role || 'User'}
+                    {isLoading ? '...' : (role || 'User')}
                   </p>
-                  {shortid && (
+                  {!isLoading && shortid && (
                     <div className="flex items-center gap-2 mt-2 overflow-x-auto">
                       <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono whitespace-nowrap">
                         ID: {shortid}
@@ -241,7 +264,7 @@ const Header = () => {
                 <NavLink href="/user/queue-history" icon={History}>Queue History</NavLink>
               </NavGroup>
 
-              {role === 'business' && (
+              {!isLoading && role === 'business' && (
                 <NavGroup title="Business">
                   <NavLink href="/dashboard" icon={PieChart}>Business Dashboard</NavLink>
                   <NavLink href="/business/profile" icon={User}>Business Profile</NavLink>
