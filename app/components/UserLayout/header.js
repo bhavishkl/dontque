@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useSession, signOut } from "next-auth/react"
 import { 
-  Bell, X, Home, Settings, LogOut, User, 
+  Bell, X, Home, Settings, User, 
   Users, PieChart, HelpCircle,
   Clock, Copy, Share2, History,
   Bookmark
@@ -13,7 +13,7 @@ import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { useUserInfo } from '../../hooks/useUserName'
 import { usePathname } from 'next/navigation'
-import { Avatar, Button, Popover, PopoverTrigger, PopoverContent, Tooltip } from "@nextui-org/react"
+import { Button, Popover, PopoverTrigger, PopoverContent, Tooltip } from "@nextui-org/react"
 import { toast } from 'sonner'
 import { ThemeToggle } from '../ThemeToggle'
 
@@ -96,7 +96,7 @@ const Header = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Left section with hover effect */}
-            <div className="flex items-center gap-2 group">
+            <div className="flex items-center group">
               <Link href="/dashboard" className="flex items-center gap-2 transition-transform duration-200 hover:scale-105">
                 <Image
                   src="/logo.webp"

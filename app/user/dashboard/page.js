@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
 import { useRouter } from 'next/navigation'
-import { Settings, Phone } from 'lucide-react'
+import { Settings, Phone, LogOut } from 'lucide-react'
 import { Button, Card, CardBody, Avatar, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Checkbox } from "@nextui-org/react"
 import { toast } from 'sonner'
 import { useApi } from '../../hooks/useApi'
@@ -55,6 +55,10 @@ export default function UserDashboard() {
     }
   }
 
+  const handleLogout = async () => {
+    await signOut({ redirect: true, callbackUrl: '/' })
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
@@ -62,32 +66,62 @@ export default function UserDashboard() {
           <CardBody>
             <div className="flex flex-col sm:flex-row items-center sm:items-center justify-between gap-4 sm:gap-6 p-2 sm:p-4">
               <div className="flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6 w-full sm:w-auto">
-                <Avatar 
-                  src={userData?.image || `https://ui-avatars.com/api/?name=${userData?.name}&background=random`} 
-                  name={userData?.name} 
-                  className="h-20 w-20 sm:h-24 sm:w-24 text-large"
-                  showFallback
-                  fallback={
-                    <div className="bg-primary text-white font-semibold text-xl">
-                      {userData?.name?.charAt(0)?.toUpperCase()}
+                {isUserLoading ? (
+                  <>
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 animate-pulse" />
+                    <div className="space-y-3 text-center sm:text-left">
+                      <div className="h-6 w-32 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded animate-pulse" />
+                      <div className="h-5 w-40 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded animate-pulse" />
                     </div>
-                  }
-                />
-                <div className="space-y-2 text-center sm:text-left">
-                  <h1 className="text-xl sm:text-2xl font-bold dark:text-white">{userData?.name}</h1>
-                  <p className="text-gray-600 dark:text-gray-300 flex items-center justify-center sm:justify-start gap-2">
-                    <Phone className="h-4 w-4" />
-                    {userData?.phone_number}
-                  </p>
-                </div>
+                  </>
+                ) : (
+                  <>
+                    <Avatar 
+                      src={userData?.image || `https://ui-avatars.com/api/?name=${userData?.name}&background=random`} 
+                      name={userData?.name} 
+                      className="h-20 w-20 sm:h-24 sm:w-24 text-large"
+                      showFallback
+                      fallback={
+                        <div className="bg-primary text-white font-semibold text-xl">
+                          {userData?.name?.charAt(0)?.toUpperCase()}
+                        </div>
+                      }
+                    />
+                    <div className="space-y-2 text-center sm:text-left">
+                      <h1 className="text-xl sm:text-2xl font-bold dark:text-white">{userData?.name}</h1>
+                      <p className="text-gray-600 dark:text-gray-300 flex items-center justify-center sm:justify-start gap-2">
+                        <Phone className="h-4 w-4" />
+                        {userData?.phone_number}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
-              <Button 
-                className="bg-primary text-white dark:bg-primary-dark hover:opacity-90 transition-opacity w-full sm:w-auto"
-                startContent={<Settings className="h-4 w-4" />}
-                onClick={handleEditProfile}
-              >
-                Edit Profile
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
+                {isUserLoading ? (
+                  <>
+                    <div className="h-10 w-28 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded animate-pulse" />
+                    <div className="h-10 w-28 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded animate-pulse" />
+                  </>
+                ) : (
+                  <>
+                    <Button 
+                      className="bg-primary text-white dark:bg-primary-dark hover:opacity-90 transition-opacity"
+                      startContent={<Settings className="h-4 w-4" />}
+                      onClick={handleEditProfile}
+                    >
+                      Edit Profile
+                    </Button>
+                    <Button 
+                      className="bg-danger text-white hover:opacity-90 transition-opacity"
+                      startContent={<LogOut className="h-4 w-4" />}
+                      onClick={handleLogout}
+                    >
+                      Logout
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           </CardBody>
         </Card>
@@ -107,21 +141,30 @@ export default function UserDashboard() {
                 </ModalHeader>
                 <ModalBody>
                   <div className="space-y-4 sm:space-y-6">
-                    <Input
-                      label="Name"
-                      value={editedUserData?.name || ''}
-                      onChange={(e) => setEditedUserData({...editedUserData, name: e.target.value})}
-                      variant="bordered"
-                      className="w-full text-sm sm:text-base"
-                    />
-                    <Input
-                      label="Phone Number"
-                      value={editedUserData?.phone_number || ''}
-                      onChange={(e) => setEditedUserData({...editedUserData, phone_number: e.target.value})}
-                      variant="bordered"
-                      type="tel"
-                      className="w-full text-sm sm:text-base"
-                    />
+                    {isUserLoading ? (
+                      <>
+                        <div className="h-14 w-full bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded animate-pulse" />
+                        <div className="h-14 w-full bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded animate-pulse" />
+                      </>
+                    ) : (
+                      <>
+                        <Input
+                          label="Name"
+                          value={editedUserData?.name || ''}
+                          onChange={(e) => setEditedUserData({...editedUserData, name: e.target.value})}
+                          variant="bordered"
+                          className="w-full text-sm sm:text-base"
+                        />
+                        <Input
+                          label="Phone Number"
+                          value={editedUserData?.phone_number || ''}
+                          onChange={(e) => setEditedUserData({...editedUserData, phone_number: e.target.value})}
+                          variant="bordered"
+                          type="tel"
+                          className="w-full text-sm sm:text-base"
+                        />
+                      </>
+                    )}
                   </div>
                 </ModalBody>
                 <ModalFooter>
@@ -137,6 +180,7 @@ export default function UserDashboard() {
                     color="primary"
                     onPress={handleSaveChanges}
                     className="text-sm sm:text-base"
+                    isLoading={isUserLoading}
                   >
                     Save Changes
                   </Button>
