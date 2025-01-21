@@ -10,7 +10,6 @@ import { ThemeProvider } from 'next-themes';
 import Script from 'next/script';
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import OfflineAlert from './components/OfflineAlert';
-import { WebVitalsTracker } from './components/WebVitalsTracker';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -34,7 +33,7 @@ export const metadata = {
     siteName: 'DontQue',
     images: [
       {
-        url: '/og-image.jpg',
+        url: '/logo.svg',
         width: 1200,
         height: 630,
       },
@@ -96,7 +95,6 @@ export default async function RootLayout({ children }) {
             richColors
           />
           <OfflineAlert />
-          <WebVitalsTracker />
         </ThemeProvider>
         <Script
           src="https://checkout.razorpay.com/v1/checkout.js"

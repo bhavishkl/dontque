@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Modal, ModalContent, ModalHeader, ModalBody, Button, ModalFooter, useDisclosure, Card, CardBody, Skeleton, Input, Chip } from "@nextui-org/react"
+import { Modal, ModalContent, ModalHeader, ModalBody, Button, ModalFooter, useDisclosure, Card, CardBody, Skeleton, Chip } from "@nextui-org/react"
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { categories } from '../../utils/category'
-import { Search, Clock, Scan, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, MapPin, Star } from 'lucide-react'
+import { Clock, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, MapPin, Star } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApi } from '../../hooks/useApi'
 import debounce from 'lodash/debounce'
@@ -16,16 +16,6 @@ import SaveButton from '@/app/components/UniComp/SaveButton';
 import { useLocation } from '../../hooks/useLocation';
 import SearchBar from '@/app/components/SearchBar';
 import dynamic from 'next/dynamic';
-
-const DynamicScanner = dynamic(
-  () => import('@yudiel/react-qr-scanner').then(mod => ({ default: mod.Scanner })),
-  {
-    loading: () => <div className="w-full h-64 flex items-center justify-center">
-      <div className="animate-pulse text-gray-500">Loading scanner...</div>
-    </div>,
-    ssr: false
-  }
-);
 
 const QueueItem = memo(({ queue }) => {
   const router = useRouter();
@@ -174,7 +164,6 @@ export default function Home() {
   const router = useRouter()
   const { data: session } = useSession()
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [isScannerActive, setIsScannerActive] = useState(false);
   const { data: savedQueues, isLoading: isSavedLoading } = useApi('/api/user/saved-queues')
   const { location: userLocation, isLoading: isLocationLoading, refreshLocation } = useLocation();
 
@@ -221,59 +210,11 @@ export default function Home() {
     setIsSearching(false);
   };
 
-  const handleQrCodeScanned = (result) => {
-    if (result) {
-      try {
-        // Close the QR scanner modal
-        onClose();
-        
-        // Extract the queue ID from the URL
-        const url = new URL(result);
-        const pathParts = url.pathname.split('/');
-        const quickJoinIndex = pathParts.indexOf('quick-join');
-        
-        let queueId;
-        if (quickJoinIndex !== -1 && pathParts[quickJoinIndex + 1]) {
-          // If it's already a quick-join URL
-          queueId = pathParts[quickJoinIndex + 1];
-        } else {
-          // If it's a regular queue URL, get the last part
-          queueId = pathParts[pathParts.length - 1];
-        }
-        
-        if (queueId) {
-          // Navigate to the quick-join page
-          router.push(`/quick-join/${queueId}`);
-          toast.success('QR code scanned successfully');
-        } else {
-          throw new Error('Invalid QR code');
-        }
-      } catch (error) {
-        console.error('Error processing QR code:', error);
-        toast.error('Invalid QR code format. Please try again.');
-      }
-    } else {
-      toast.error('Failed to scan QR code. Please try again.');
-    }
-  };
-
-
-  const toggleScanner = () => {
-    if (isScannerActive) {
-      setIsScannerActive(false);
-      onClose();
-    } else {
-      setIsScannerActive(true);
-      onOpen();
-    }
-  };
-  
   const handleCategoryClick = (category) => {
     setSelectedCategory(category)
     mutate()
     router.push(`/user/queues?category=${category}`)
   }
-
 
   useEffect(() => {
     if (!userLocation && !isLocationLoading) {
@@ -307,7 +248,6 @@ export default function Home() {
               <div className="md:w-1/2 w-full">
                 <SearchBar 
                   onSearch={handleSearch}
-                  onScanClick={toggleScanner}
                   isSearching={isSearching}
                 />
               </div>
@@ -430,37 +370,6 @@ export default function Home() {
           </div>
         </section>
       </main>
-     
-
-      {isScannerActive && (
-        <ModalContent>
-          <ModalHeader>Scan QR Code</ModalHeader>
-          <ModalBody>
-            <div className="w-full">
-              <DynamicScanner
-                onResult={(result) => {
-                  if (result) {
-                    const url = result.getText();
-                    if (url.includes('/quick-join/')) {
-                      const id = url.split('/quick-join/')[1];
-                      router.push(`/quick-join/${id}`);
-                      onClose();
-                    } else {
-                      toast.error('Invalid QR Code');
-                    }
-                  }
-                }}
-                onError={(error) => {
-                  console.log(error?.message)
-                }}
-              />
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button onClick={onClose}>Close</Button>
-          </ModalFooter>
-        </ModalContent>
-      )}
     </div>
   )
 }

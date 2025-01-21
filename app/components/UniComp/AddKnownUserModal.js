@@ -45,24 +45,6 @@ const AddKnownUserModal = ({ queueId, onSuccess, isAdvanced, selectedServices, c
     }
   };
 
-  const fetchQueueData = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/queues/${params.queueId}/manage`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch queue data');
-      }
-      const data = await response.json();
-      setQueueData(data.queueData);
-      setServiceTime(data.queueData.est_time_to_serve.toString());
-      setCustomersInQueue(data.customersInQueue);
-    } catch (error) {
-      console.error('Error fetching queue data:', error);
-      toast.error('Failed to load queue data');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <>
