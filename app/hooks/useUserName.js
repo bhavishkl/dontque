@@ -22,7 +22,7 @@ const fetchUserInfo = async (userId) => {
       role: data.role,
       image: data.image,
       short_id: data.user_short_id,
-      isNameNull: !data.name
+      needsNameUpdate: !data.name || data.name === 'User' // Check if name needs update
     }
   } catch (error) {
     console.error('Error fetching user info:', error)
@@ -33,10 +33,10 @@ const fetchUserInfo = async (userId) => {
 // Global SWR configuration for user info
 const userInfoConfig = {
   revalidateOnFocus: false,
-  revalidateOnReconnect: false, // Changed to false since user data rarely changes
-  dedupingInterval: 3600000, // Increased to 1 hour since user data is relatively static
-  refreshInterval: 0, // Removed auto-refresh since user data doesn't need constant updates
-  shouldRetryOnError: false, // Don't retry on error since it's likely a permanent error
+  revalidateOnReconnect: false,
+  dedupingInterval: 3600000,
+  refreshInterval: 0,
+  shouldRetryOnError: false,
 }
 
 export function useUserInfo(userId) {
@@ -48,26 +48,30 @@ export function useUserInfo(userId) {
     userInfoConfig
   )
 
-  const updateUserInfo = async (newInfo) => {
+  const updateUserName = async (newName) => {
+    if (!newName || newName.trim() === '') {
+      throw new Error('Name cannot be empty')
+    }
+
     try {
       // Optimistic update
-      mutate({ ...data, ...newInfo }, false)
+      mutate({ ...data, name: newName.trim(), needsNameUpdate: false }, false)
 
       const { error: updateError } = await supabase
         .from('user_profile')
-        .update(newInfo)
+        .update({ name: newName.trim() })
         .eq('user_id', userId)
 
       if (updateError) throw updateError
 
-      // Update all instances of this user's data across the app
+      // Update all instances of this user's data
       mutate()
 
       return true
     } catch (error) {
       // Revert optimistic update
       mutate(data, false)
-      console.error('Error updating user info:', error)
+      console.error('Error updating user name:', error)
       throw error
     }
   }
@@ -76,8 +80,9 @@ export function useUserInfo(userId) {
     ...data,
     isLoading: !error && !data,
     isError: error,
-    updateUserInfo,
-    mutate, // Expose mutate for manual revalidation if needed
+    updateUserName,
+    needsNameUpdate: data?.needsNameUpdate,
+    mutate,
   }
 }
 
@@ -85,7 +90,6 @@ export function useUserInfo(userId) {
 export const preloadUserInfo = (userId) => {
   if (userId) {
     const key = `${USER_INFO_KEY}-${userId}`
-    // Trigger fetch but don't wait for it
     useSWR.preload(key, () => fetchUserInfo(userId))
   }
 }

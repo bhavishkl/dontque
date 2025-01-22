@@ -47,10 +47,10 @@ export default function Footer() {
 
   const socialLinks = [
     { icon: <Facebook size={20} />, href: "#" },
-    { icon: <Instagram size={20} />, href: "#" },
+    { icon: <Instagram size={20} />, href: "https://www.instagram.com/dontque.co/" },
     { icon: <Twitter size={20} />, href: "#" },
     { icon: <Github size={20} />, href: "#" },
-    { icon: <Youtube size={20} />, href: "#" }
+    { icon: <Youtube size={20} />, href: "https://youtube.com/@dontque?si=8TfvifUKcP9VcsKG" }
   ]
 
   return (

@@ -16,6 +16,8 @@ import SaveButton from '@/app/components/UniComp/SaveButton';
 import { useLocation } from '../../hooks/useLocation';
 import SearchBar from '@/app/components/SearchBar';
 import dynamic from 'next/dynamic';
+import { useUserInfo } from '@/app/hooks/useUserName'
+import UpdateNameModal from '@/app/components/UpdateNameModal'
 
 const QueueItem = memo(({ queue }) => {
   const router = useRouter();
@@ -166,6 +168,8 @@ export default function Home() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { data: savedQueues, isLoading: isSavedLoading } = useApi('/api/user/saved-queues')
   const { location: userLocation, isLoading: isLocationLoading, refreshLocation } = useLocation();
+  const [showNameModal, setShowNameModal] = useState(false)
+  const { needsNameUpdate } = useUserInfo(session?.user?.id)
 
   // Dummy data for user stats
   const [userStats, setUserStats] = useState({
@@ -225,6 +229,12 @@ export default function Home() {
       return () => clearTimeout(timer);
     }
   }, [userLocation, isLocationLoading, refreshLocation]);
+
+  useEffect(() => {
+    if (needsNameUpdate) {
+      setShowNameModal(true)
+    }
+  }, [needsNameUpdate])
 
   return (
     <div className="min-h-screen dark:bg-gray-900 dark:text-gray-100">
@@ -370,6 +380,11 @@ export default function Home() {
           </div>
         </section>
       </main>
+      <UpdateNameModal
+        isOpen={showNameModal}
+        onClose={() => setShowNameModal(false)}
+        userId={session?.user?.id}
+      />
     </div>
   )
 }
