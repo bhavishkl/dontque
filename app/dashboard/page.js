@@ -13,6 +13,7 @@ import { useSession } from "next-auth/react"
 import { useRouter } from 'next/navigation'
 import { useApi } from '../hooks/useApi'
 import { useUserInfo } from '../hooks/useUserName'
+import { toast } from "sonner"
 
 export default function QueueOwnerDashboard() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -29,6 +30,16 @@ export default function QueueOwnerDashboard() {
       router.push('/user/home')
     }
   }, [session, role, router])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('created') === 'true') {
+      toast.success('Welcome to your new queue!', {
+        description: 'Start managing your queue from here.',
+      });
+      router.replace('/dashboard');
+    }
+  }, [router]);
 
   if (!session || role === 'user') {
     return null
@@ -147,82 +158,96 @@ export default function QueueOwnerDashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-6">
-        <div className="grid gap-4 md:grid-cols-4 mb-8">
-          <Card className="bg-background/60 shadow-md hover:shadow-xl transition-all duration-200 border border-divider">
-            <CardBody className="gap-3">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm text-default-500">Active Queues</p>
-                  <div className="text-2xl font-semibold mt-1">
-                    {overallStats.activeQueues}/{overallStats.totalQueues}
+        {isLoading ? (
+          <div className="container mx-auto px-4 py-6">
+            <div className="grid gap-4 md:grid-cols-4 mb-8">
+              {[...Array(4)].map((_, i) => (
+                <Card key={i} className="bg-background/60">
+                  <CardBody>
+                    <Skeleton className="h-24 rounded-lg" />
+                  </CardBody>
+                </Card>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-4 mb-8">
+            <Card className="bg-background/60 shadow-md hover:shadow-xl transition-all duration-200 border border-divider">
+              <CardBody className="gap-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm text-default-500">Active Queues</p>
+                    <div className="text-2xl font-semibold mt-1">
+                      {overallStats.activeQueues}/{overallStats.totalQueues}
+                    </div>
+                  </div>
+                  <div className="p-2 rounded-full bg-primary/10">
+                    <PieChart className="h-5 w-5 text-primary" />
                   </div>
                 </div>
-                <div className="p-2 rounded-full bg-primary/10">
-                  <PieChart className="h-5 w-5 text-primary" />
+                <div className="h-1 w-full bg-default-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary rounded-full transition-all" 
+                    style={{ width: `${(overallStats.activeQueues/overallStats.totalQueues) * 100}%` }}
+                  />
                 </div>
-              </div>
-              <div className="h-1 w-full bg-default-100 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-primary rounded-full transition-all" 
-                  style={{ width: `${(overallStats.activeQueues/overallStats.totalQueues) * 100}%` }}
-                />
-              </div>
-            </CardBody>
-          </Card>
+              </CardBody>
+            </Card>
 
-          <Card className="bg-background/60 shadow-md hover:shadow-xl transition-all duration-200 border border-divider">
-            <CardBody className="gap-3">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm text-default-500">Customers Today</p>
-                  <div className="text-2xl font-semibold mt-1">{overallStats.totalServedToday}</div>
-                </div>
-                <div className="p-2 rounded-full bg-success/10">
-                  <Users className="h-5 w-5 text-success" />
-                </div>
-              </div>
-              <p className="text-sm text-default-400">
-                Currently waiting: {overallStats.totalCustomers}
-              </p>
-            </CardBody>
-          </Card>
-
-          <Card className="bg-background/60 shadow-md hover:shadow-xl transition-all duration-200 border border-divider">
-            <CardBody className="gap-3">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm text-default-500">Avg. Wait Time</p>
-                  <div className="text-2xl font-semibold mt-1">{overallStats.avgWaitTime} min</div>
-                </div>
-                <div className="p-2 rounded-full bg-warning/10">
-                  <Clock className="h-5 w-5 text-warning" />
-                </div>
-              </div>
-              <p className="text-sm text-default-400">
-                Peak hours: {overallStats.peakHours}
-              </p>
-            </CardBody>
-          </Card>
-
-          <Card className="bg-background/60 shadow-md hover:shadow-xl transition-all duration-200 border border-divider">
-            <CardBody className="gap-3">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm text-default-500">Revenue Impact</p>
-                  <div className="text-2xl font-semibold mt-1">
-                    {overallStats.businessValue.roi}%
+            <Card className="bg-background/60 shadow-md hover:shadow-xl transition-all duration-200 border border-divider">
+              <CardBody className="gap-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm text-default-500">Customers Today</p>
+                    <div className="text-2xl font-semibold mt-1">{overallStats.totalServedToday}</div>
+                  </div>
+                  <div className="p-2 rounded-full bg-success/10">
+                    <Users className="h-5 w-5 text-success" />
                   </div>
                 </div>
-                <div className="p-2 rounded-full bg-secondary/10">
-                  <DollarSign className="h-5 w-5 text-secondary" />
+                <p className="text-sm text-default-400">
+                  Currently waiting: {overallStats.totalCustomers}
+                </p>
+              </CardBody>
+            </Card>
+
+            <Card className="bg-background/60 shadow-md hover:shadow-xl transition-all duration-200 border border-divider">
+              <CardBody className="gap-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm text-default-500">Avg. Wait Time</p>
+                    <div className="text-2xl font-semibold mt-1">{overallStats.avgWaitTime} min</div>
+                  </div>
+                  <div className="p-2 rounded-full bg-warning/10">
+                    <Clock className="h-5 w-5 text-warning" />
+                  </div>
                 </div>
-              </div>
-              <p className="text-sm text-default-400">
-                +₹{overallStats.businessValue.totalExtraRevenue.toLocaleString()}
-              </p>
-            </CardBody>
-          </Card>
-        </div>
+                <p className="text-sm text-default-400">
+                  Peak hours: {overallStats.peakHours}
+                </p>
+              </CardBody>
+            </Card>
+
+            <Card className="bg-background/60 shadow-md hover:shadow-xl transition-all duration-200 border border-divider">
+              <CardBody className="gap-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm text-default-500">Revenue Impact</p>
+                    <div className="text-2xl font-semibold mt-1">
+                      {overallStats.businessValue.roi}%
+                    </div>
+                  </div>
+                  <div className="p-2 rounded-full bg-secondary/10">
+                    <DollarSign className="h-5 w-5 text-secondary" />
+                  </div>
+                </div>
+                <p className="text-sm text-default-400">
+                  +₹{overallStats.businessValue.totalExtraRevenue.toLocaleString()}
+                </p>
+              </CardBody>
+            </Card>
+          </div>
+        )}
 
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <h2 className="text-xl font-semibold">Your Queues</h2>

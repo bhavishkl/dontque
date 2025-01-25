@@ -267,8 +267,8 @@ const Header = () => {
 
               {!isLoading && role === 'business' && (
                 <NavGroup title="Business">
-                  <NavLink href="/dashboard" icon={PieChart}>Business Dashboard</NavLink>
-                  <NavLink href="/business/profile" icon={User}>Business Profile</NavLink>
+                  <NavLink href="/dashboard" icon={PieChart}>Queue Dashboard</NavLink>
+                  <NavLink href="/dashboard/business-profile" icon={User}>Business Profile</NavLink>
                 </NavGroup>
               )}
 

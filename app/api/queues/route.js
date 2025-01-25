@@ -94,42 +94,206 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
-    
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { name, description, category, location, max_capacity, opening_time, closing_time, est_time_to_serve, service_start_time } = await request.json();
+    const queueData = await request.json();
 
-    // Generate a unique queue ID
-    const queueId = 'Q' + Math.random().toString(36).substr(2, 6).toUpperCase();
+    // Clean and validate numeric fields
+    const cleanedQueueData = {
+      queue_id: queueData.id,
+      owner_id: session.user.id,
+      name: queueData.name,
+      description: queueData.description,
+      category: queueData.category,
+      location: queueData.location,
+      address: queueData.address,
+      max_capacity: queueData.maxCapacity ? parseInt(queueData.maxCapacity) : 0,
+      opening_time: queueData.openingTime || null,
+      closing_time: queueData.closingTime || null,
+      service_start_time: queueData.serviceStartTime || null,
+      service_type: queueData.serviceType,
+      est_time_to_serve: queueData.serviceType === 'standard' 
+        ? (queueData.estTimeToServe ? parseInt(queueData.estTimeToServe) : 10)
+        : 0,
+      status: 'active'
+    };
 
-    const { data, error } = await supabase
+    // Validate required fields
+    if (!cleanedQueueData.name || !cleanedQueueData.category || 
+        !cleanedQueueData.location || !cleanedQueueData.service_type) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Name, category, location, and service type are required' 
+      }, { status: 400 });
+    }
+
+    // Validate data based on service type
+    if (queueData.serviceType === 'advanced') {
+      // For advanced type, ensure we have counters
+      if (!queueData.counters?.length) {
+        return NextResponse.json({ 
+          success: false, 
+          message: 'Advanced queues require at least one counter' 
+        }, { status: 400 });
+      }
+
+      // Create a map of counter IDs for quick lookup
+      const counterMap = new Map(
+        queueData.counters.map(counter => [counter.id, counter])
+      );
+
+      // If services exist, validate counter links
+      if (queueData.services?.length) {
+        for (const service of queueData.services) {
+          if (!service.linkedCounters?.length) {
+            return NextResponse.json({ 
+              success: false, 
+              message: 'Each service must be linked to at least one counter' 
+            }, { status: 400 });
+          }
+
+          // Validate counter references using UUIDs
+          for (const counterId of service.linkedCounters) {
+            if (!counterMap.has(counterId)) {
+              return NextResponse.json({ 
+                success: false, 
+                message: 'Invalid counter reference in service' 
+              }, { status: 400 });
+            }
+          }
+        }
+      }
+
+      // If staff exists, validate counter assignments
+      if (queueData.staff?.length) {
+        for (const staff of queueData.staff) {
+          if (!counterMap.has(staff.assignedCounter)) {
+            return NextResponse.json({ 
+              success: false, 
+              message: 'Invalid counter assignment for staff member' 
+            }, { status: 400 });
+          }
+        }
+      }
+    }
+
+    // Insert queue with cleaned data
+    const { data: queue, error: queueError } = await supabase
       .from('queues')
-      .insert({
-        owner_id: session.user.id,
-        name,
-        description,
-        category,
-        location,
-        max_capacity,
-        opening_time,
-        closing_time,
-        est_time_to_serve: parseInt(est_time_to_serve),
-        service_start_time,
-        status: 'active',
-      })
+      .insert(cleanedQueueData)
       .select()
       .single();
 
-    if (error) {
-      console.error('Supabase error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (queueError) throw queueError;
+
+    // For advanced type, insert counters and related data
+    if (queueData.serviceType === 'advanced') {
+      // Clean counter data before insertion
+      const cleanedCounters = queueData.counters.map(counter => ({
+        counter_id: counter.id,
+        queue_id: queueData.id,
+        name: counter.name,
+        counter_type: queueData.staff?.length > 0 ? 'staff' : 'standard',
+        status: 'active',
+        service_start_time: counter.serviceStartTime || null,
+        max_capacity: counter.maxCapacity ? parseInt(counter.maxCapacity) : 0
+      }));
+
+      const { data: counters, error: counterError } = await supabase
+        .from('counters')
+        .insert(cleanedCounters)
+        .select();
+
+      if (counterError) {
+        await supabase
+          .from('queues')
+          .delete()
+          .eq('queue_id', queueData.id);
+        throw counterError;
+      }
+
+      // Insert services if they exist
+      if (queueData.services?.length) {
+        const serviceEntries = queueData.services.flatMap(service => 
+          service.linkedCounters.map(counterId => ({
+            service_id: service.id,
+            counter_id: counterId,
+            name: service.name,
+            description: service.description || null,
+            estimated_time: service.estTimeToServe ? parseInt(service.estTimeToServe) : null,
+            price: service.price ? parseFloat(service.price) : null,
+            status: 'active'
+          }))
+        );
+
+        const { error: serviceError } = await supabase
+          .from('services')
+          .insert(serviceEntries);
+
+        if (serviceError) {
+          await supabase
+            .from('counters')
+            .delete()
+            .eq('queue_id', queueData.id);
+          await supabase
+            .from('queues')
+            .delete()
+            .eq('queue_id', queueData.id);
+          throw serviceError;
+        }
+      }
+
+      // Insert staff if they exist
+      if (queueData.staff?.length) {
+        const cleanedStaff = queueData.staff.map(staff => ({
+          staff_id: staff.id,
+          counter_id: staff.assignedCounter,
+          name: staff.name,
+          specialization: staff.role,
+          experience_years: null, // Add default values for required fields
+          rating: 4.0, // Default rating as per schema
+          review_count: 0 // Default count
+        }));
+
+        const { error: staffError } = await supabase
+          .from('staff_details')
+          .insert(cleanedStaff);
+
+        if (staffError) {
+          await supabase
+            .from('services')
+            .delete()
+            .in('counter_id', queueData.counters.map(c => c.id));
+          await supabase
+            .from('counters')
+            .delete()
+            .eq('queue_id', queueData.id);
+          await supabase
+            .from('queues')
+            .delete()
+            .eq('queue_id', queueData.id);
+          throw staffError;
+        }
+      }
     }
 
-    return NextResponse.json(data, { status: 201 });
+    return NextResponse.json({
+      success: true,
+      message: 'Queue created successfully',
+      data: queue
+    });
+
   } catch (error) {
     console.error('Error creating queue:', error);
-    return NextResponse.json({ error: 'Failed to create queue' }, { status: 500 });
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: 'Failed to create queue',
+        error: error.message 
+      },
+      { status: 500 }
+    );
   }
 }
