@@ -239,3 +239,37 @@ CREATE INDEX idx_services_queue_id ON services(queue_id);
 CREATE INDEX idx_services_counter_id ON services(counter_id);
 CREATE INDEX idx_queue_entries_counter_id ON queue_entries(counter_id);
 CREATE INDEX idx_staff_details_counter_id ON staff_details(counter_id);
+
+
+-- Business Info Table (modified)
+CREATE TABLE business_info (
+    business_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    owner_id VARCHAR(255) REFERENCES user_profile(user_id),
+    name VARCHAR(255) NOT NULL,
+    business_type VARCHAR(50) CHECK (business_type IN ('proprietorship', 'partnership', 'pvt_ltd', 'ltd', 'llp', 'trust')),
+    category VARCHAR(50),
+    description TEXT,
+    
+    -- Location details
+    address TEXT,
+    city VARCHAR(100),
+    pincode VARCHAR(6),
+    
+    -- Contact information
+    phone VARCHAR(10),
+    email VARCHAR(255),
+    
+    -- Legal documents
+    gst_number VARCHAR(15),
+    pan_number VARCHAR(10),
+    fssai_number VARCHAR(14),
+    
+    status VARCHAR(20) DEFAULT 'active',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for performance
+CREATE INDEX idx_business_info_owner ON business_info(owner_id);
+CREATE INDEX idx_business_info_city ON business_info(city);
+CREATE INDEX idx_business_info_pincode ON business_info(pincode);

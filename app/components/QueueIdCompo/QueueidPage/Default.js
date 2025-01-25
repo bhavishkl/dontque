@@ -9,7 +9,6 @@ import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
 import { createClient } from '@supabase/supabase-js'
 import { useApi } from '@/app/hooks/useApi'
-import { debounce } from 'lodash'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
@@ -19,24 +18,43 @@ const QueueInfoSec = lazy(() => import('@/app/components/QueueIdCompo/QueueidPag
 const NotificationPreferencesModal = lazy(() => import('@/app/components/NotificationPreferencesModal'));
 
 const calculatePersonalizedServeTime = (nextServeAt, position, estTimeToServe, serviceStartTime) => {
+  // If position is 1 and service has started, they're next up - return current time
+  if (position === 1) {
+    const now = new Date();
+    
+    // If there's a service start time, check if we've passed it
+    if (serviceStartTime) {
+      const [hours, minutes] = serviceStartTime.split(':').map(Number);
+      const serviceStart = new Date(now);
+      serviceStart.setHours(hours, minutes, 0, 0);
+      
+      // If current time is before service start, return service start time
+      if (now < serviceStart) {
+        return serviceStart;
+      }
+    }
+    
+    // If we're past service start time or there isn't one, return current time
+    // as they should be served immediately
+    return now;
+  }
+  
+  // For all other positions, continue with existing logic
   if (!nextServeAt || !position || !estTimeToServe) return null;
   
   const now = new Date();
-  const baseTime = new Date(nextServeAt);
+  const baseTime = nextServeAt ? new Date(nextServeAt) : new Date();
   
-  // Parse service start time
   if (serviceStartTime) {
     const [hours, minutes] = serviceStartTime.split(':').map(Number);
     const serviceStart = new Date(now);
     serviceStart.setHours(hours, minutes, 0, 0);
     
-    // If current time is before service start time, use service start time as base
     if (now < serviceStart) {
       baseTime.setHours(hours, minutes, 0, 0);
     }
   }
   
-  // Calculate wait time based on position
   const waitTimeInMinutes = (position - 1) * estTimeToServe;
   return new Date(baseTime.getTime() + waitTimeInMinutes * 60000);
 };

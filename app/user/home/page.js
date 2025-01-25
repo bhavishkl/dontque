@@ -48,16 +48,14 @@ const QueueItem = memo(({ queue }) => {
         </div>
 
         {/* Rating Badge */}
-        {queue.avg_rating && (
-          <div className="absolute top-3 right-3">
-            <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg dark:bg-gray-900/90">
-              <Star className="h-3.5 w-3.5 text-yellow-500 fill-current" />
-              <span className="text-sm font-medium text-gray-700 dark:text-white">
-                {queue.avg_rating.toFixed(1)}
-              </span>
-            </div>
+        <div className="absolute top-3 right-3">
+          <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg dark:bg-gray-900/90">
+            <Star className="h-3.5 w-3.5 text-yellow-500 fill-current" />
+            <span className="text-sm font-medium text-gray-700 dark:text-white">
+              {queue.avg_rating ? queue.avg_rating.toFixed(1) : 'New'}
+            </span>
           </div>
-        )}
+        </div>
 
         {/* Quick Actions Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
