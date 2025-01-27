@@ -254,16 +254,16 @@ const Header = () => {
 
             {/* Navigation Links */}
             <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
+            {!isLoading && role === 'user' && (
               <NavGroup title="Main">
                 <NavLink href="/user/home" icon={Home}>Home</NavLink>
                 <NavLink href="/user/queues" icon={Users}>Queues</NavLink>
                 <NavLink href="/user/saved-queues" icon={Bookmark}>Saved Queues</NavLink>
-              </NavGroup>
-
-              <NavGroup title="Queue Management">
                 <NavLink href="/user/current-queues" icon={Clock}>Current Queues</NavLink>
                 <NavLink href="/user/queue-history" icon={History}>Queue History</NavLink>
               </NavGroup>
+              )}
+
 
               {!isLoading && role === 'business' && (
                 <NavGroup title="Business">

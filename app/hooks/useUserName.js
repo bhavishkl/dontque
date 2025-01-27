@@ -1,5 +1,8 @@
+'use client'
+
 import useSWR from 'swr'
 import { supabase } from '../lib/supabase'
+import { useSession } from 'next-auth/react'
 
 // Global cache key prefix
 const USER_INFO_KEY = 'user-info'
@@ -22,7 +25,7 @@ const fetchUserInfo = async (userId) => {
       role: data.role,
       image: data.image,
       short_id: data.user_short_id,
-      needsNameUpdate: !data.name || data.name === 'User' // Check if name needs update
+      needsNameUpdate: !data.name || data.name === 'User'
     }
   } catch (error) {
     console.error('Error fetching user info:', error)
@@ -40,12 +43,27 @@ const userInfoConfig = {
 }
 
 export function useUserInfo(userId) {
+  const { data: session, update: updateSession } = useSession()
   const cacheKey = userId ? `${USER_INFO_KEY}-${userId}` : null
 
   const { data, error, mutate } = useSWR(
     cacheKey,
     () => fetchUserInfo(userId),
-    userInfoConfig
+    {
+      ...userInfoConfig,
+      onSuccess: async (data) => {
+        if (data?.role && session?.user && data.role !== session.user.role) {
+          // Update session with the role from database
+          await updateSession({
+            ...session,
+            user: {
+              ...session.user,
+              role: data.role
+            }
+          })
+        }
+      }
+    }
   )
 
   const updateUserName = async (newName) => {

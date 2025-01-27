@@ -34,6 +34,7 @@ export const authOptions = {
         idToken: token.idToken,
         name: token.name,
         image: token.image,
+        role: token.role || null
       };
       return session;
     },

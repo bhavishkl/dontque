@@ -1,62 +1,54 @@
 'use client'
 
-import { useState, useEffect } from 'react';import { useRouter } from 'next/navigation';
-import { useSession } from "next-auth/react";
-import { useUserInfo } from './hooks/useUserName';
-import PerformanceMetrics from './components/PerformanceMetrics';
-import PricingSection from './components/LandingPageCompo/pricing/PricingSection'
-import TestimonialSection from './components/LandingPageCompo/testimonials/TestimonialSection'
-import FeaturesSection from './components/LandingPageCompo/features/FeaturesSection'
-import FaqSection from './components/LandingPageCompo/faq/FaqSection'
-import Footer from './components/LandingPageCompo/Footer'
-import Hero from './components/LandingPageCompo/hero/Hero'
-import Header from './components/LandingPageCompo/Header'
+import dynamic from 'next/dynamic';
+import Hero from './components/LandingPageCompo/hero/Hero';
+
+
+// Dynamic imports with loading fallbacks
+const PerformanceMetrics = dynamic(() => import('./components/PerformanceMetrics'), {
+  loading: () => <div>Loading metrics...</div>
+});
+const PricingSection = dynamic(() => import('./components/LandingPageCompo/pricing/PricingSection'), {
+  loading: () => <div>Loading pricing...</div>
+});
+const TestimonialSection = dynamic(() => import('./components/LandingPageCompo/testimonials/TestimonialSection'), {
+  loading: () => <div>Loading testimonials...</div>
+});
+const FeaturesSection = dynamic(() => import('./components/LandingPageCompo/features/FeaturesSection'), {
+  loading: () => <div>Loading features...</div>
+});
+const FaqSection = dynamic(() => import('./components/LandingPageCompo/faq/FaqSection'), {
+  loading: () => <div>Loading FAQ...</div>
+});
+const Footer = dynamic(() => import('./components/LandingPageCompo/Footer'), {
+  loading: () => <div>Loading footer...</div>
+});
+const Header = dynamic(() => import('./components/LandingPageCompo/Header'), {
+  loading: () => <div>Loading header...</div>
+});
 
 export default function LandingPage() {
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const router = useRouter();
-  const { data: session, status } = useSession();
-  const { role } = useUserInfo(session?.user?.id);
-
-  useEffect(() => {
-    if (session) {
-      if (role === 'business') {
-        router.push('/dashboard');
-      } else {
-        router.push('/user/home');
-      }
-    }
-  }, [session, router, role]);
-
-  if (status === "loading") {
-    return <div>Loading...</div>;
-  }
-
-  if (session) {
-    return null; // or a loading spinner if you prefer
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-100 to-white dark:from-gray-900 dark:to-gray-800 scroll-smooth">
       <Header showNavLinks={true} />
 
       <main>
-        <Hero />
+      <Hero />
         
         <section id="features">
-          <FeaturesSection />
+      <FeaturesSection />
         </section>
 
         <section id="pricing">
-          <PricingSection />
+      <PricingSection />
         </section>
 
         <section id="testimonials">
-          <TestimonialSection />
+      <TestimonialSection />
         </section>
 
         <section id="faq">
-          <FaqSection />
+      <FaqSection />
         </section>
       </main>
 
