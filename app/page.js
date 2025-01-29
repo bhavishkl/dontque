@@ -6,6 +6,8 @@ import Hero from './components/LandingPageCompo/hero/Hero'
 import Header from './components/LandingPageCompo/Header'
 import { Card } from "@nextui-org/card"
 import { Skeleton } from "@nextui-org/skeleton"
+import { useSession } from 'next-auth/react'
+import { useRouter, redirect } from 'next/navigation'
 
 // Loading components with proper skeletons
 const LoadingSkeleton = () => (
@@ -61,6 +63,18 @@ const Footer = dynamic(() => import('./components/LandingPageCompo/Footer'), {
 })
 
 export default function LandingPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+
+  // Move redirect logic before render
+  if (status === 'authenticated' && session?.user?.role) {
+    if (session.user.role === 'user') {
+      redirect('/user/home')
+    } else if (session.user.role === 'business') {
+      redirect('/dashboard')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-100 to-white dark:from-gray-900 dark:to-gray-800 scroll-smooth">
       {/* Header loaded statically for better initial load */}

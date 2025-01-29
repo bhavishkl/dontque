@@ -1,70 +1,61 @@
 'use client'
 
-import useSWR from 'swr'
-import { supabase } from '../lib/supabase'
 import { useSession } from 'next-auth/react'
+import { useSupabase } from './useSupabase'
+import { useEffect, useRef } from 'react'
 
 // Global cache key prefix
 const USER_INFO_KEY = 'user-info'
 
-// Fetcher function with error handling
-const fetchUserInfo = async (userId) => {
-  if (!userId) return null
-
-  try {
-    const { data, error } = await supabase
-      .from('user_profile')
-      .select('name, role, image, user_short_id')
-      .eq('user_id', userId)
-      .single()
-
-    if (error) throw error
-
-    return {
-      name: data.name,
-      role: data.role,
-      image: data.image,
-      short_id: data.user_short_id,
-      needsNameUpdate: !data.name || data.name === 'User'
-    }
-  } catch (error) {
-    console.error('Error fetching user info:', error)
-    throw error
-  }
-}
-
-// Global SWR configuration for user info
-const userInfoConfig = {
-  revalidateOnFocus: false,
-  revalidateOnReconnect: false,
-  dedupingInterval: 3600000,
-  refreshInterval: 0,
-  shouldRetryOnError: false,
-}
-
 export function useUserInfo(userId) {
   const { data: session, update: updateSession } = useSession()
+  const lastRoleRef = useRef(null)
+
   const cacheKey = userId ? `${USER_INFO_KEY}-${userId}` : null
 
-  const { data, error, mutate } = useSWR(
-    cacheKey,
-    () => fetchUserInfo(userId),
-    {
-      ...userInfoConfig,
-      onSuccess: async (data) => {
-        if (data?.role && session?.user && data.role !== session.user.role) {
-          // Update session with the role from database
-          await updateSession({
-            ...session,
-            user: {
-              ...session.user,
-              role: data.role
-            }
-          })
+  const { data, error, mutate } = useSupabase('user_profile', {
+    action: 'select',
+    data: 'name, role, image, user_short_id',
+    filters: userId ? [{ type: 'eq', column: 'user_id', value: userId }] : null,
+    key: cacheKey
+  })
+
+  // Transform the data to match the expected format
+  const transformedData = data?.[0] ? {
+    name: data[0].name,
+    role: data[0].role,
+    image: data[0].image,
+    short_id: data[0].user_short_id,
+    needsNameUpdate: !data[0].name || data[0].name === 'User'
+  } : null
+
+  // Use useEffect with proper cleanup and ref to prevent infinite updates
+  useEffect(() => {
+    const currentRole = transformedData?.role
+    const sessionRole = session?.user?.role
+
+    // Only update if roles are different and we haven't updated for this role yet
+    if (currentRole && 
+        sessionRole && 
+        currentRole !== sessionRole && 
+        currentRole !== lastRoleRef.current) {
+      
+      lastRoleRef.current = currentRole // Update ref before making the change
+      
+      updateSession({
+        ...session,
+        user: {
+          ...session.user,
+          role: currentRole
         }
-      }
+      }).catch(console.error) // Handle promise rejection
     }
-  )
+
+    // Cleanup function
+    return () => {
+      // No cleanup needed for this case
+    }
+  }, [transformedData?.role, session])
 
   const updateUserName = async (newName) => {
     if (!newName || newName.trim() === '') {
@@ -73,41 +64,30 @@ export function useUserInfo(userId) {
 
     try {
       // Optimistic update
-      mutate({ ...data, name: newName.trim(), needsNameUpdate: false }, false)
-
-      const { error: updateError } = await supabase
-        .from('user_profile')
-        .update({ name: newName.trim() })
-        .eq('user_id', userId)
-
-      if (updateError) throw updateError
-
-      // Update all instances of this user's data
-      mutate()
+      const optimisticData = {
+        ...transformedData,
+        name: newName.trim(),
+        needsNameUpdate: false
+      }
+      mutate({ name: newName.trim() }, {
+        action: 'update',
+        filters: [{ type: 'eq', column: 'user_id', value: userId }],
+        optimisticData: [optimisticData]
+      })
 
       return true
     } catch (error) {
-      // Revert optimistic update
-      mutate(data, false)
       console.error('Error updating user name:', error)
       throw error
     }
   }
 
   return {
-    ...data,
-    isLoading: !error && !data,
+    ...transformedData,
+    isLoading: !error && !transformedData,
     isError: error,
     updateUserName,
-    needsNameUpdate: data?.needsNameUpdate,
+    needsNameUpdate: transformedData?.needsNameUpdate,
     mutate,
-  }
-}
-
-// Optional: Add a preload function for critical user data
-export const preloadUserInfo = (userId) => {
-  if (userId) {
-    const key = `${USER_INFO_KEY}-${userId}`
-    useSWR.preload(key, () => fetchUserInfo(userId))
   }
 }
