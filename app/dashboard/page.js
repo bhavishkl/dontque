@@ -1,19 +1,26 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { Users, Clock, Settings, Plus, Search, MoreVertical, PieChart, DollarSign } from 'lucide-react'
+import { Users, Clock, Settings, Plus, PieChart, DollarSign } from 'lucide-react'
 import { Button } from "@nextui-org/button"
-import { Input } from "@nextui-org/input"
 import { Card, CardBody } from "@nextui-org/card"
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@nextui-org/dropdown"
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@nextui-org/table"
 import { Skeleton } from "@nextui-org/skeleton"
 import { useSession } from "next-auth/react"
 import { useRouter } from 'next/navigation'
 import { useApi } from '../hooks/useApi'
 import { useUserInfo } from '../hooks/useUserName'
 import { toast } from "sonner"
+
+// Dynamic import of QueueTable
+const QueueTable = dynamic(
+  () => import('../components/DashboardComponents/QueueTable'),
+  {
+    loading: () => <Skeleton className="w-full h-[400px] rounded-lg" />,
+    ssr: false
+  }
+)
 
 export default function QueueOwnerDashboard() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -105,7 +112,7 @@ export default function QueueOwnerDashboard() {
         if (!response.ok) {
           throw new Error('Failed to delete queue')
         }
-        fetchQueuesData()
+        refetchQueuesData()
       } catch (error) {
         console.error('Error deleting queue:', error)
       }
@@ -125,7 +132,7 @@ export default function QueueOwnerDashboard() {
       if (!response.ok) {
         throw new Error('Failed to update queue status')
       }
-      fetchQueuesData()
+      refetchQueuesData()
     } catch (error) {
       console.error('Error updating queue status:', error)
     }
@@ -135,7 +142,7 @@ export default function QueueOwnerDashboard() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 bg-background/70 backdrop-blur-lg border-b border-divider z-10">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Queue Owner Dashboard</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Queue Owner Dashboard</h1>
           <div className="flex items-center gap-3">
             <Button 
               variant="light" 
@@ -171,7 +178,7 @@ export default function QueueOwnerDashboard() {
             </div>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-4 mb-8">
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-4 mb-8">
             <Card className="bg-background/60 shadow-md hover:shadow-xl transition-all duration-200 border border-divider">
               <CardBody className="gap-3">
                 <div className="flex justify-between items-start">
@@ -249,114 +256,14 @@ export default function QueueOwnerDashboard() {
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h2 className="text-xl font-semibold">Your Queues</h2>
-          <div className="w-full sm:w-auto max-w-sm">
-            <Input
-              type="search"
-              placeholder="Search queues..."
-              startContent={<Search className="w-4 h-4 text-default-400" />}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full"
-            />
-          </div>
-        </div>
+        
 
-        <Card className="bg-background/60 shadow-sm">
-          <CardBody>
-            <Table aria-label="Queues table" className="min-h-[400px]">
-              <TableHeader>
-                <TableColumn>QUEUE NAME</TableColumn>
-                <TableColumn>CURRENT</TableColumn>
-                <TableColumn>7-DAY AVG WAIT TIME</TableColumn>
-                <TableColumn>SERVED TODAY</TableColumn>
-                <TableColumn>STATUS</TableColumn>
-                <TableColumn>RATING</TableColumn>
-                <TableColumn >ACTIONS</TableColumn>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  Array(5).fill().map((_, index) => (
-                    <TableRow key={index}>
-                      <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-1/2" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-1/2" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-1/2" /></TableCell>
-                      <TableCell><Skeleton className="h-6 w-6 rounded-full" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                      <TableCell><Skeleton className="h-8 w-full" /></TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  filteredQueues.map((queue) => (
-                    <TableRow key={queue.queue_id} className="dark:bg-gray-800 dark:text-white">
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {queue.name}
-                          {queue.service_type === 'advanced' && (
-                            <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-purple-400 rounded-full border border-purple-400/20">
-                              PRO
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{queue.current_queue}</TableCell>
-                      <TableCell>{queue.seven_day_avg_wait_time?.toFixed(1) || '0'} min</TableCell>
-                      <TableCell>{queue.total_served}</TableCell>
-                      <TableCell>
-                        <div>
-                          <div 
-                            className={`w-2 h-2 rounded-full ${
-                              queue.status === 'active' 
-                                ? 'bg-success-500' 
-                                : 'bg-warning-500'
-                            }`}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <span className="text-yellow-400 text-lg">★</span>
-                          <span className="text-sm text-default-600">
-                            {queue.avg_rating?.toFixed(1) || '0.0'}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Link href={`/dashboard/manage/${queue.queue_id}`} className="inline-flex items-center justify-center gap-1 px-4 py-2 text-sm font-medium bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors duration-200">Manage</Link>
-                          <Button 
-                            size="sm" 
-                            variant="bordered" 
-                            className="w-24"
-                            onClick={() => handlePauseQueue(queue.queue_id, queue.status)}
-                          >
-                            {queue.status === 'active' ? 'Pause' : 'Activate'}
-                          </Button>
-                          <Dropdown>
-                            <DropdownTrigger>
-                              <Button isIconOnly variant="light" size="sm">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownTrigger>
-                            <DropdownMenu aria-label="More Actions">
-                              <DropdownItem onClick={() => router.push(`/dashboard/edit-queue/${queue.queue_id}`)}>Edit Queue</DropdownItem>
-                              <DropdownItem className="text-danger" color="danger" onClick={() => handleDeleteQueue(queue.queue_id)}>Delete Queue</DropdownItem>
-                              <DropdownItem>
-                                <Link href={`/dashboard/analytics/${queue.queue_id}`}>View Analytics</Link>
-                              </DropdownItem>
-                            </DropdownMenu>
-                          </Dropdown>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardBody>
-        </Card>
+        <QueueTable 
+          isLoading={isLoading}
+          queues={queuesData}
+          handleDeleteQueue={handleDeleteQueue}
+          handlePauseQueue={handlePauseQueue}
+        />
       </main>
     </div>
   )
