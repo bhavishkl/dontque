@@ -12,12 +12,13 @@ import { toast } from 'sonner'
 import { useApi } from '../../hooks/useApi'
 import debounce from 'lodash/debounce'
 import { memo } from 'react';
-import SaveButton from '@/app/components/UniComp/SaveButton';
 import { useLocation } from '../../hooks/useLocation';
 import SearchBar from '@/app/components/SearchBar';
 import dynamic from 'next/dynamic';
 import { useUserInfo } from '@/app/hooks/useUserName'
-import UpdateNameModal from '@/app/components/UpdateNameModal'
+
+const SaveButton = dynamic(() => import('@/app/components/UniComp/SaveButton'))
+const UpdateNameModal = dynamic(() => import('@/app/components/UpdateNameModal'))
 
 const QueueItem = memo(({ queue }) => {
   const router = useRouter();
