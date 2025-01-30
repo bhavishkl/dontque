@@ -4,10 +4,20 @@ import { useState, useEffect } from 'react'
 import { useSession, signOut } from "next-auth/react"
 import { useRouter } from 'next/navigation'
 import { Settings, Phone, LogOut } from 'lucide-react'
-import { Button, Card, CardBody, Avatar, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Input, Checkbox } from "@nextui-org/react"
+import { Button, Card, CardBody, Avatar } from "@nextui-org/react"
 import { toast } from 'sonner'
 import { useApi } from '../../hooks/useApi'
 import { useUserInfo } from '../../hooks/useUserName'
+import dynamic from 'next/dynamic'
+
+// Dynamic import of EditProfileModal
+const EditProfileModal = dynamic(
+  () => import('../../components/UserDashboardComponents/EditProfileModal'),
+  {
+    loading: () => null,
+    ssr: false
+  }
+)
 
 export default function UserDashboard() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -15,7 +25,9 @@ export default function UserDashboard() {
   const { data: userData, isLoading: isUserLoading, isError: isUserError, mutate: mutateUser } = useApi('/api/user/profile')
   const { data: session, update: updateSession } = useSession()
   const router = useRouter()
-  const { updateUserInfo } = useUserInfo(session?.user?.id)
+  
+  // Get role and updateUserInfo separately to handle potential undefined
+  const { role, updateUserInfo: updateInfo } = useUserInfo(session?.user?.id) || {}
 
   useEffect(() => {
     if (!session) {
@@ -36,22 +48,52 @@ export default function UserDashboard() {
   
   const handleSaveChanges = async () => {
     try {
+      if (!editedUserData?.name || !editedUserData?.phone_number) {
+        toast.error('Please fill in all required fields')
+        return
+      }
+
+      // Format phone number with +91 prefix if not already present
+      const formattedPhoneNumber = editedUserData.phone_number.startsWith('+91') 
+        ? editedUserData.phone_number 
+        : `+91${editedUserData.phone_number}`
+
       const response = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editedUserData)
+        body: JSON.stringify({
+          ...editedUserData,
+          phone_number: formattedPhoneNumber
+        })
       })
-      if (!response.ok) throw new Error('Failed to update profile')
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update profile')
+      }
       
-      await mutateUser(editedUserData)
-      await updateSession({ ...session, user: { ...session.user, name: editedUserData.name } })
-      updateUserInfo({ name: editedUserData.name })
+      // Update local data with formatted phone number
+      await mutateUser({
+        ...editedUserData,
+        phone_number: formattedPhoneNumber
+      })
+      
+      // Update session
+      if (updateSession) {
+        await updateSession({ ...session, user: { ...session.user, name: editedUserData.name } })
+      }
+      
+      // Update user info only if the function exists
+      if (typeof updateInfo === 'function') {
+        await updateInfo({ name: editedUserData.name })
+      }
       
       setIsEditModalOpen(false)
       toast.success('Profile updated successfully')
     } catch (error) {
       console.error('Error updating profile:', error)
-      toast.error('Failed to update profile')
+      toast.error(error.message || 'Failed to update profile. Please try again.')
     }
   }
 
@@ -127,68 +169,14 @@ export default function UserDashboard() {
         </Card>
 
         {/* Edit Profile Modal */}
-        <Modal 
-          isOpen={isEditModalOpen} 
+        <EditProfileModal 
+          isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
-          size="2xl"
-          className="sm:mx-4"
-        >
-          <ModalContent>
-            {(onClose) => (
-              <>
-                <ModalHeader className="flex flex-col gap-1">
-                  <h2 className="text-lg sm:text-xl font-semibold">Edit Profile</h2>
-                </ModalHeader>
-                <ModalBody>
-                  <div className="space-y-4 sm:space-y-6">
-                    {isUserLoading ? (
-                      <>
-                        <div className="h-14 w-full bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded animate-pulse" />
-                        <div className="h-14 w-full bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded animate-pulse" />
-                      </>
-                    ) : (
-                      <>
-                        <Input
-                          label="Name"
-                          value={editedUserData?.name || ''}
-                          onChange={(e) => setEditedUserData({...editedUserData, name: e.target.value})}
-                          variant="bordered"
-                          className="w-full text-sm sm:text-base"
-                        />
-                        <Input
-                          label="Phone Number"
-                          value={editedUserData?.phone_number || ''}
-                          onChange={(e) => setEditedUserData({...editedUserData, phone_number: e.target.value})}
-                          variant="bordered"
-                          type="tel"
-                          className="w-full text-sm sm:text-base"
-                        />
-                      </>
-                    )}
-                  </div>
-                </ModalBody>
-                <ModalFooter>
-                  <Button 
-                    color="danger" 
-                    variant="light" 
-                    onPress={onClose}
-                    className="text-sm sm:text-base"
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    color="primary"
-                    onPress={handleSaveChanges}
-                    className="text-sm sm:text-base"
-                    isLoading={isUserLoading}
-                  >
-                    Save Changes
-                  </Button>
-                </ModalFooter>
-              </>
-            )}
-          </ModalContent>
-        </Modal>
+          editedUserData={editedUserData}
+          setEditedUserData={setEditedUserData}
+          handleSaveChanges={handleSaveChanges}
+          isUserLoading={isUserLoading}
+        />
       </main>
     </div>
   )
