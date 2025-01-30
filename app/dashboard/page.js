@@ -325,7 +325,7 @@ export default function QueueOwnerDashboard() {
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
-                          <Link href={`/dashboard/manage/${queue.queue_id}`} className="inline-flex items-center justify-center gap-1 px-4 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary-500">Manage Queue</Link>
+                          <Link href={`/dashboard/manage/${queue.queue_id}`} className="inline-flex items-center justify-center gap-1 px-4 py-2 text-sm font-medium bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors duration-200">Manage</Link>
                           <Button 
                             size="sm" 
                             variant="bordered" 

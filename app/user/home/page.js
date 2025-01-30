@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Modal, ModalContent, ModalHeader, ModalBody, Button, ModalFooter, useDisclosure, Card, CardBody, Skeleton, Chip } from "@nextui-org/react"
+import { Button, useDisclosure, Card, CardBody, Skeleton, Chip } from "@nextui-org/react"
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -25,32 +25,31 @@ const QueueItem = memo(({ queue }) => {
 
   return (
     <div 
-      className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary-100/50 dark:hover:shadow-primary-900/10"
+      className="group bg-white dark:bg-gray-800 rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-orange-100/50 dark:hover:shadow-orange-900/10 border border-gray-100 dark:border-gray-700"
       style={{ width: '320px' }}
     >
       {/* Image Container */}
-      <div className="relative h-40">
+      <div className="relative h-48">
         <Image
           src={queue.image_url || '/default.jpg'}
           alt={queue.name}
           width={400}
           height={200}
-          className="w-full h-full object-cover brightness-[0.97]"
+          className="w-full h-full object-cover"
+          style={{ filter: 'brightness(0.95)' }}
         />
-        {/* Category Chip */}
-        <div className="absolute top-3 left-3">
+        
+        {/* Top Info Bar */}
+        <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
           <Chip
-            className="bg-white/90 backdrop-blur-sm border-none text-gray-700 dark:bg-gray-900/90 dark:text-white"
+            className="bg-white/95 backdrop-blur-md border-none text-gray-700 dark:bg-gray-900/95 dark:text-white shadow-sm"
             startContent={<span className="text-base">{icon}</span>}
           >
             {queue.category || 'General'}
           </Chip>
-        </div>
 
-        {/* Rating Badge */}
-        <div className="absolute top-3 right-3">
-          <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg dark:bg-gray-900/90">
-            <Star className="h-3.5 w-3.5 text-yellow-500 fill-current" />
+          <div className="flex items-center gap-2 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full dark:bg-gray-900/95 shadow-sm">
+            <Star className="h-4 w-4 text-yellow-500 fill-current" />
             <span className="text-sm font-medium text-gray-700 dark:text-white">
               {queue.avg_rating ? queue.avg_rating.toFixed(1) : 'New'}
             </span>
@@ -58,26 +57,23 @@ const QueueItem = memo(({ queue }) => {
         </div>
 
         {/* Quick Actions Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
-          <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
+          <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
             <SaveButton 
               queueId={queue.queue_id}
-              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-full p-2"
+              className="bg-white/25 hover:bg-white/40 backdrop-blur-md text-white rounded-full p-2.5 shadow-lg transition-all duration-200"
             />
             <div className="flex gap-2">
               <Button
                 isIconOnly
-                className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-full p-2"
-                onClick={() => window.open(
-                  `https://maps.app.goo.gl/uYAVo2VP4Gz3B9FK6?q`,
-                  '_blank'
-                )}
+                className="bg-white/25 hover:bg-white/40 backdrop-blur-md text-white rounded-full p-2.5 shadow-lg transition-all duration-200"
+                onClick={() => window.open(`https://maps.app.goo.gl/uYAVo2VP4Gz3B9FK6?q`, '_blank')}
               >
                 <MapPin className="h-4 w-4" />
               </Button>
               <Button
                 isIconOnly
-                className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-full p-2"
+                className="bg-white/25 hover:bg-white/40 backdrop-blur-md text-white rounded-full p-2.5 shadow-lg transition-all duration-200"
                 onClick={() => {
                   navigator.share({
                     title: queue.name,
@@ -94,52 +90,60 @@ const QueueItem = memo(({ queue }) => {
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        <div className="flex justify-between items-start gap-4 mb-4">
-          {/* Left side - Name and Hours */}
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold mb-2 line-clamp-1 text-gray-900 dark:text-gray-100">
+      <div className="p-5">
+        <div className="space-y-4">
+          {/* Queue Info */}
+          <div>
+            <h3 className="text-xl font-semibold mb-1 line-clamp-1 text-gray-900 dark:text-gray-100">
               {queue.name}
             </h3>
-            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-              <Clock className="h-4 w-4 shrink-0" />
-              <span className="truncate">{formatOperatingHours(queue)}</span>
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+              <Clock className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate opacity-75">{formatOperatingHours(queue)}</span>
             </div>
           </div>
 
-          {/* Right side - Stats */}
-          <div className="flex flex-col items-end gap-2 shrink-0">
-            {/* Queue Count */}
-            <div className="flex items-center gap-1.5 bg-gray-100/80 dark:bg-gray-700/50 px-2 py-1 rounded-lg">
-              <Users className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{queue.current_queue_count || 0}</span>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex items-center gap-2 border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 rounded-xl">
+              <Users className="h-4 w-4 text-orange-500 dark:text-orange-400" />
+              <div>
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{queue.current_queue_count || 0}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">in queue</span>
+              </div>
             </div>
 
-            {/* Wait Time */}
             {queue.total_estimated_wait_time > 0 && (
-              <div className="flex items-center gap-1.5 bg-gray-100/80 dark:bg-gray-700/50 px-2 py-1 rounded-lg">
-                <Clock className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">~{Math.round(queue.total_estimated_wait_time)}m</span>
-              </div>
-            )}
-
-            {/* High Demand Badge */}
-            {queue.capacity_percentage > 80 && (
-              <div className="flex items-center gap-1.5 bg-red-100/80 dark:bg-red-900/30 px-2 py-1 rounded-lg">
-                <span className="text-xs font-medium text-red-600 dark:text-red-400">High Demand</span>
+              <div className="flex items-center gap-2 border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 rounded-xl">
+                <Clock className="h-4 w-4 text-orange-500 dark:text-orange-400" />
+                <div>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{Math.round(queue.total_estimated_wait_time)}m</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">wait</span>
+                </div>
               </div>
             )}
           </div>
-        </div>
 
-        {/* View Button */}
-        <Button
-          className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2"
-          onClick={() => router.push(`/user/queue/${queue.queue_id}`)}
-        >
-          View Details
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+          {/* High Demand Badge */}
+          {queue.capacity_percentage > 80 && (
+            <div className="inline-flex items-center gap-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-3 py-1 rounded-full text-sm">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+              </span>
+              High Demand
+            </div>
+          )}
+
+          {/* View Button */}
+          <Button
+            className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-medium py-2.5 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 mt-2"
+            onClick={() => router.push(`/user/queue/${queue.queue_id}`)}
+          >
+            View Details
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

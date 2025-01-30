@@ -104,8 +104,8 @@ export default function SearchBar({ onSearch, onScanClick, isSearching }) {
                   <div className="flex items-center gap-2">
                     <Search className="h-4 w-4 text-gray-400" />
                     <div className="flex flex-col">
-                      <span className="font-medium">{suggestion.name}</span>
-                      <span className="text-xs text-gray-500">
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{suggestion.name}</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">
                         {suggestion.category} • {suggestion.location}
                       </span>
                     </div>

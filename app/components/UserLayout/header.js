@@ -6,7 +6,7 @@ import {
   Bell, X, Home, Settings, User, 
   Users, PieChart, HelpCircle,
   Clock, Copy, Share2, History,
-  Bookmark
+  Bookmark, MessageSquare
 } from 'lucide-react'
 import Image from 'next/image'
 import { useState, useEffect, useRef } from 'react'
@@ -178,11 +178,17 @@ const Header = () => {
 
       {/* Sidebar */}
       {session && (
-        <div className={`fixed inset-0 z-30 transition-all duration-300 ${
+        <div className={`fixed inset-0 z-30 transition-all duration-500 ${
           sidebarOpen 
-            ? 'bg-black/30 backdrop-blur-sm' 
-            : 'pointer-events-none bg-transparent backdrop-blur-none'
-        }`}>
+            ? 'bg-black/30 backdrop-blur-sm perspective-[1000px] transform-gpu' 
+            : 'pointer-events-none bg-transparent backdrop-blur-none perspective-none'
+        }`}
+          style={{
+            transformStyle: 'preserve-3d',
+            transformOrigin: 'right center',
+            transform: sidebarOpen ? 'rotateY(0deg)' : 'rotateY(-90deg)'
+          }}
+        >
           <div
             ref={sidebarRef}
             className={`absolute right-0 top-0 h-screen w-72 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col ${
@@ -275,7 +281,9 @@ const Header = () => {
               <NavGroup title="Account">
                 <NavLink href="/user/dashboard" icon={User}>Profile</NavLink>
                 <NavLink href="/user/settings" icon={Settings}>Settings</NavLink>
-              <NavLink href="/business/support" icon={HelpCircle}>Support</NavLink>
+                <NavLink href="/business/support" icon={HelpCircle}>Support</NavLink>
+                <NavLink href="/feedback" icon={MessageSquare}>App Feedback</NavLink>
+
               </NavGroup>
             </nav>
           </div>
