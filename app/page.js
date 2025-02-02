@@ -40,10 +40,6 @@ const PricingSection = dynamic(() => import('./components/LandingPageCompo/prici
   loading: () => <LoadingSkeleton />
 })
 
-const TestimonialSection = dynamic(() => import('./components/LandingPageCompo/testimonials/TestimonialSection'), {
-  loading: () => <LoadingSkeleton />
-})
-
 const FeaturesSection = dynamic(() => import('./components/LandingPageCompo/features/FeaturesSection'), {
   loading: () => <LoadingSkeleton />
 })
@@ -94,12 +90,6 @@ export default function LandingPage() {
         <section id="pricing">
           <Suspense fallback={<LoadingSkeleton />}>
             <PricingSection />
-          </Suspense>
-        </section>
-
-        <section id="testimonials">
-          <Suspense fallback={<LoadingSkeleton />}>
-            <TestimonialSection />
           </Suspense>
         </section>
 
