@@ -88,9 +88,7 @@ export default function Advanced({ params, queueData }) {
     mutate: mutateQueueEntry 
   } = useApi(
     params.queueid ? `/api/queues/${params.queueid}/advanced-queues/entries` : null,
-    {
-      refreshInterval: 5000 // Refresh every 5 seconds
-    }
+   
   )
 
   const { 
@@ -99,9 +97,7 @@ export default function Advanced({ params, queueData }) {
     mutate: mutateCounters 
   } = useApi(
     params.queueid ? `/api/queues/${params.queueid}/counters` : null,
-    {
-      refreshInterval: 5000 // Refresh every 5 seconds
-    }
+
   )
 
   // Update userQueueEntry when queueEntry data changes
@@ -422,24 +418,51 @@ export default function Advanced({ params, queueData }) {
               </Badge>
             </div>
 
-            <div className="space-y-3">
-              <div className="flex flex-wrap gap-2">
-                <p className="text-sm font-medium">Selected Services:</p>
-                {Array.from(selectedServices).map(serviceId => {
-                  // Add null check for service
-                  const service = counter?.services?.find(s => s.id === serviceId) || {
-                    name: 'Service Unavailable',
-                    id: serviceId
-                  };
-                  return (
-                    <Chip key={serviceId} variant="flat" className="bg-white/20">
-                      {service.name}
-                    </Chip>
-                  );
-                })}
+            {/* Compact Selected Counter and Services Section */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-4">
+              {/* Counter Section */}
+              <div className="flex-1 flex items-center gap-3 p-3 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
+                <div className="p-1.5 bg-white/20 rounded-full">
+                  <User className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs text-white/80">Selected Counter</p>
+                  <p className="text-sm font-medium text-white">
+                    {counter?.name || 'Counter Unavailable'}
+                  </p>
+                </div>
               </div>
 
-              {/* Position Display */}
+              {/* Services Section */}
+              <div className="flex-1 p-3 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-white/20 rounded-full">
+                    <Check className="h-4 w-4 text-white" />
+                  </div>
+                  <p className="text-xs text-white/80">Selected Services</p>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {Array.from(selectedServices).map(serviceId => {
+                    const service = counter?.services?.find(s => s.id === serviceId) || {
+                      name: 'Service Unavailable',
+                      id: serviceId
+                    };
+                    return (
+                      <Chip
+                        key={serviceId}
+                        variant="flat"
+                        className="bg-white/20 text-white text-xs"
+                        size="sm"
+                      >
+                        {service.name}
+                      </Chip>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
               <div className="flex justify-between items-center gap-4">
                 <div className="flex-1">
                   <div className="relative flex justify-center">
@@ -588,13 +611,20 @@ export default function Advanced({ params, queueData }) {
             <Tabs 
               selectedKey={selectedCounter} 
               onSelectionChange={handleTabChange}
+              variant="underlined"
+              classNames={{
+                tabList: "gap-6 w-full relative rounded-none p-0 border-b border-divider",
+                cursor: "w-full bg-orange-500",
+                tab: "max-w-fit px-0 h-12",
+                tabContent: "group-data-[selected=true]:text-orange-500"
+              }}
             >
               {counters.map((counter) => (
                 <Tab
                   key={counter.id.toString()}
                   title={
                     <div className="flex items-center space-x-2">
-                      <span>{counter.name}</span>
+                      <span className="text-medium">{counter.name}</span>
                     </div>
                   }
                 >

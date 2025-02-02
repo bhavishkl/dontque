@@ -26,6 +26,34 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
   const [isToggling, setIsToggling] = useState(false)
   const [activeTab, setActiveTab] = useState("cards")
   const [loadingActions, setLoadingActions] = useState({})
+  const [recentActivity, setRecentActivity] = useState([])
+
+  const formatRelativeTime = (timestamp) => {
+    const diff = Date.now() - new Date(timestamp);
+    const seconds = Math.floor(diff / 1000);
+    if (seconds < 60) return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days !== 1 ? 's' : ''} ago`;
+  };
+
+  const addRecentActivity = (userName, action) => {
+    const key = `recentActivity_${params.queueId}`;
+    const stored = JSON.parse(localStorage.getItem(key)) || [];
+    const newEntry = { userName, action, timestamp: new Date().toISOString() };
+    const updated = [newEntry, ...stored].slice(0, 2);
+    localStorage.setItem(key, JSON.stringify(updated));
+    setRecentActivity(updated);
+  };
+
+  useEffect(() => {
+    const key = `recentActivity_${params.queueId}`;
+    const stored = JSON.parse(localStorage.getItem(key)) || [];
+    setRecentActivity(stored);
+  }, [params.queueId]);
 
   useEffect(() => {
     if (queueData) {
@@ -111,6 +139,12 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
         const errorData = await response.json()
         throw new Error(errorData.error || 'Failed to mark customer as served')
       }
+      
+      const servedCustomer = customersInQueue.find(customer => customer.entry_id === entryId);
+      if (servedCustomer) {
+         addRecentActivity(servedCustomer.user_profile?.name || servedCustomer.name || 'Customer', 'served');
+      }
+      
       await refetchQueueData()
       toast.success('Customer served successfully')
       setCustomersInQueue(prevCustomers => prevCustomers.filter(customer => customer.entry_id !== entryId))
@@ -132,6 +166,12 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
         throw new Error('Failed to mark customer as no-show');
       }
       const data = await response.json();
+      
+      const noShowCustomer = customersInQueue.find(customer => customer.entry_id === entryId);
+      if (noShowCustomer) {
+         addRecentActivity(noShowCustomer.user_profile?.name || noShowCustomer.name || 'Customer', 'no-show');
+      }
+      
       toast.success('Customer marked as no-show');
       refetchQueueData();
       setCustomersInQueue(prevCustomers => prevCustomers.filter(customer => customer.entry_id !== entryId));
@@ -347,6 +387,21 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
           </div>
         </CardBody>
       </Card>
+
+      {recentActivity.length > 0 && (
+        <Card className="mb-8">
+          <CardBody>
+            <h3 className="text-lg font-semibold mb-2">Recent Activity</h3>
+            <div className="space-y-1">
+              {recentActivity.map((activity, index) => (
+                <div key={index} className="text-sm text-gray-700 dark:text-gray-300">
+                  {activity.userName} {activity.action} {formatRelativeTime(activity.timestamp)}
+                </div>
+              ))}
+            </div>
+          </CardBody>
+        </Card>
+      )}
 
       <Tabs selectedKey={activeTab} onSelectionChange={setActiveTab}>
         <Tab key="cards" title="Queue Cards">

@@ -8,36 +8,31 @@ export async function POST(request) {
     const { identityType, identityValue, channel, methods, verified } = identity
     const city = network.ipLocation?.city?.name || null
 
-    // First, check if the user already exists
+    // Check if the user already exists in the user_profile table.
+    let profileData
     const { data: existingUser, error: fetchError } = await supabase
       .from('user_profile')
-      .select('user_id, name')
-      .eq(identityType === 'EMAIL' ? 'email' : 'phone_number', identityValue)
-      .single()
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle()
 
     if (fetchError && fetchError.code !== 'PGRST116') {
       throw fetchError
     }
 
-    let profileData
     if (existingUser) {
-      // Update existing user, but don't change the name
+      // The user exists: do not update any fields (like name) – just refresh the updated_at column.
       const { data, error: updateError } = await supabase
         .from('user_profile')
-        .update({
-          country_code: otplessUser.country_code,
-          otpless_token: token,
-          city: city
-        })
-        .eq('user_id', existingUser.user_id)
+        .update({ updated_at: new Date().toISOString() })
+        .eq('user_id', userId)
         .select()
         .single()
-
+      
       if (updateError) throw updateError
       profileData = data
-      profileData.name = existingUser.name // Preserve the existing name
     } else {
-      // Insert new user
+      // New user: insert all provided details.
       const { data, error: insertError } = await supabase
         .from('user_profile')
         .insert({
@@ -51,12 +46,12 @@ export async function POST(request) {
         })
         .select()
         .single()
-
+      
       if (insertError) throw insertError
       profileData = data
     }
 
-    // Update user_info
+    // Upsert for user_info to update authentication and device details.
     const { error: infoError } = await supabase
       .from('user_info')
       .upsert({
@@ -79,7 +74,7 @@ export async function POST(request) {
       }, { onConflict: 'user_id' })
       .select()
       .single()
-
+    
     if (infoError) throw infoError
 
     return Response.json({ success: true, data: profileData })

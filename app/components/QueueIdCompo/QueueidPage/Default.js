@@ -3,7 +3,7 @@
 import { useState, useEffect, lazy } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Clock, Users, ChevronDown, ChevronUp, Bell, AlertCircle, Timer, Share2, Star, Calendar, LogOut } from 'lucide-react'
+import { ArrowLeft, Clock, Users, ChevronDown, ChevronUp, Bell, AlertCircle, Timer, Share2, Star, Calendar, LogOut, User } from 'lucide-react'
 import { Button, Card, CardBody, CardHeader, Progress, Skeleton, Tooltip, Badge } from "@nextui-org/react"
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
@@ -210,10 +210,10 @@ export default function QueueDetailsPage({ params, queueData: initialQueueData }
 
  
   return (
-    <div className="min-h-screen bg-orange-100 dark:bg-gray-900">
-      <header className="bg-orange-200 dark:bg-gray-800 shadow-sm">
+    <div className="min-h-screen dark:bg-gray-900">
+      <header className=" dark:bg-gray-800 shadow-sm">
         <div className="container mx-auto px-4 py-4">
-          <Link href="/user/queues" className="inline-flex items-center text-orange-600 dark:text-orange-400 hover:underline">
+          <Link href="/user/queues" className="inline-flex items-center text-grey-600  hover:underline">
             <ArrowLeft className="w-4 h-4 mr-2" />
             <span className="font-medium">Back to Queues</span>
           </Link>
@@ -234,30 +234,61 @@ export default function QueueDetailsPage({ params, queueData: initialQueueData }
               {!queueData?.userQueueEntry && (
                 <Card className="dark:bg-gray-800">
                   <CardHeader className="pb-2">
-                    <h2 className="text-2xl font-bold text-orange-700 dark:text-orange-400">Current Queue Status</h2>
+                    <h2 className="text-2xl font-bold text-orange-600 dark:text-orange-400">Current Queue Status</h2>
                   </CardHeader>
-                  <CardBody>
-                    <div className="space-y-4">
+                  <CardBody className="p-6">
+                    <div className="space-y-6">
+                      {/* Queue Capacity */}
                       <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Queue Capacity</span>
-                          <span>{queueData?.current_queue_count || 0} people waiting</span>
+                        <div className="flex justify-between text-sm mb-2">
+                          <span className="text-gray-600 dark:text-gray-400">Queue Capacity</span>
+                          <span className="font-semibold">{queueData?.current_queue_count || 0} / {queueData?.max_capacity || 20}</span>
                         </div>
                         <Progress 
                           value={queueData?.capacity_percentage || 0}
                           className="h-2"
                           classNames={{
                             indicator: "bg-orange-500 dark:bg-orange-400",
-                            track: "bg-orange-200 dark:bg-orange-900",
+                            track: "bg-orange-200/50 dark:bg-orange-900/20",
                           }}
                         />
                       </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <Clock className="w-5 h-5 mr-2 text-orange-600 dark:text-orange-400" />
-                          <span>Total Wait Time</span>
-                        </div>
-                        <span className="font-semibold">{queueData?.total_estimated_wait_time || 0} minutes</span>
+
+                      {/* Queue Stats */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* People Ahead Card */}
+                        <Card className="bg-orange-50 dark:bg-orange-900/20">
+                          <CardBody className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-orange-100 dark:bg-orange-800/30 rounded-lg">
+                                <User className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">People Ahead</p>
+                                <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
+                                  {queueData?.current_queue_count || 0}
+                                </p>
+                              </div>
+                            </div>
+                          </CardBody>
+                        </Card>
+
+                        {/* Wait Time Card */}
+                        <Card className="bg-orange-50 dark:bg-orange-900/20">
+                          <CardBody className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-orange-100 dark:bg-orange-800/30 rounded-lg">
+                                <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Est. Wait Time</p>
+                                <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
+                                  {queueData?.total_estimated_wait_time || 0} mins
+                                </p>
+                              </div>
+                            </div>
+                          </CardBody>
+                        </Card>
                       </div>
                     </div>
                   </CardBody>

@@ -17,6 +17,43 @@ export default function ManageAdvanced({ params, queueData, isLoading: pageLoadi
   const [serviceStartTime, setServiceStartTime] = useState('09:00')
   const [isCounterActive, setIsCounterActive] = useState(true)
   const [isActionsExpanded, setIsActionsExpanded] = useState(false)
+  const [recentActivity, setRecentActivity] = useState([])
+
+  // Helper function to format relative time
+  const formatRelativeTime = (timestamp) => {
+    const diff = Date.now() - new Date(timestamp);
+    const seconds = Math.floor(diff / 1000);
+    if (seconds < 60) return `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days !== 1 ? 's' : ''} ago`;
+  };
+
+  // Function to add a recent activity log for the current counter
+  const addRecentActivity = (userName, action) => {
+    if (!selectedCounter) return;
+    const key = `recentActivity_${selectedCounter}`;
+    const stored = JSON.parse(localStorage.getItem(key)) || [];
+    const newEntry = { userName, action, timestamp: new Date().toISOString() };
+    // Only keep the two most recent records
+    const updated = [newEntry, ...stored].slice(0, 2);
+    localStorage.setItem(key, JSON.stringify(updated));
+    setRecentActivity(updated);
+  };
+
+  // Load recent activity from local storage when the selected counter changes
+  useEffect(() => {
+    if (!selectedCounter) {
+      setRecentActivity([]);
+      return;
+    }
+    const key = `recentActivity_${selectedCounter}`;
+    const stored = JSON.parse(localStorage.getItem(key)) || [];
+    setRecentActivity(stored);
+  }, [selectedCounter]);
 
   // Update counter data when selection changes or counters update
   useEffect(() => {
@@ -99,36 +136,43 @@ export default function ManageAdvanced({ params, queueData, isLoading: pageLoadi
 
   const QueueList = ({ counterId, queueId }) => {
     const { entries, isLoading, error, mutate } = useCounterEntries(queueId, counterId)
-    const [processingEntry, setProcessingEntry] = useState(null)
+    const [isServing, setIsServing] = useState(false)
 
-    const handleEntryAction = async (entryId, action) => {
-      setProcessingEntry(entryId)
+    const handleServeNext = async () => {
+      if (!entries || entries.length === 0) {
+        toast.warning('No users in queue to serve')
+        return
+      }
+
+      setIsServing(true)
       try {
+        const firstEntry = entries[0]
         const response = await fetch(`/api/queues/${queueId}/manage/entries`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            action,
-            entryId
+            action: 'serve',
+            entryId: firstEntry.entry_id
           })
         })
 
         const data = await response.json()
         
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to process entry')
+          throw new Error(data.error || 'Failed to serve user')
         }
 
         await mutate()
-        toast.success(data.message)
-
+        toast.success(`Served ${firstEntry.user_profile?.name || 'customer'}`)
+        // Log the activity using local storage for this counter
+        addRecentActivity(firstEntry.user_profile?.name || 'Customer', 'served')
       } catch (error) {
-        console.error('Error processing entry:', error)
-        toast.error(error.message || 'Failed to process customer')
+        console.error('Error serving user:', error)
+        toast.error(error.message || 'Failed to serve customer')
       } finally {
-        setProcessingEntry(null)
+        setIsServing(false)
       }
     }
 
@@ -184,24 +228,16 @@ export default function ManageAdvanced({ params, queueData, isLoading: pageLoadi
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex gap-2">
+                  {index === 0 && (
                     <Button
                       size="sm"
                       color="success"
-                      isLoading={processingEntry === entry.entry_id}
-                      onClick={() => handleEntryAction(entry.entry_id, 'serve')}
+                      isLoading={isServing}
+                      onClick={handleServeNext}
                     >
-                      Serve
+                      Serve Next
                     </Button>
-                    <Button
-                      size="sm"
-                      color="danger"
-                      isLoading={processingEntry === entry.entry_id}
-                      onClick={() => handleEntryAction(entry.entry_id, 'no_show')}
-                    >
-                      No Show
-                    </Button>
-                  </div>
+                  )}
                 </TableCell>
               </TableRow>
             ))
@@ -379,6 +415,22 @@ export default function ManageAdvanced({ params, queueData, isLoading: pageLoadi
               </Card>
             </div>
 
+            {/* Recent Activity Section */}
+            {selectedCounter && recentActivity.length > 0 && (
+              <Card className="mb-4">
+                <CardBody>
+                  <h3 className="text-lg font-semibold mb-2">Recent Activity</h3>
+                  <div className="space-y-1">
+                    {recentActivity.map((activity, index) => (
+                      <div key={index} className="text-sm text-gray-700 dark:text-gray-300">
+                        {activity.userName} {activity.action} {formatRelativeTime(activity.timestamp)}
+                      </div>
+                    ))}
+                  </div>
+                </CardBody>
+              </Card>
+            )}
+
             {/* Queue Management Tabs */}
             <Tabs 
               aria-label="Queue Management Options" 
@@ -420,4 +472,3 @@ export default function ManageAdvanced({ params, queueData, isLoading: pageLoadi
     </div>
   )
 }
-
