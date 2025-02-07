@@ -273,3 +273,15 @@ CREATE TABLE business_info (
 CREATE INDEX idx_business_info_owner ON business_info(owner_id);
 CREATE INDEX idx_business_info_city ON business_info(city);
 CREATE INDEX idx_business_info_pincode ON business_info(pincode);
+
+-- Create (or replace) a SQL view to calculate the aggregates
+CREATE OR REPLACE VIEW feedback_aggregates AS
+SELECT 
+  AVG(rating)::numeric(10,2) AS average,
+  COUNT(*) AS total,
+  SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) AS star1,
+  SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END) AS star2,
+  SUM(CASE WHEN rating = 3 THEN 1 ELSE 0 END) AS star3,
+  SUM(CASE WHEN rating = 4 THEN 1 ELSE 0 END) AS star4,
+  SUM(CASE WHEN rating = 5 THEN 1 ELSE 0 END) AS star5
+FROM app_feedback;

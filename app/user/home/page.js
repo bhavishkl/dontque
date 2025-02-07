@@ -57,35 +57,29 @@ const QueueItem = memo(({ queue }) => {
           </div>
         </div>
 
-        {/* Quick Actions Overlay */}
+        {/* Quick Actions Overlay (Map and Share buttons only) */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
-          <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
-            <SaveButton 
-              queueId={queue.queue_id}
+          <div className="absolute bottom-4 right-4 flex gap-2 items-center">
+            <Button
+              isIconOnly
               className="bg-white/25 hover:bg-white/40 backdrop-blur-md text-white rounded-full p-2.5 shadow-lg transition-all duration-200"
-            />
-            <div className="flex gap-2">
-              <Button
-                isIconOnly
-                className="bg-white/25 hover:bg-white/40 backdrop-blur-md text-white rounded-full p-2.5 shadow-lg transition-all duration-200"
-                onClick={() => window.open(`https://maps.app.goo.gl/uYAVo2VP4Gz3B9FK6?q`, '_blank')}
-              >
-                <MapPin className="h-4 w-4" />
-              </Button>
-              <Button
-                isIconOnly
-                className="bg-white/25 hover:bg-white/40 backdrop-blur-md text-white rounded-full p-2.5 shadow-lg transition-all duration-200"
-                onClick={() => {
-                  navigator.share({
-                    title: queue.name,
-                    text: `Check out ${queue.name} on DontQ!`,
-                    url: `/user/queue/${queue.queue_id}`
-                  });
-                }}
-              >
-                <Share2 className="h-4 w-4" />
-              </Button>
-            </div>
+              onClick={() => window.open(`https://maps.app.goo.gl/uYAVo2VP4Gz3B9FK6?q`, '_blank')}
+            >
+              <MapPin className="h-4 w-4" />
+            </Button>
+            <Button
+              isIconOnly
+              className="bg-white/25 hover:bg-white/40 backdrop-blur-md text-white rounded-full p-2.5 shadow-lg transition-all duration-200"
+              onClick={() => {
+                navigator.share({
+                  title: queue.name,
+                  text: `Check out ${queue.name} on DontQ!`,
+                  url: `/user/queue/${queue.queue_id}`
+                });
+              }}
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
@@ -106,7 +100,7 @@ const QueueItem = memo(({ queue }) => {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 gap-2">
-            <div className="flex items-center gap-2 border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 rounded-xl">
+            <div className="flex items-center gap-2 border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-xl">
               <Users className="h-4 w-4 text-orange-500 dark:text-orange-400" />
               <div>
                 <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{queue.current_queue_count || 0}</span>
@@ -115,7 +109,7 @@ const QueueItem = memo(({ queue }) => {
             </div>
 
             {queue.total_estimated_wait_time > 0 && (
-              <div className="flex items-center gap-2 border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 rounded-xl">
+              <div className="flex items-center gap-2 border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-xl">
                 <Clock className="h-4 w-4 text-orange-500 dark:text-orange-400" />
                 <div>
                   <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{Math.round(queue.total_estimated_wait_time)}m</span>
@@ -136,14 +130,20 @@ const QueueItem = memo(({ queue }) => {
             </div>
           )}
 
-          {/* View Button */}
-          <Button
-            className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-medium py-2.5 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 mt-2"
-            onClick={() => router.push(`/user/queue/${queue.queue_id}`)}
-          >
-            View Details
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          {/* Action Buttons (View Details and SaveButton) */}
+          <div className="flex gap-2 mt-2">
+            <Button
+              className="flex-grow bg-gray-900 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-medium py-2.5 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+              onClick={() => router.push(`/user/queue/${queue.queue_id}`)}
+            >
+              View Details
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <SaveButton 
+              queueId={queue.queue_id}
+              className="bg-white/25 hover:bg-white/40 backdrop-blur-md text-white rounded-full p-2.5 shadow-lg transition-all duration-200"
+            />
+          </div>
         </div>
       </div>
     </div>

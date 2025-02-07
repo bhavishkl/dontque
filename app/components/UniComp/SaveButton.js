@@ -65,7 +65,11 @@ export default function SaveButton({ queueId, className }) {
       className={className}
     >
       <Bookmark 
-        className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} 
+        // When saved: fill the icon, remove stroke, and use yellow color.
+        // When unsaved: no fill, use stroke to display a border outline in gray.
+        fill={isSaved ? 'currentColor' : 'none'}
+        stroke={isSaved ? 'none' : 'currentColor'}
+        className={`h-5 w-5 ${isSaved ? 'text-yellow-500' : 'text-gray-400'}`}
       />
     </Button>
   );
