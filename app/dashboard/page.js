@@ -32,7 +32,7 @@ export default function QueueOwnerDashboard() {
 
   useEffect(() => {
     if (!session) {
-      router.push('/login')
+      router.push('/signin')
     } else if (role === 'user') {
       router.push('/user/home')
     }

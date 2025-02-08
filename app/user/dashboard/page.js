@@ -98,7 +98,18 @@ export default function UserDashboard() {
   }
 
   const handleLogout = async () => {
-    await signOut({ redirect: true, callbackUrl: '/' })
+    try {
+      // Call the logout API to clear cookies
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+      });
+      
+      // Then sign out with NextAuth
+      await signOut({ redirect: true, callbackUrl: '/' });
+    } catch (error) {
+      console.error('Error during logout:', error);
+      toast.error('Failed to logout. Please try again.');
+    }
   }
 
   return (
