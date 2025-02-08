@@ -17,7 +17,6 @@ export async function middleware(request) {
       const secret = new TextEncoder().encode(process.env.COOKIE_SECRET);
       const { payload } = await jwtVerify(userDataCookie.value, secret);
 
-      // Role-based redirection
       if (payload.role === 'business' && !request.nextUrl.pathname.startsWith('/dashboard')) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       } else if (payload.role === 'user' && !request.nextUrl.pathname.startsWith('/user/home')) {
