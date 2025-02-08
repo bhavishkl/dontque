@@ -11,11 +11,11 @@ import {
 import Image from 'next/image'
 import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
-import { useUserInfo } from '../../hooks/useUserName'
 import { usePathname } from 'next/navigation'
 import { Button, Popover, PopoverTrigger, PopoverContent, Tooltip } from "@nextui-org/react"
 import { toast } from 'sonner'
 import { ThemeToggle } from '../ThemeToggle'
+import { useApi } from '../../hooks/useApi'
 
 const DynamicHeader = dynamic(() => import('./DynamicHeader'), { ssr: false })
 
@@ -24,14 +24,23 @@ const Header = () => {
   const { data: session } = useSession()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const sidebarRef = useRef(null)
-  const { 
-    name: userName, 
-    role, 
-    image: userImage, 
-    short_id: shortid,
-    isLoading,
-    isError 
-  } = useUserInfo(session?.user?.id)
+
+  const { data: apiData, isLoading: userLoading, isError: userError } = useApi(
+    session?.user?.id ? `/api/user?userId=${session.user.id}` : null
+  )
+
+  const userInfo = apiData && apiData.success ? {
+    name: apiData.data.name,
+    role: apiData.data.role,
+    image: apiData.data.image,
+    short_id: apiData.data.user_short_id,
+    needsNameUpdate: !apiData.data.name || apiData.data.name === 'User'
+  } : {}
+
+  const userName = userInfo.name
+  const role = userInfo.role
+  const userImage = userInfo.image
+  const shortid = userInfo.short_id
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
 
@@ -47,10 +56,6 @@ const Header = () => {
       document.removeEventListener('mousedown', handleOutsideClick)
     }
   }, [])
-
-  const handleLogout = async () => {
-    await signOut({ redirect: true, callbackUrl: '/' })
-  }
 
   if (pathname === '/signin' || pathname === '/') return null
 
@@ -108,8 +113,8 @@ const Header = () => {
                 />
               </Link>
               <span className="ml-2 text-xl sm:text-2xl font-bold text-black dark:text-white">
-            Dont<span className="text-orange-500">Que</span>
-          </span>
+                Dont<span className="text-orange-500">Que</span>
+              </span>
             </div>
 
             {/* Right section */}
@@ -147,8 +152,8 @@ const Header = () => {
                   className="flex items-center gap-3 cursor-pointer p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
                   onClick={toggleSidebar}
                 >
-                  <div className="relative w-8 h-8 rounded-lg overflow-hidden ring-1 ">
-                    {isLoading ? (
+                  <div className="relative w-8 h-8 rounded-lg overflow-hidden ring-1">
+                    {userLoading ? (
                       <div className="animate-pulse w-full h-full bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800" />
                     ) : userImage ? (
                       <img
@@ -162,7 +167,7 @@ const Header = () => {
                       </div>
                     )}
                   </div>
-                  {isLoading ? (
+                  {userLoading ? (
                     <div className="hidden sm:block w-24 h-4 animate-pulse bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded" />
                   ) : (
                     <span className="hidden sm:block text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -199,7 +204,7 @@ const Header = () => {
             <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
               <div className="flex items-center gap-4">
                 <div className="relative w-12 h-12 rounded-lg overflow-hidden ring-2 ring-amber-200 dark:ring-amber-800">
-                  {isLoading ? (
+                  {userLoading ? (
                     <div className="w-full h-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
                   ) : userImage ? (
                     <img
@@ -215,20 +220,20 @@ const Header = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="font-semibold text-gray-900 dark:text-white">
-                    {isLoading ? 'Loading...' : (userName || session.user?.name || 'Guest')}
+                    {userLoading ? 'Loading...' : (userName || session.user?.name || 'Guest')}
                   </h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {isLoading ? '...' : (role || 'User')}
+                    {userLoading ? '...' : (role || 'User')}
                   </p>
-                  {!isLoading && shortid && (
+                  {!userLoading && shortid && (
                     <div className="flex items-center gap-2 mt-2 overflow-x-auto">
                       <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono whitespace-nowrap">
                         ID: {shortid}
                       </code>
                       <button
                         onClick={() => {
-                          navigator.clipboard.writeText(shortid);
-                          toast.success('Shortid copied to clipboard');
+                          navigator.clipboard.writeText(shortid)
+                          toast.success('Shortid copied to clipboard')
                         }}
                         className="flex-shrink-0 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
                         title="Copy ID"
@@ -241,10 +246,10 @@ const Header = () => {
                             await navigator.share({
                               title: 'My Queue Shortid',
                               text: `My DontQue id: ${shortid}`,
-                            });
+                            })
                           } catch (err) {
-                            navigator.clipboard.writeText(shortid);
-                            toast.success('Shortid copied to clipboard');
+                            navigator.clipboard.writeText(shortid)
+                            toast.success('Shortid copied to clipboard')
                           }
                         }}
                         className="flex-shrink-0 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
@@ -260,18 +265,17 @@ const Header = () => {
 
             {/* Navigation Links */}
             <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
-            {!isLoading && role === 'user' && (
-              <NavGroup title="Main">
-                <NavLink href="/user/home" icon={Home}>Home</NavLink>
-                <NavLink href="/user/queues" icon={Users}>Queues</NavLink>
-                <NavLink href="/user/saved-queues" icon={Bookmark}>Saved Queues</NavLink>
-                <NavLink href="/user/current-queues" icon={Clock}>Current Queues</NavLink>
-                <NavLink href="/user/queue-history" icon={History}>Queue History</NavLink>
-              </NavGroup>
+              {!userLoading && role === 'user' && (
+                <NavGroup title="Main">
+                  <NavLink href="/user/home" icon={Home}>Home</NavLink>
+                  <NavLink href="/user/queues" icon={Users}>Queues</NavLink>
+                  <NavLink href="/user/saved-queues" icon={Bookmark}>Saved Queues</NavLink>
+                  <NavLink href="/user/current-queues" icon={Clock}>Current Queues</NavLink>
+                  <NavLink href="/user/queue-history" icon={History}>Queue History</NavLink>
+                </NavGroup>
               )}
 
-
-              {!isLoading && role === 'business' && (
+              {!userLoading && role === 'business' && (
                 <NavGroup title="Business">
                   <NavLink href="/dashboard" icon={PieChart}>Queue Dashboard</NavLink>
                   <NavLink href="/dashboard/business-profile" icon={User}>Business Profile</NavLink>
@@ -283,7 +287,6 @@ const Header = () => {
                 <NavLink href="/user/settings" icon={Settings}>Settings</NavLink>
                 <NavLink href="/business/support" icon={HelpCircle}>Support</NavLink>
                 <NavLink href="/feedback" icon={MessageSquare}>App Feedback</NavLink>
-
               </NavGroup>
             </nav>
           </div>

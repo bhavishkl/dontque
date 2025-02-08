@@ -15,7 +15,6 @@ import { memo } from 'react';
 import { useLocation } from '../../hooks/useLocation';
 import SearchBar from '@/app/components/SearchBar';
 import dynamic from 'next/dynamic';
-import { useUserInfo } from '@/app/hooks/useUserName'
 
 const SaveButton = dynamic(() => import('@/app/components/UniComp/SaveButton'))
 const UpdateNameModal = dynamic(() => import('@/app/components/UpdateNameModal'))
@@ -172,7 +171,13 @@ export default function Home() {
   const { data: savedQueues, isLoading: isSavedLoading } = useApi('/api/user/saved-queues')
   const { location: userLocation, isLoading: isLocationLoading, refreshLocation } = useLocation();
   const [showNameModal, setShowNameModal] = useState(false)
-  const { needsNameUpdate } = useUserInfo(session?.user?.id)
+  const { data: userData, isLoading: isUserLoading } = useApi(
+    session?.user?.id ? `/api/user?userId=${session.user.id}` : null
+  )
+  
+  const needsNameUpdate = userData?.data ? 
+    !userData.data.name || userData.data.name === 'User' : 
+    false
 
   // Dummy data for user stats
   const [userStats, setUserStats] = useState({
