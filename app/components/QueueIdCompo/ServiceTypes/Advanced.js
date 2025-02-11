@@ -596,220 +596,213 @@ export default function Advanced({ params, queueData }) {
         handleShare={handleShare}
       />
       
-      <Card className="w-full">
-        <CardBody>
-          {isInitialLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-8 w-3/4" />
-              <Skeleton className="h-32 w-full" />
-            </div>
-          ) : userQueueEntry && userQueueEntry.entry_id ? (
-            // Show queue status when user is in queue and has valid entry_id
-            renderQueueStatus(counters.find(c => c.id.toString() === userQueueEntry.counter_id))
-          ) : counters.length > 0 ? (
-            // Show counter selection and join UI when not in queue and counters are available
-            <Tabs 
-              selectedKey={selectedCounter} 
-              onSelectionChange={handleTabChange}
-              variant="underlined"
-              classNames={{
-                tabList: "gap-6 w-full relative rounded-none p-0 border-b border-divider",
-                cursor: "w-full bg-orange-500",
-                tab: "max-w-fit px-0 h-12",
-                tabContent: "group-data-[selected=true]:text-orange-500"
-              }}
-            >
-              {counters.map((counter) => (
-                <Tab
-                  key={counter.id.toString()}
-                  title={
-                    <div className="flex items-center space-x-2">
-                      <span className="text-medium">{counter.name}</span>
+      <div className="w-full space-y-8">
+        {isInitialLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-3/4" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        ) : userQueueEntry && userQueueEntry.entry_id ? (
+          // Show queue status when user is in queue and has valid entry_id
+          renderQueueStatus(counters.find(c => c.id.toString() === userQueueEntry.counter_id))
+        ) : counters.length > 0 ? (
+          // Show counter selection and join UI when not in queue and counters are available
+          <Tabs 
+            selectedKey={selectedCounter} 
+            onSelectionChange={handleTabChange}
+            variant="underlined"
+            classNames={{
+              tabList: "gap-6 w-full relative rounded-none p-0 border-b border-divider",
+              cursor: "w-full bg-orange-500",
+              tab: "max-w-fit px-0 h-12",
+              tabContent: "group-data-[selected=true]:text-orange-500"
+            }}
+          >
+            {counters.map((counter) => (
+              <Tab
+                key={counter.id.toString()}
+                title={
+                  <div className="flex items-center space-x-2">
+                    <span className="text-medium">{counter.name}</span>
+                  </div>
+                }
+              >
+                <div className="mt-4 space-y-6">
+                  {/* Queue Status Section */}
+                  <div className="space-y-6">
+                    {/* Queue Capacity */}
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="text-gray-600 dark:text-gray-400">Queue Capacity</span>
+                        <span className="font-semibold">{counter.current_queue_size || 0} / {counter.max_capacity || 20}</span>
+                      </div>
+                      <Progress 
+                        value={((counter.current_queue_size || 0) / (counter.max_capacity || 20)) * 100} 
+                        className="h-2"
+                        classNames={{
+                          indicator: "bg-orange-500 dark:bg-orange-400",
+                          track: "bg-orange-200/50 dark:bg-orange-900/20",
+                        }}
+                      />
                     </div>
-                  }
-                >
-                  <div className="mt-4 space-y-6">
-                    {/* Queue Status Card */}
-                    <Card className="dark:bg-gray-800">
-                      <CardBody className="p-6">
-                        <h2 className="text-2xl font-bold text-orange-600 dark:text-orange-400 mb-6">Current Queue Status</h2>
-                        <div className="space-y-6">
-                          {/* Queue Capacity */}
-                          <div>
-                            <div className="flex justify-between text-sm mb-2">
-                              <span className="text-gray-600 dark:text-gray-400">Queue Capacity</span>
-                              <span className="font-semibold">{counter.current_queue_size || 0} / {counter.max_capacity || 20}</span>
-                            </div>
-                            <Progress 
-                              value={((counter.current_queue_size || 0) / (counter.max_capacity || 20)) * 100} 
-                              className="h-2"
-                              classNames={{
-                                indicator: "bg-orange-500 dark:bg-orange-400",
-                                track: "bg-orange-200/50 dark:bg-orange-900/20",
-                              }}
-                            />
-                          </div>
 
-                          {/* Queue Stats */}
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {/* People Ahead Card */}
-                            <Card className="bg-orange-50 dark:bg-orange-900/20">
-                              <CardBody className="p-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="p-2 bg-orange-100 dark:bg-orange-800/30 rounded-lg">
-                                    <User className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">People Ahead</p>
-                                    <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
-                                      {counter.current_queue_size || 0}
-                                    </p>
-                                  </div>
-                                </div>
-                              </CardBody>
-                            </Card>
-
-                            {/* Wait Time Card */}
-                            <Card className="bg-orange-50 dark:bg-orange-900/20">
-                              <CardBody className="p-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="p-2 bg-orange-100 dark:bg-orange-800/30 rounded-lg">
-                                    <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">Est. Wait Time</p>
-                                    <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
-                                      {(counter.current_queue_size || 0) * (counter.services.find(s => s.id.toString() === Array.from(selectedServices)[0])?.estimatedTime || 15)} mins
-                                    </p>
-                                  </div>
-                                </div>
-                              </CardBody>
-                            </Card>
-                          </div>
-                        </div>
-                      </CardBody>
-                    </Card>
-
-                    {/* Staff Details */}
-                    {counter.type === 'staff' && counter.staffDetails && (
-                      <Card className="bg-default-50">
+                    {/* Queue Stats */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* People Ahead Card */}
+                      <Card className="bg-orange-50 dark:bg-orange-900/20">
                         <CardBody className="p-4">
-                          <div className="flex gap-4">
-                            <Avatar
-                              src={counter.staffDetails.image || '/default-avatar.png'}
-                              className="w-16 h-16"
-                              alt={counter.staffDetails.name || counter.name}
-                              fallback={(counter.staffDetails.name || counter.name)?.charAt(0) || '?'}
-                            />
-                            <div className="flex-1">
-                              {/* Staff Name */}
-                              <h3 className="text-lg font-semibold mb-1">
-                                {counter.staffDetails.name || counter.name}
-                              </h3>
-                              
-                              <div className="flex items-center gap-2 flex-wrap">
-                                {counter.staffDetails.rating && (
-                                  <div className="flex items-center gap-1">
-                                    <Star className="h-4 w-4 fill-warning text-warning" />
-                                    <span>{counter.staffDetails.rating.toFixed(1)}</span>
-                                    <span className="text-default-500">
-                                      ({counter.staffDetails.reviewCount || 0} reviews)
-                                    </span>
-                                  </div>
-                                )}
-                                {counter.staffDetails.experience && (
-                                  <Chip 
-                                    size="sm" 
-                                    variant="flat"
-                                    className="bg-orange-100 dark:bg-orange-900/20"
-                                  >
-                                    <div className="flex items-center gap-1">
-                                      <Calendar className="h-3 w-3" />
-                                      <span>{counter.staffDetails.experience}y exp</span>
-                                    </div>
-                                  </Chip>
-                                )}
-                              </div>
-                              
-                              {counter.staffDetails.specialization && (
-                                <p className="text-sm font-medium mt-2 text-default-600">
-                                  {counter.staffDetails.specialization}
-                                </p>
-                              )}
-                              {counter.staffDetails.bio && (
-                                <p className="text-sm text-default-500 mt-1">
-                                  {counter.staffDetails.bio}
-                                </p>
-                              )}
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-orange-100 dark:bg-orange-800/30 rounded-lg">
+                              <User className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">People Ahead</p>
+                              <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
+                                {counter.current_queue_size || 0}
+                              </p>
                             </div>
                           </div>
                         </CardBody>
                       </Card>
-                    )}
 
-                    {/* Service Selection Section */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Available Services</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {counter.services.map((service) => (
-                          <Card
-                            key={service.id}
-                            isPressable
-                            onPress={() => handleServiceSelect(service.id)}
-                            className={`border-2 ${selectedServices.has(service.id) ? 'border-orange-500' : 'border-transparent'}`}
-                          >
-                            <CardBody className="p-3">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="font-medium">{service.name}</p>
-                                  <p className="text-sm text-gray-500">{service.description}</p>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <Timer className="h-4 w-4" />
-                                    <span className="text-sm">{service.estimatedTime} mins</span>
-                                    {service.price && (
-                                      <span className="text-sm text-gray-600">• {service.price}</span>
-                                    )}
-                                  </div>
-                                </div>
-                                {selectedServices.has(service.id) && (
-                                  <CheckCircle2 className="h-5 w-5 text-orange-500" />
-                                )}
-                              </div>
-                            </CardBody>
-                          </Card>
-                        ))}
-                      </div>
+                      {/* Wait Time Card */}
+                      <Card className="bg-orange-50 dark:bg-orange-900/20">
+                        <CardBody className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-orange-100 dark:bg-orange-800/30 rounded-lg">
+                              <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Est. Wait Time</p>
+                              <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
+                                {(counter.current_queue_size || 0) * (counter.services.find(s => s.id.toString() === Array.from(selectedServices)[0])?.estimatedTime || 15)} mins
+                              </p>
+                            </div>
+                          </div>
+                        </CardBody>
+                      </Card>
                     </div>
-
-                    {/* Join Queue Button */}
-                    <Button
-                      size="lg"
-                      color="primary"
-                      className="w-full"
-                      onClick={handleJoinQueue}
-                      isLoading={isSubmitting}
-                      startContent={!isSubmitting && <ArrowRight className="h-5 w-5" />}
-                      isDisabled={!selectedServices.size || counter.status !== 'active'}
-                    >
-                      {counter.status === 'active' 
-                        ? 'Join Queue' 
-                        : 'Counter Currently Unavailable'
-                      }
-                    </Button>
                   </div>
-                </Tab>
-              ))}
-            </Tabs>
-          ) : (
-            // Show error state when no counters are available
-            <div className="text-center py-8">
-              <AlertCircle className="h-12 w-12 text-warning mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Counters Available</h3>
-              <p className="text-gray-500">Please try again later or contact support.</p>
-            </div>
-          )}
-        </CardBody>
-      </Card>
+
+                  {/* Staff Details */}
+                  {counter.type === 'staff' && counter.staffDetails && (
+                    <Card className="bg-default-50">
+                      <CardBody className="p-4">
+                        <div className="flex gap-4">
+                          <Avatar
+                            src={counter.staffDetails.image || '/default-avatar.png'}
+                            className="w-16 h-16"
+                            alt={counter.staffDetails.name || counter.name}
+                            fallback={(counter.staffDetails.name || counter.name)?.charAt(0) || '?'}
+                          />
+                          <div className="flex-1">
+                            {/* Staff Name */}
+                            <h3 className="text-lg font-semibold mb-1">
+                              {counter.staffDetails.name || counter.name}
+                            </h3>
+                            
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {counter.staffDetails.rating && (
+                                <div className="flex items-center gap-1">
+                                  <Star className="h-4 w-4 fill-warning text-warning" />
+                                  <span>{counter.staffDetails.rating.toFixed(1)}</span>
+                                  <span className="text-default-500">
+                                    ({counter.staffDetails.reviewCount || 0} reviews)
+                                  </span>
+                                </div>
+                              )}
+                              {counter.staffDetails.experience && (
+                                <Chip 
+                                  size="sm" 
+                                  variant="flat"
+                                  className="bg-orange-100 dark:bg-orange-900/20"
+                                >
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    <span>{counter.staffDetails.experience}y exp</span>
+                                  </div>
+                                </Chip>
+                              )}
+                            </div>
+                            
+                            {counter.staffDetails.specialization && (
+                              <p className="text-sm font-medium mt-2 text-default-600">
+                                {counter.staffDetails.specialization}
+                              </p>
+                            )}
+                            {counter.staffDetails.bio && (
+                              <p className="text-sm text-default-500 mt-1">
+                                {counter.staffDetails.bio}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </CardBody>
+                    </Card>
+                  )}
+
+                  {/* Service Selection Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Available Services</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {counter.services.map((service) => (
+                        <Card
+                          key={service.id}
+                          isPressable
+                          onPress={() => handleServiceSelect(service.id)}
+                          className={`border-2 ${selectedServices.has(service.id) ? 'border-orange-500' : 'border-transparent'}`}
+                        >
+                          <CardBody className="p-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium">{service.name}</p>
+                                <p className="text-sm text-gray-500">{service.description}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Timer className="h-4 w-4" />
+                                  <span className="text-sm">{service.estimatedTime} mins</span>
+                                  {service.price && (
+                                    <span className="text-sm text-gray-600">• {service.price}</span>
+                                  )}
+                                </div>
+                              </div>
+                              {selectedServices.has(service.id) && (
+                                <CheckCircle2 className="h-5 w-5 text-orange-500" />
+                              )}
+                            </div>
+                          </CardBody>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Join Queue Button */}
+                  <Button
+                    size="lg"
+                    color="primary"
+                    className="w-full"
+                    onClick={handleJoinQueue}
+                    isLoading={isSubmitting}
+                    startContent={!isSubmitting && <ArrowRight className="h-5 w-5" />}
+                    isDisabled={!selectedServices.size || counter.status !== 'active'}
+                  >
+                    {counter.status === 'active' 
+                      ? 'Join Queue' 
+                      : 'Counter Currently Unavailable'
+                    }
+                  </Button>
+                </div>
+              </Tab>
+            ))}
+          </Tabs>
+        ) : (
+          // Show error state when no counters are available
+          <div className="text-center py-8">
+            <AlertCircle className="h-12 w-12 text-warning mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Counters Available</h3>
+            <p className="text-gray-500">Please try again later or contact support.</p>
+          </div>
+        )}
+      </div>
 
       <NotificationPreferencesModal 
         isOpen={isPreferencesModalOpen}

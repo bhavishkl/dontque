@@ -285,3 +285,19 @@ SELECT
   SUM(CASE WHEN rating = 4 THEN 1 ELSE 0 END) AS star4,
   SUM(CASE WHEN rating = 5 THEN 1 ELSE 0 END) AS star5
 FROM app_feedback;
+
+-- Create support_tickets table
+CREATE TABLE support_tickets (
+    ticket_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id VARCHAR(255) REFERENCES user_profile(user_id),
+    user_role VARCHAR(50) NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    status VARCHAR(20) DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'resolved')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create index for faster queries
+CREATE INDEX idx_support_tickets_user ON support_tickets(user_id);
+CREATE INDEX idx_support_tickets_status ON support_tickets(status);

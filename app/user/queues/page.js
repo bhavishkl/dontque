@@ -3,13 +3,13 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import Link from 'next/link'
 import Image from 'next/image'
 import { Search, Clock, Users, MapPin, Star, Bookmark, Share2 } from 'lucide-react'
 import { Input, Select, SelectItem, Card, CardBody, Button, Chip, Progress, Skeleton } from "@nextui-org/react"
 import debounce from 'lodash/debounce'
 import { useApi } from '../../hooks/useApi'
 import SaveButton from '@/app/components/UniComp/SaveButton'
+import { useLocation } from '../../hooks/useLocation'
 
 const categories = [
   'All',
@@ -27,15 +27,13 @@ export default function QueueListPage() {
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [sortBy, setSortBy] = useState('wait')
   const [search, setSearch] = useState('')
-  const [userLocation, setUserLocation] = useState(null)
+  const { location: userLocation, refreshLocation } = useLocation()
   const router = useRouter()
+  const [forceAllCities, setForceAllCities] = useState(false)
 
   useEffect(() => {
-    const storedLocation = sessionStorage.getItem('userLocation')
-    if (storedLocation) {
-      setUserLocation(JSON.parse(storedLocation))
-    }
-  }, [])
+    refreshLocation();
+  }, [refreshLocation]);
 
   const debouncedSearch = useMemo(
     () => debounce((value) => setSearch(value), 300),
@@ -43,7 +41,9 @@ export default function QueueListPage() {
   )
 
   const { data: queues, isLoading, isError, mutate } = useApi(
-    `/api/queues?category=${selectedCategory}&search=${search}&sortBy=${sortBy}&city=${userLocation?.city || ''}&limit=20`
+    `/api/queues?category=${selectedCategory}&search=${search}&sortBy=${sortBy}${
+      !forceAllCities && userLocation?.city ? `&city=${userLocation.city}` : ''
+    }&limit=20`
   )
 
   const debouncedMutate = useMemo(
@@ -91,16 +91,17 @@ export default function QueueListPage() {
     }
   }
   
-  const filteredQueues = queues
-    ? queues.sort((a, b) => {
-        if (sortBy === 'wait') {
-          return (a.total_estimated_wait_time || 0) - (b.total_estimated_wait_time || 0)
-        } else if (sortBy === 'distance') {
-          return (a.distance || 0) - (b.distance || 0)
-        }
-        return 0
-      })
-    : []
+  // Fix: Handle both array and object response formats
+  const queueData = Array.isArray(queues) ? queues : queues?.data || [];
+  
+  const filteredQueues = queueData.sort((a, b) => {
+    if (sortBy === 'wait') {
+      return (a.total_estimated_wait_time || 0) - (b.total_estimated_wait_time || 0);
+    } else if (sortBy === 'distance') {
+      return (a.distance || 0) - (b.distance || 0);
+    }
+    return 0;
+  });
 
   return (
     <div className="min-h-screen dark:bg-neutral-900 dark:text-white">
@@ -194,7 +195,7 @@ export default function QueueListPage() {
                 </CardBody>
               </Card>
             ))
-          ) : (
+          ) : filteredQueues.length > 0 ? (
             filteredQueues.map((queue) => (
               <Card key={queue.queue_id} className="hover:shadow-lg transition-shadow duration-300 dark:bg-neutral-800">
                 <CardBody>
@@ -229,10 +230,6 @@ export default function QueueListPage() {
                             <Users className="h-4 w-4 mr-1" />
                             <span>{queue.current_queue_count || 0} in queue</span>
                           </div>
-                          <div className="flex items-center text-neutral-600 dark:text-neutral-400">
-                            <MapPin className="h-4 w-4 mr-1" />
-                            <span>{queue.distance || 'N/A'} away</span>
-                          </div>
                         </div>
                         <div className="mb-4">
                           <div className="flex justify-between text-sm mb-1">
@@ -260,6 +257,45 @@ export default function QueueListPage() {
                 </CardBody>
               </Card>
             ))
+          ) : (
+            <Card className="col-span-full">
+              <CardBody className="text-center space-y-4">
+                <MapPin className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+                <h3 className="text-lg font-medium">
+                  {userLocation?.city ? 
+                    `No queues found in ${userLocation.city}` : 
+                    "No queues found"}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {userLocation?.city ?
+                    "Try expanding your search area or check nearby cities" :
+                    "Try adjusting your search filters"}
+                </p>
+                {userLocation?.city && (
+                  <div className="flex gap-4 justify-center mt-4">
+                    <Button 
+                      color="primary" 
+                      onClick={() => {
+                        setSearch('');
+                        setSelectedCategory('All');
+                      }}
+                    >
+                      Clear Filters
+                    </Button>
+                    <Button 
+                      variant="bordered"
+                      onClick={() => {
+                        sessionStorage.removeItem('userLocation');
+                        refreshLocation();
+                        mutate();
+                      }}
+                    >
+                      Try Nearby Areas
+                    </Button>
+                  </div>
+                )}
+              </CardBody>
+            </Card>
           )}
         </div>
 

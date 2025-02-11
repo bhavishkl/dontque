@@ -284,8 +284,7 @@ const Header = () => {
 
               <NavGroup title="Account">
                 <NavLink href="/user/dashboard" icon={User}>Profile</NavLink>
-                <NavLink href="/user/settings" icon={Settings}>Settings</NavLink>
-                <NavLink href="/business/support" icon={HelpCircle}>Support</NavLink>
+                <NavLink href="/support" icon={HelpCircle}>Support</NavLink>
                 <NavLink href="/feedback" icon={MessageSquare}>App Feedback</NavLink>
               </NavGroup>
             </nav>

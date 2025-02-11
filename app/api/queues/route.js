@@ -82,7 +82,22 @@ export async function GET(request) {
     monitor.markStep('data-transformed');
     monitor.end();
 
-    return NextResponse.json(formattedQueues);
+    // Add empty state metadata
+    const responsePayload = formattedQueues.length > 0 ? 
+      formattedQueues : 
+      { 
+        data: [],
+        meta: {
+          search,
+          category,
+          city: city || 'Not specified',
+          message: city ? 
+            `No active queues found in ${city.trim()}` : 
+            'No queues found with current filters'
+        }
+      };
+
+    return NextResponse.json(responsePayload);
 
   } catch (error) {
     console.error('Unexpected error:', error);

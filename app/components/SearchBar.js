@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { Search, Scan } from 'lucide-react';
 import { Button } from "@nextui-org/react";
 import debounce from 'lodash/debounce';
+import { useRouter } from 'next/navigation';
 
 export default function SearchBar({ onSearch, onScanClick, isSearching }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const router = useRouter();
 
   const debouncedFetch = useCallback(
     debounce(async (query) => {
@@ -75,7 +77,7 @@ export default function SearchBar({ onSearch, onScanClick, isSearching }) {
         <Button
           isIconOnly
           className="h-12 w-12 bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20 rounded-xl"
-          onClick={onScanClick}
+          onClick={() => router.push('/scan')}
         >
           <Scan className="text-white h-5 w-5" />
         </Button>
