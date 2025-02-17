@@ -71,8 +71,6 @@ export default async function RootLayout({ children }) {
           name="google-site-verification" 
           content="N4FxqHbSvySNNCTrB03INB_j9KrcdSmEUPhhlh-UQsA" 
         />
-        <meta name="application-name" content="DontQue" />
-        <link rel="apple-touch-icon" href="/default.jpg" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
