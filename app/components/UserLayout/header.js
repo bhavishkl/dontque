@@ -188,11 +188,6 @@ const Header = () => {
             ? 'bg-black/30 backdrop-blur-sm perspective-[1000px] transform-gpu' 
             : 'pointer-events-none bg-transparent backdrop-blur-none perspective-none'
         }`}
-          style={{
-            transformStyle: 'preserve-3d',
-            transformOrigin: 'right center',
-            transform: sidebarOpen ? 'rotateY(0deg)' : 'rotateY(-90deg)'
-          }}
         >
           <div
             ref={sidebarRef}
