@@ -23,7 +23,7 @@ const geistMono = localFont({
 });
 
 export const metadata = {
-  title: "DontQue - AI-Powered Queue Management System",
+  title: "DontQue - unified Queue Management System",
   description: "Revolutionize your queue management with DontQue. Reduce wait times, enhance customer satisfaction, and optimize operations with our AI-powered solution.",
   keywords: "queue management system, virtual queue, line management, wait time reduction, AI queue system, digital queuing, appointment scheduling, DontQue",
   openGraph: {
@@ -33,7 +33,7 @@ export const metadata = {
     siteName: 'DontQue',
     images: [
       {
-        url: '/logo.svg',
+        url: '/default.jpg',
         width: 1200,
         height: 630,
       },
