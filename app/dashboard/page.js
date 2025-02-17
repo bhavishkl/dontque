@@ -142,7 +142,7 @@ export default function QueueOwnerDashboard() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 bg-background/70 backdrop-blur-lg border-b border-divider z-10">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl sm:text-2xl font-bold">Queue Owner Dashboard</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Dashboard</h1>
           <div className="flex items-center gap-3">
             <Button 
               variant="light" 
@@ -157,7 +157,6 @@ export default function QueueOwnerDashboard() {
                 startContent={<Plus className="w-4 h-4" />}
                 className="font-medium"
               >
-                New Queue
               </Button>
             </Link>
           </div>
