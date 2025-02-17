@@ -74,7 +74,7 @@ export default async function RootLayout({ children }) {
         <meta name="application-name" content="DontQue" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#f97316" />
-        <link rel="icon" type="image/jpeg" href="/default.jpg" />
+        <link rel="icon" href="/default.jpg" />
         <link rel="apple-touch-icon" href="/default.jpg" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
