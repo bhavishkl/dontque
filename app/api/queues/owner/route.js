@@ -4,6 +4,8 @@ import { authOptions } from "../../auth/[...nextauth]/route"
 import { supabase } from '../../../lib/supabase'
 import { PerformanceMonitor } from '../../../../utils/performance'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request) {
   const monitor = new PerformanceMonitor('GET /api/queues/owner')
   
