@@ -7,13 +7,6 @@ export async function GET(request, { params }) {
   try {
     const { queueid } = params;
 
-    // Add these headers to prevent caching
-    const headers = {
-      'Cache-Control': 'no-store, no-cache, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-    };
-
     // Fetch queue data
     const { data: queueData, error: queueError } = await supabase
       .from('queues')
@@ -23,7 +16,7 @@ export async function GET(request, { params }) {
 
     if (queueError) {
       console.error('Error fetching queue data:', queueError);
-      return NextResponse.json({ error: queueError.message }, { status: 500, headers: headers });
+      return NextResponse.json({ error: queueError.message }, { status: 500 });
     }
 
     // Fetch customers in queue
@@ -42,7 +35,7 @@ export async function GET(request, { params }) {
 
     if (customersError) {
       console.error('Error fetching customers in queue:', customersError);
-      return NextResponse.json({ error: customersError.message }, { status: 500, headers: headers });
+      return NextResponse.json({ error: customersError.message }, { status: 500 });
     }
 
     // Format join_time for each customer
@@ -55,16 +48,16 @@ export async function GET(request, { params }) {
       queueData,
       customersInQueue: customersWithFormattedTime
     }, {
-      headers: headers,
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+      },
     });
   } catch (error) {
     console.error('Unexpected error in GET function:', error);
     return NextResponse.json({ error: 'An unexpected error occurred' }, { 
       status: 500,
       headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
+        'Cache-Control': 'no-store, max-age=0',
       },
     });
   }

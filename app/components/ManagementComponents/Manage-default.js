@@ -17,9 +17,7 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
   const { data: queueData, isLoading, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage`, {
     fallbackData: initialQueueData,
     revalidateOnMount: true,
-    dedupingInterval: 0,
-    revalidateOnFocus: true,
-    refreshInterval: 3000
+    dedupingInterval: 5000
   })
 
   const [customersInQueue, setCustomersInQueue] = useState([])
@@ -136,7 +134,6 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
     try {
       const response = await fetch(`/api/queues/${params.queueId}/customers/${entryId}/serve`, {
         method: 'POST',
-        cache: 'no-store',
       })
       if (!response.ok) {
         const errorData = await response.json()
@@ -149,8 +146,6 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
       }
       
       await refetchQueueData()
-      await mutate(`/api/queues/${params.queueId}/manage`, undefined, { revalidate: true })
-      
       toast.success('Customer served successfully')
       setCustomersInQueue(prevCustomers => prevCustomers.filter(customer => customer.entry_id !== entryId))
     } catch (error) {
