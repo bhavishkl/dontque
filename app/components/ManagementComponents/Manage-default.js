@@ -15,8 +15,7 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.
 
 export default function ManageDefault({ params, queueData: initialQueueData, isLoading: initialLoading }) {
   const { data: queueData, isLoading, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage`, {
-    fallbackData: initialQueueData,
-    revalidateOnMount: true,
+revalidateOnMount: true,
     dedupingInterval: 5000
   })
 
