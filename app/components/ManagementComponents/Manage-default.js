@@ -14,7 +14,7 @@ import { useApi } from '@/app/hooks/useApi'
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
 export default function ManageDefault({ params, queueData: initialQueueData, isLoading: initialLoading }) {
-  const { data: queueData, isLoading, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage`, {
+  const { data: queueData, isLoading, mutate: refetchQueueData } = useApi(`/api/management/queues/${params.queueId}/default`, {
     fallbackData: initialQueueData,
     revalidateOnMount: true,
     dedupingInterval: 5000
