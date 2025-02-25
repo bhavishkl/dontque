@@ -35,9 +35,9 @@ export function useLocation() {
   const getPosition = () => {
     return new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: false, // Changed to false since we only need approximate city location
+        enableHighAccuracy: false,
         timeout: 5000,
-        maximumAge: 300000 // 5 minutes
+        maximumAge: 300000
       });
     });
   };
@@ -58,7 +58,8 @@ export function useLocation() {
         longitude: position.coords.longitude,
         accuracy: position.coords.accuracy,
         city: getCityFromCoordinates(position.coords.latitude, position.coords.longitude),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        isManuallySet: false // Add flag for automatic location
       };
 
       sessionStorage.setItem('userLocation', JSON.stringify(newLocation));
@@ -83,8 +84,15 @@ export function useLocation() {
     const stored = sessionStorage.getItem('userLocation');
     if (stored) {
       const parsedLocation = JSON.parse(stored);
+      
+      // If location was manually set, just use it
+      if (parsedLocation.isManuallySet) {
+        setLocation(parsedLocation);
+        return;
+      }
+
+      // Only refresh automatic location if it's older than 30 minutes
       const locationAge = new Date() - new Date(parsedLocation.timestamp);
-      // Refresh if location is older than 30 minutes
       if (locationAge > 1800000) {
         debouncedRequestLocation();
       } else {

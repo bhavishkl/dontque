@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Button, useDisclosure, Card, CardBody, Skeleton, Chip } from "@nextui-org/react"
+import { Button, useDisclosure, Card, CardBody, Skeleton, Chip, Select, SelectItem } from "@nextui-org/react"
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { categories } from '../../utils/category'
-import { Clock, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, MapPin, Star } from 'lucide-react'
+import { Clock, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, MapPin, Star, Edit2, Crosshair } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApi } from '../../hooks/useApi'
 import debounce from 'lodash/debounce'
@@ -15,6 +15,7 @@ import { memo } from 'react';
 import { useLocation } from '../../hooks/useLocation';
 import SearchBar from '@/app/components/SearchBar';
 import dynamic from 'next/dynamic';
+import { cityCoordinates } from '../../utils/cities';
 
 const SaveButton = dynamic(() => import('@/app/components/UniComp/SaveButton'))
 const UpdateNameModal = dynamic(() => import('@/app/components/UpdateNameModal'))
@@ -42,7 +43,9 @@ const QueueItem = memo(({ queue }) => {
         {/* Top Info Bar */}
         <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
           <Chip
-            className="bg-white/95 backdrop-blur-md border-none text-gray-700 dark:bg-gray-900/95 dark:text-white shadow-sm"
+            variant="flat"
+            size="sm"
+            className="backdrop-blur-md bg-black/30 text-white font-medium border border-white/20"
             startContent={<span className="text-base">{icon}</span>}
           >
             {queue.category || 'General'}
@@ -169,7 +172,7 @@ export default function Home() {
   const { data: session } = useSession()
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { data: savedQueues, isLoading: isSavedLoading } = useApi('/api/user/saved-queues')
-  const { location: userLocation, isLoading: isLocationLoading, refreshLocation } = useLocation();
+  const { location: userLocation, isLoading: isLocationLoading, refreshLocation, requestLocation } = useLocation();
   const [showNameModal, setShowNameModal] = useState(false)
   const { data: userData, isLoading: isUserLoading } = useApi(
     session?.user?.id ? `/api/user?userId=${session.user.id}` : null
@@ -244,6 +247,8 @@ export default function Home() {
     }
   }, [needsNameUpdate])
 
+  const [isManualSelection, setIsManualSelection] = useState(false)
+
   return (
     <div className="min-h-screen dark:bg-gray-900 dark:text-gray-100">
       <main>
@@ -258,9 +263,74 @@ export default function Home() {
                 <p className="text-lg sm:text-xl text-orange-50">Find and join queues near you instantly.</p>
                 <div className="flex items-center gap-2 text-orange-50/80 text-sm">
                   <MapPin className="h-4 w-4" />
-                  <span suppressHydrationWarning>
-                    {userLocation?.city || 'Loading location...'}
-                  </span>
+                  {isManualSelection ? (
+                    <div className="flex items-center gap-2">
+                      <Select
+                        aria-label="Select City"
+                        selectedKeys={userLocation?.city ? [userLocation.city] : []}
+                        className="bg-white/10 backdrop-blur-md rounded-lg"
+                        style={{ width: "160px" }}
+                        onSelectionChange={(keys) => {
+                          const selectedCity = Array.from(keys)[0]?.toString();
+                          if (selectedCity) {
+                            const newLocation = {
+                              city: selectedCity,
+                              latitude: cityCoordinates[selectedCity].lat,
+                              longitude: cityCoordinates[selectedCity].lng,
+                              timestamp: new Date().toISOString(),
+                              isManuallySet: true // Add flag for manual selection
+                            };
+                            sessionStorage.setItem('userLocation', JSON.stringify(newLocation));
+                            refreshLocation();
+                          }
+                        }}
+                      >
+                        {Object.keys(cityCoordinates).map((city) => (
+                          <SelectItem key={city} value={city}>
+                            {city}
+                          </SelectItem>
+                        ))}
+                      </Select>
+                      <Button
+                        size="sm"
+                        color="primary"
+                        variant="flat"
+                        className="bg-white/20 text-white"
+                        onClick={() => setIsManualSelection(false)}
+                      >
+                        Apply
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span suppressHydrationWarning>
+                        {userLocation?.city || 'Loading location...'}
+                      </span>
+                      <div className="flex gap-1">
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="flat"
+                          className="bg-white/10 hover:bg-white/20 text-white"
+                          onClick={() => setIsManualSelection(true)}
+                        >
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="flat"
+                          className="bg-white/10 hover:bg-white/20 text-white"
+                          onClick={() => {
+                            sessionStorage.removeItem('userLocation');
+                            requestLocation();
+                          }}
+                        >
+                          <Crosshair className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="md:w-1/2 w-full">
@@ -284,7 +354,7 @@ export default function Home() {
                   key={category.name}
                   className={`inline-flex items-center px-2 sm:px-3 py-1 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors duration-200 ease-in-out whitespace-nowrap ${
                     selectedCategory === category.name
-                      ? 'bg-orange-500 text-white'
+                      ? 'bg-gray-800 text-white dark:bg-white dark:text-black'
                       : 'bg-gray-100 text-black hover:bg-gray-200 dark:bg-[#111827] dark:text-white dark:hover:bg-gray-700'
                   }`}
                   onClick={() => handleCategoryClick(category.name)}

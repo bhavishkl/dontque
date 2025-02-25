@@ -1,5 +1,5 @@
 export const categories = [
-  { name: 'All', icon: '🌐' },
+  { name: 'All', icon: '📃' },
   { name: 'Restaurants', icon: '🍽️' },
   { name: 'Retail', icon: '🛍️' },
   { name: 'Healthcare', icon: '🏥' },
