@@ -260,6 +260,29 @@ const Header = () => {
 
             {/* Navigation Links */}
             <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
+              {!userLoading && role === 'admin' && (
+                <>
+                  <NavGroup title="Admin">
+                    <NavLink href="/admin/dashboard" icon={PieChart}>Admin Dashboard</NavLink>
+                    <NavLink href="/admin/users" icon={Users}>Manage Users</NavLink>
+                    <NavLink href="/admin/businesses" icon={Users}>Manage Businesses</NavLink>
+                  </NavGroup>
+                  
+                  <NavGroup title="Business">
+                    <NavLink href="/dashboard" icon={PieChart}>Queue Dashboard</NavLink>
+                    <NavLink href="/dashboard/business-profile" icon={User}>Business Profile</NavLink>
+                  </NavGroup>
+                  
+                  <NavGroup title="Main">
+                    <NavLink href="/user/home" icon={Home}>Home</NavLink>
+                    <NavLink href="/user/queues" icon={Users}>Queues</NavLink>
+                    <NavLink href="/user/saved-queues" icon={Bookmark}>Saved Queues</NavLink>
+                    <NavLink href="/user/current-queues" icon={Clock}>Current Queues</NavLink>
+                    <NavLink href="/user/queue-history" icon={History}>Queue History</NavLink>
+                  </NavGroup>
+                </>
+              )}
+
               {!userLoading && role === 'user' && (
                 <NavGroup title="Main">
                   <NavLink href="/user/home" icon={Home}>Home</NavLink>

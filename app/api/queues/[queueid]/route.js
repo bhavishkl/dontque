@@ -107,3 +107,93 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 });
   }
 }
+
+export async function DELETE(request, { params }) {
+  const monitor = new PerformanceMonitor('DELETE queue');
+  try {
+    const { queueid } = params;
+    const session = await getServerSession(authOptions);
+    monitor.markStep('auth check');
+
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // First, verify the user owns this queue
+    const { data: queueData, error: queueError } = await supabase
+      .from('queues')
+      .select('owner_id')
+      .eq('queue_id', queueid)
+      .single();
+    
+    if (queueError) {
+      console.error('Error fetching queue:', queueError);
+      return NextResponse.json({ error: 'Queue not found' }, { status: 404 });
+    }
+
+    if (queueData.owner_id !== session.user.id) {
+      return NextResponse.json({ error: 'You do not have permission to delete this queue' }, { status: 403 });
+    }
+    
+    monitor.markStep('ownership verified');
+
+    // Delete related records first (due to foreign key constraints)
+    // 1. Delete queue entries
+    const { error: entriesError } = await supabase
+      .from('queue_entries')
+      .delete()
+      .eq('queue_id', queueid);
+    
+    if (entriesError) {
+      console.error('Error deleting queue entries:', entriesError);
+      return NextResponse.json({ error: 'Failed to delete queue entries' }, { status: 500 });
+    }
+    
+    // 2. Delete saved queues references
+    const { error: savedQueuesError } = await supabase
+      .from('saved_queues')
+      .delete()
+      .eq('queue_id', queueid);
+    
+    if (savedQueuesError) {
+      console.error('Error deleting saved queue references:', savedQueuesError);
+      // Continue anyway as this is not critical
+    }
+    
+    // 3. Delete queue counters if they exist
+    const { error: countersError } = await supabase
+      .from('queue_counters')
+      .delete()
+      .eq('queue_id', queueid);
+    
+    if (countersError) {
+      console.error('Error deleting queue counters:', countersError);
+      // Continue anyway as not all queues have counters
+    }
+    
+    monitor.markStep('related records deleted');
+
+    // Finally, delete the queue itself
+    const { error: deleteError } = await supabase
+      .from('queues')
+      .delete()
+      .eq('queue_id', queueid);
+    
+    if (deleteError) {
+      console.error('Error deleting queue:', deleteError);
+      return NextResponse.json({ error: 'Failed to delete queue' }, { status: 500 });
+    }
+    
+    monitor.markStep('queue deleted');
+    monitor.end();
+    
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Queue deleted successfully' 
+    });
+  } catch (error) {
+    console.error('Unexpected error in DELETE function:', error);
+    monitor.end();
+    return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 });
+  }
+}
