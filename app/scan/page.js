@@ -1,28 +1,24 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { Scanner } from '@yudiel/react-qr-scanner'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { Html5Qrcode } from 'html5-qrcode'
 
 export default function QRScannerPage() {
   const router = useRouter()
-  const [scanResult, setScanResult] = useState('')
-  const [hasCameraAccess, setHasCameraAccess] = useState(null) // Start with null for initial state
+  const [hasCameraAccess, setHasCameraAccess] = useState(null)
   const [cameraError, setCameraError] = useState(null)
+  const [isScanning, setIsScanning] = useState(false)
+  const scannerRef = useRef(null)
+  const containerRef = useRef(null)
 
   useEffect(() => {
     let isMounted = true
-    const controller = new AbortController()
 
     const checkCameraAccess = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
-            facingMode: 'environment',
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
-          },
-          signal: controller.signal
+          video: { facingMode: 'environment' }
         })
         
         if (isMounted) {
@@ -43,46 +39,78 @@ export default function QRScannerPage() {
 
     return () => {
       isMounted = false
-      controller.abort()
+      // Stop scanning when component unmounts
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(error => {
+          console.error("Failed to stop scanner", error);
+        });
+      }
     }
   }, [])
 
-  const handleScanResult = (result) => {
-    if (result && result !== scanResult) {
-      setScanResult(result)
-      
-      setTimeout(() => {
-        try {
-          const url = result.startsWith('/') 
-            ? new URL(result, window.location.origin)
-            : new URL(result);
-          
-          if (url.origin === window.location.origin) {
-            router.push(url.pathname)
-          } else {
-            toast.error('External links are not allowed')
-            router.back()
-          }
-        } catch (error) {
-          console.log('Scanned content:', result)
-          if (result.startsWith('/')) {
-            router.push(result)
-          } else {
-            toast.error('Invalid QR code content')
-            router.back()
-          }
-        }
-      }, 100)
+  useEffect(() => {
+    // Initialize QR scanner when camera access is confirmed
+    if (hasCameraAccess && containerRef.current && !isScanning) {
+      const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0
+      };
+
+      const html5QrCode = new Html5Qrcode("qr-reader");
+      scannerRef.current = html5QrCode;
+      setIsScanning(true);
+
+      html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        onScanSuccess,
+        onScanFailure
+      ).catch((err) => {
+        console.error("Failed to start scanner", err);
+        setIsScanning(false);
+        setCameraError("Failed to start scanner: " + err.message);
+        setHasCameraAccess(false);
+      });
     }
-  }
+  }, [hasCameraAccess]);
+
+  const onScanSuccess = (decodedText) => {
+    console.log(`Scan result: ${decodedText}`);
+    
+    try {
+      // Navigate based on URL type
+      if (decodedText.startsWith('http')) {
+        window.open(decodedText, '_blank');
+      } else {
+        router.push(decodedText);
+      }
+      
+      toast.success('QR code scanned successfully');
+      
+      // Stop scanning after successful scan
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(err => {
+          console.error("Failed to stop scanner", err);
+        });
+      }
+    } catch (error) {
+      console.error('Error handling scan result:', error);
+      toast.error('Failed to process QR code');
+    }
+  };
+
+  const onScanFailure = (error) => {
+    // Don't log scan failures - these happen constantly when no QR code is present
+    // and would flood the console
+  };
 
   if (hasCameraAccess === null) {
-    // Loading state while checking permissions
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
         <div className="animate-pulse">Checking camera permissions...</div>
       </div>
-    )
+    );
   }
 
   if (!hasCameraAccess) {
@@ -92,67 +120,33 @@ export default function QRScannerPage() {
         <p className="text-gray-600 mb-8">
           {cameraError === 'NotAllowedError' 
             ? 'Please enable camera permissions in your browser settings'
-            : 'Camera not available or supported'}
+            : cameraError || 'Camera not available or supported'}
         </p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-blue-500 text-white rounded-md"
+        >
+          Try Again
+        </button>
       </div>
-    )
+    );
   }
 
   return (
     <div className="min-h-screen p-4">
       <h1 className="text-2xl font-bold mb-8 text-center">Scan QR Code</h1>
-      <div className="max-w-2xl mx-auto rounded-xl overflow-hidden border-2 border-white/20 bg-black">
-        <Scanner
-          onResult={(result) => {
-            if (result) {
-              const text = result?.getText()
-              if (text && text.trim().length > 0) {
-                handleScanResult(text.trim())
-              }
-            }
-          }}
-          onError={(error) => {
-            console.error('Scanner error:', error)
-            // Only set access to false if it's a permission error
-            if (error.name === 'NotAllowedError') {
-              setHasCameraAccess(false)
-            }
-          }}
-          options={{
-            constraints: {
-              facingMode: 'environment',
-            }
-          }}
-          styles={{
-            container: {
-              width: '100%',
-              height: '60vh',
-              position: 'relative',
-              overflow: 'hidden',
-              backgroundColor: 'black'
-            },
-            video: {
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover'
-            },
-            finderBorder: {
-              borderColor: 'rgba(255, 165, 0, 0.5)'
-            }
-          }}
-        />
+      <div className="max-w-md mx-auto">
+        <div 
+          id="qr-reader" 
+          ref={containerRef}
+          className="overflow-hidden rounded-xl border-2 border-white/20"
+          style={{ width: '100%', minHeight: '300px' }}
+        ></div>
       </div>
       
-      {hasCameraAccess && !scanResult && (
-        <div className="text-center mt-4 text-gray-400">
-          <p>Point your camera at a QR code</p>
-          <div className="mt-2 animate-pulse">Initializing camera...</div>
-        </div>
-      )}
+      <div className="text-center mt-4 text-gray-400">
+        <p>Point your camera at a QR code</p>
+      </div>
     </div>
-  )
+  );
 } 
