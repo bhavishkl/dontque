@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, lazy } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Clock, Users, ChevronDown, ChevronUp, Bell, AlertCircle, Timer, Share2, Star, Calendar, LogOut, User } from 'lucide-react'
@@ -9,13 +9,17 @@ import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
 import { createClient } from '@supabase/supabase-js'
 import { useApi } from '@/app/hooks/useApi'
+// Remove the direct import
+// import LeaveQueueConfirmationModal from '@/app/components/QueueIdCompo/LeaveQueueConfirmationModal'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
-// Lazy load less critical components
+// Lazy load all components
 const AddKnownUserModal = lazy(() => import('@/app/components/UniComp/AddKnownUserModal'));
 const QueueInfoSec = lazy(() => import('@/app/components/QueueIdCompo/QueueidPage/QueueInfoSec'));
 const NotificationPreferencesModal = lazy(() => import('@/app/components/NotificationPreferencesModal'));
+// Add dynamic import for LeaveQueueConfirmationModal
+const LeaveQueueConfirmationModal = lazy(() => import('@/app/components/QueueIdCompo/LeaveQueueConfirmationModal'));
 
 const calculatePersonalizedServeTime = (nextServeAt, position, estTimeToServe, serviceStartTime) => {
   // If position is 1 and service has started, they're next up - return current time
@@ -73,6 +77,8 @@ export default function QueueDetailsPage({ params, queueData: initialQueueData }
   const [showAllInfo, setShowAllInfo] = useState(false);
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
+  const [isLeavingQueue, setIsLeavingQueue] = useState(false);
 
   if (isError) {
     return <div>Error: {error.message}</div>
@@ -151,7 +157,7 @@ export default function QueueDetailsPage({ params, queueData: initialQueueData }
   };
   
   const handleLeaveQueue = async () => {
-    setIsLeaving(true);
+    setIsLeavingQueue(true);
     try {
       const response = await fetch(`/api/queues/${params.queueid}/leave`, {
         method: 'POST',
@@ -169,7 +175,8 @@ export default function QueueDetailsPage({ params, queueData: initialQueueData }
       console.error('Error leaving queue:', err);
       toast.error(err.message || 'Failed to leave queue. Please try again.');
     } finally {
-      setIsLeaving(false);
+      setIsLeavingQueue(false);
+      setIsLeaveModalOpen(false);
     }
   };
 
@@ -207,8 +214,10 @@ export default function QueueDetailsPage({ params, queueData: initialQueueData }
     setNotificationsEnabled(hasEnabledChannels);
   };
 
+  const openLeaveConfirmation = () => {
+    setIsLeaveModalOpen(true);
+  }
 
- 
   return (
     <div className="min-h-screen dark:bg-gray-900">
       <header className=" dark:bg-gray-800 shadow-sm">
@@ -495,10 +504,9 @@ export default function QueueDetailsPage({ params, queueData: initialQueueData }
                           color="danger"
                           variant="flat"
                           startContent={<LogOut className="h-4 w-4" />}
-                          onClick={handleLeaveQueue}
-                          isLoading={isLeaving}
+                          onClick={openLeaveConfirmation}
                         >
-                          {isLeaving ? "Leaving Queue..." : "Leave Queue"}
+                          Leave Queue
                         </Button>
                       </div>
 
@@ -577,6 +585,17 @@ export default function QueueDetailsPage({ params, queueData: initialQueueData }
           </div>
         )}
       </main>
+
+      <Suspense fallback={null}>
+        <LeaveQueueConfirmationModal
+          isOpen={isLeaveModalOpen}
+          onClose={() => setIsLeaveModalOpen(false)}
+          onConfirm={handleLeaveQueue}
+          isLoading={isLeavingQueue}
+          position={queueData?.userQueueEntry?.position}
+          waitTime={queueData?.userQueueEntry?.wait_time_formatted}
+        />
+      </Suspense>
     </div>
   )
 }

@@ -8,6 +8,8 @@ import { toast } from 'sonner'
 import dynamic from 'next/dynamic'
 import * as htmlToImage from 'html-to-image'
 import { useApi } from '@/app/hooks/useApi'
+// Remove the direct import
+// import LeaveQueueConfirmationModal from '@/app/components/QueueIdCompo/LeaveQueueConfirmationModal'
 
 // Dynamic import with loading fallback
 const AddKnownUserModal = dynamic(
@@ -29,6 +31,15 @@ const AddKnownUserModal = dynamic(
 
 const NotificationPreferencesModal = dynamic(
   () => import('@/app/components/NotificationPreferencesModal'),
+  {
+    loading: () => null,
+    ssr: false
+  }
+)
+
+// Add dynamic import for LeaveQueueConfirmationModal
+const LeaveQueueConfirmationModal = dynamic(
+  () => import('@/app/components/QueueIdCompo/LeaveQueueConfirmationModal'),
   {
     loading: () => null,
     ssr: false
@@ -71,6 +82,8 @@ export default function Advanced({ params, queueData }) {
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false)
   const queueStatusRef = useRef(null)
   const [isSharing, setIsSharing] = useState(false)
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
+  const [isLeavingQueue, setIsLeavingQueue] = useState(false)
 
   // Add timer effect
   useEffect(() => {
@@ -188,6 +201,7 @@ export default function Advanced({ params, queueData }) {
   }
 
   const handleLeaveQueue = async () => {
+    setIsLeavingQueue(true)
     try {
       if (!userQueueEntry?.entry_id) {
         throw new Error('Invalid queue entry')
@@ -222,6 +236,9 @@ export default function Advanced({ params, queueData }) {
     } catch (error) {
       toast.error(error.message || 'Failed to leave queue')
       console.error('Error leaving queue:', error)
+    } finally {
+      setIsLeavingQueue(false)
+      setIsLeaveModalOpen(false)
     }
   }
 
@@ -566,7 +583,7 @@ export default function Advanced({ params, queueData }) {
                   color="danger"
                   variant="flat"
                   startContent={<LogOut className="h-4 w-4" />}
-                  onClick={handleLeaveQueue}
+                  onClick={openLeaveConfirmation}
                 >
                   Leave Queue
                 </Button>
@@ -587,6 +604,11 @@ export default function Advanced({ params, queueData }) {
   };
 
   const selectedCounterData = counters.find(c => c.id.toString() === selectedCounter)
+
+  // Add the confirmation modal trigger
+  const openLeaveConfirmation = () => {
+    setIsLeaveModalOpen(true)
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
@@ -808,6 +830,15 @@ export default function Advanced({ params, queueData }) {
         isOpen={isPreferencesModalOpen}
         onClose={() => setIsPreferencesModalOpen(false)}
         onSave={handlePreferencesSaved}
+      />
+
+      <LeaveQueueConfirmationModal
+        isOpen={isLeaveModalOpen}
+        onClose={() => setIsLeaveModalOpen(false)}
+        onConfirm={handleLeaveQueue}
+        isLoading={isLeavingQueue}
+        position={userQueueEntry?.position}
+        waitTime={userQueueEntry?.wait_time_formatted}
       />
     </div>
   )
