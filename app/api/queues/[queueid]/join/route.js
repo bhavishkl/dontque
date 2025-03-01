@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../auth/[...nextauth]/route";
 import { NotificationService } from '@/services/NotificationService';
-import { PerformanceMonitor } from '@/utils/performance';
+import { PerformanceMonitor } from '@/app/utils/performance';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -98,15 +98,18 @@ export async function POST(request, { params }) {
       .order('join_time', { ascending: true });
     perf.markStep('fetch_queue_entries');
 
-    // Calculate actual position
+    // Calculate actual position and estimated wait time
     let actualPosition = 0;
     queueEntries.forEach((entry, index) => {
       if (entry.user_id === session.user.id) {
         actualPosition = index + 1;
       }
     });
+    
+    // Calculate estimated wait time based on position and service time
+    const estimatedWaitTime = Math.ceil(actualPosition * queueData.est_time_to_serve);
 
-    // Send notification with accurate data
+    // Send notification with accurate data including wait time
     await notificationService.sendNotification(
       'QUEUE_JOIN',
       session.user.id,
@@ -117,6 +120,7 @@ export async function POST(request, { params }) {
       {
         queueName: queueData.name,
         position: actualPosition,
+        waitTime: estimatedWaitTime
       }
     );
     perf.markStep('send_notification');
@@ -124,7 +128,10 @@ export async function POST(request, { params }) {
     perf.end();
     return NextResponse.json({
       message: 'Successfully joined the queue',
-      entry: newEntry
+      entry: {
+        ...newEntry,
+        estimated_wait_time: estimatedWaitTime
+      }
     });
 
   } catch (error) {

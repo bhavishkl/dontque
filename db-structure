@@ -17,24 +17,24 @@ CREATE INDEX idx_user_profile_phone_number ON user_profile(phone_number);
 CREATE INDEX idx_user_profile_short_id ON user_profile(short_id);
 
 CREATE TABLE queue_entries_archive (
-  id SERIAL PRIMARY KEY,
+  entry_id UUID PRIMARY KEY,
   queue_id UUID NOT NULL,
-  user_id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL,
+  counter_id UUID,
+  services JSONB DEFAULT '[]',
   status VARCHAR(20) NOT NULL,
-  wait_time INTEGER,
   actual_wait_time INTEGER,
   join_time TIMESTAMP NOT NULL,
   serve_time TIMESTAMP,
   leave_time TIMESTAMP,
-  rating INTEGER,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   left_position INTEGER,
   added_by VARCHAR(255),
-  review_status VARCHAR(20) DEFAULT 'pending' CHECK (review_status IN ('pending', 'completed', 'skipped')
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_queue_entries_archive_review ON queue_entries_archive(user_id, review_status);
+CREATE INDEX idx_queue_entries_archive_user ON queue_entries_archive(user_id);
+CREATE INDEX idx_queue_entries_archive_queue ON queue_entries_archive(queue_id);
 
 -- Queues Table (rewritten)
 CREATE TABLE queues (

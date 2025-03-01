@@ -159,9 +159,13 @@ export default function QueueDetailsPage({ params, queueData: initialQueueData }
   const handleLeaveQueue = async () => {
     setIsLeavingQueue(true);
     try {
+      // Send position data along with the leave request
       const response = await fetch(`/api/queues/${params.queueid}/leave`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          position: queueData?.userQueueEntry?.position
+        })
       });
   
       if (!response.ok) {
