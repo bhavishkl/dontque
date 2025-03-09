@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { PerformanceMonitor } from '../../../../../../../utils/performance';
+import { PerformanceMonitor } from '@/app/utils/performance';
 import { NotificationService, NotificationTypes } from '../../../../../../../services/NotificationService';
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
@@ -10,144 +10,62 @@ export async function POST(request, { params }) {
   const monitor = new PerformanceMonitor('serveCustomer');
   const { queueid: queueId, customerId } = params;
 
-  if (!queueId || !customerId) {
-    return NextResponse.json({ 
-      error: 'Invalid queue ID or customer ID',
-      metrics: monitor.end()
-    }, { status: 400 });
-  }
-
   try {
     monitor.markStep('startProcess');
     
-    // Initial parallel data fetch - Get 4th person (changed from 3rd to 4th)
-    const [fourthPersonResult, entryResult, queueResult] = await Promise.all([
-      supabase
-        .from('queue_entries')
-        .select('entry_id, user_id')
-        .eq('queue_id', queueId)
-        .eq('status', 'waiting')
-        .order('join_time', { ascending: true })
-        .range(3, 3), // Changed: now gets 4th position (index 3)
-      supabase
-        .from('queue_entries')
-        .select('*')
-        .match({ queue_id: queueId, entry_id: customerId })
-        .single(),
-      supabase
-        .from('queues')
-        .select('current_queue, total_served, est_time_to_serve, name')
-        .eq('queue_id', queueId)
-        .single()
-    ]);
-    monitor.markStep('dataFetch');
-
-    console.log('Fourth person query result:', {
-      data: fourthPersonResult.data,
-      error: fourthPersonResult.error,
-      count: fourthPersonResult.data?.length
-    });
-
-    if (entryResult.error || queueResult.error) {
-      throw new Error(entryResult.error?.message || queueResult.error?.message);
-    }
-
-    // Start preparing notifications in parallel with database operations
-    const notificationPromises = [];
+    // Get the request body which contains queue data from frontend
+    const { queueData, customersInQueue } = await request.json();
     
-    // Prepare fourth person notification if exists
-    if (fourthPersonResult.data?.[0]) {
-      const fourthPerson = fourthPersonResult.data[0];
-      
-      console.log('Found fourth person:', {
-        entryId: fourthPerson.entry_id,
-        userId: fourthPerson.user_id
-      });
-      
-      notificationPromises.push(
-        (async () => {
-          console.log('Fetching user data for fourth person notification');
-          const { data: userData, error: userError } = await supabase
-            .from('user_profile')
-            .select('email, phone_number')
-            .eq('user_id', fourthPerson.user_id)
-            .single();
-
-          if (userError) {
-            console.error('Error fetching user data:', userError);
-            return;
-          }
-
-          console.log('User data found:', {
-            hasEmail: !!userData?.email,
-            hasPhone: !!userData?.phone_number,
-            userId: fourthPerson.user_id
-          });
-
-          if (userData) {
-            const formattedPhone = userData?.phone_number?.startsWith('+') 
-              ? userData.phone_number 
-              : userData?.phone_number ? `+${userData.phone_number?.replace(/\D/g, '')}` : null;
-
-            const timeLeft = Math.round(2 * queueResult.data.est_time_to_serve); // Changed: multiply by 4 for 4th position
-
-            console.log('Sending approaching notification:', {
-              userId: fourthPerson.user_id,
-              queueName: queueResult.data.name,
-              timeLeft,
-              contactInfo: {
-                hasEmail: !!userData.email,
-                hasPhone: !!formattedPhone
-              }
-            });
-
-            return notificationService.sendNotification(
-              NotificationTypes.TURN_APPROACHING,
-              fourthPerson.user_id,
-              {
-                email: userData.email,
-                phone: formattedPhone
-              },
-              {
-                queueName: queueResult.data.name,
-                timeLeft: timeLeft
-              }
-            ).then(() => {
-              console.log('Successfully initiated approaching notification');
-            }).catch((error) => {
-              console.error('Error sending approaching notification:', {
-                error: error.message,
-                userId: fourthPerson.user_id
-              });
-            });
-          } else {
-            console.log('No user data found for notification');
-          }
-        })()
-      );
-    } else {
-      console.log('No fourth person found in queue');
+    if (!queueData || !customersInQueue) {
+      throw new Error('Missing required queue data');
     }
+
+    // Find the customer being served
+    const entryData = customersInQueue.find(c => c.entry_id === customerId);
+    if (!entryData) {
+      throw new Error('Customer not found in queue');
+    }
+
+    // Find the fourth person in queue (if exists)
+    const fourthPerson = customersInQueue[3];
+    monitor.markStep('dataProcessed');
 
     // Calculate metrics
-    const entryData = entryResult.data;
-    const queueData = queueResult.data;
     const actualWaitTime = Math.floor((new Date() - new Date(entryData.join_time)) / 60000);
     const newTotalServed = queueData.total_served + 1;
     monitor.markStep('metricsCalculated');
+
+    // Start preparing notifications in parallel with database operations
+    const notificationPromises = [];
+
+    // Prepare fourth person notification if exists
+    if (fourthPerson) {
+      notificationPromises.push(
+        notificationService.sendNotification(
+          NotificationTypes.TURN_APPROACHING,
+          fourthPerson.user_id,
+          {
+            queueName: queueData.name,
+            timeLeft: Math.round(2 * queueData.est_time_to_serve)
+          }
+        )
+      );
+    }
 
     // Parallel database operations
     const [archiveResult, deleteResult, updateResult] = await Promise.all([
       supabase
         .from('queue_entries_archive')
         .insert({
+          entry_id: entryData.entry_id,
           queue_id: entryData.queue_id,
           user_id: entryData.user_id,
           status: 'served',
           wait_time: entryData.estimated_wait_time,
           actual_wait_time: actualWaitTime,
           join_time: entryData.join_time,
-          leave_time: new Date().toISOString()
+          leave_time: new Date().toISOString(),
+          added_by: entryData.added_by,
         }),
       supabase
         .from('queue_entries')
@@ -165,37 +83,19 @@ export async function POST(request, { params }) {
     ]);
     monitor.markStep('databaseOperations');
 
-    // Prepare served notification in parallel
+    // Prepare served notification
     notificationPromises.push(
-      (async () => {
-        const { data: userData } = await supabase
-          .from('user_profile')
-          .select('email, phone_number')
-          .eq('user_id', entryData.user_id)
-          .single();
-
-        if (userData) {
-          const formattedPhone = userData?.phone_number?.startsWith('+') 
-            ? userData.phone_number 
-            : userData?.phone_number ? `+${userData.phone_number?.replace(/\D/g, '')}` : null;
-
-          return notificationService.sendNotification(
-            NotificationTypes.CUSTOMER_SERVED,
-            entryData.user_id,
-            {
-              email: userData.email,
-              phone: formattedPhone
-            },
-            {
-              queueName: queueResult.data.name,
-              actualWaitTime: actualWaitTime.toString()
-            }
-          );
+      notificationService.sendNotification(
+        NotificationTypes.CUSTOMER_SERVED,
+        entryData.user_id,
+        {
+          queueName: queueData.name,
+          actualWaitTime: actualWaitTime.toString()
         }
-      })()
+      )
     );
 
-    // Modified notification settlement logging
+    // Handle notifications settlement
     Promise.allSettled(notificationPromises)
       .then(results => {
         console.log('Notification promises settled:', {

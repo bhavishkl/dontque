@@ -133,7 +133,15 @@ revalidateOnMount: true,
     try {
       const response = await fetch(`/api/queues/${params.queueId}/customers/${entryId}/serve`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          queueData: queueData.queueData,
+          customersInQueue: queueData.customersInQueue
+        })
       })
+      
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.error || 'Failed to mark customer as served')

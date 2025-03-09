@@ -76,19 +76,6 @@ export async function POST(request, { params }) {
       queueId: queueid
     });
 
-    // After successful queue join and before returning response
-    const { data: userData } = await supabase
-      .from('user_profile')
-      .select('email, phone_number')
-      .eq('user_id', session.user.id)
-      .single();
-    perf.markStep('fetch_user_data');
-
-    // Format phone number to E.164 format if not already formatted
-    const formattedPhone = userData?.phone_number?.startsWith('+') 
-      ? userData.phone_number 
-      : userData?.phone_number ? `+${userData.phone_number?.replace(/\D/g, '')}` : null;
-
     // After successful queue join and before sending notification
     const { data: queueEntries } = await supabase
       .from('queue_entries')
@@ -110,19 +97,20 @@ export async function POST(request, { params }) {
     const estimatedWaitTime = Math.ceil(actualPosition * queueData.est_time_to_serve);
 
     // Send notification with accurate data including wait time
-    await notificationService.sendNotification(
-      'QUEUE_JOIN',
-      session.user.id,
-      {
-        email: userData?.email,
-        phone: formattedPhone
-      },
-      {
-        queueName: queueData.name,
-        position: actualPosition,
-        waitTime: estimatedWaitTime
-      }
-    );
+    try {
+      await notificationService.sendNotification(
+        'QUEUE_JOIN',
+        session.user.id,
+        {
+          queueName: queueData.name,
+          position: actualPosition,
+          waitTime: estimatedWaitTime
+        }
+      );
+    } catch (notificationError) {
+      // Log but don't fail the request if notification fails
+      console.error('Notification failed but continuing:', notificationError);
+    }
     perf.markStep('send_notification');
 
     perf.end();

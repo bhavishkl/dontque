@@ -27,6 +27,35 @@ const WHATSAPP_TEMPLATES = {
   }
 };
 
+// Define Email template configurations for MSG91
+const EMAIL_TEMPLATES = {
+  QUEUE_JOIN: {
+    template_id: "template_02_03_2025_18_03_2",
+    variables: {
+      queueName: "QUEUE_NAME",
+      position: "POSITION",
+      waitTime: "WAIT_TIME"
+    }
+  },
+  TURN_APPROACHING: {
+    template_id: "turn_approaching_template_id",
+    variables: {
+      queueName: "QUEUE_NAME",
+      timeLeft: "TIME_LEFT",
+      businessName: "BUSINESS_NAME"
+    }
+  },
+  CUSTOMER_SERVED: {
+    template_id: "customer_served_template_id",
+    variables: {
+      queueName: "QUEUE_NAME",
+      actualWaitTime: "ACTUAL_WAIT_TIME",
+      businessName: "BUSINESS_NAME",
+      feedbackUrl: "FEEDBACK_URL"
+    }
+  }
+};
+
 export class NotificationService {
   constructor() {
     const requiredEnvVars = {
@@ -51,27 +80,73 @@ export class NotificationService {
       headers: {
         'Content-Type': 'application/json',
         'authkey': process.env.MSG91_AUTH_KEY
-      }
+      },
+      timeout: 10000 // 10 seconds timeout
     });
   }
 
   async getUserPreferences(userId) {
+    console.log('Fetching notification preferences for user:', userId);
+    
     const { data, error } = await supabase
       .from('user_notification_preferences')
       .select('whatsapp_enabled, sms_enabled, email_enabled')
       .eq('user_id', userId)
       .single();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('Error fetching user preferences:', error);
+      
+      // Check if it's a "not found" error
+      if (error.code === 'PGRST116') {
+        console.log('No preferences found, using default preferences');
+        // Return default preferences if none exist
+        return {
+          whatsapp_enabled: true,
+          sms_enabled: false,
+          email_enabled: true
+        };
+      }
+      
       return null;
     }
 
-    return data || { 
-      whatsapp_enabled: true,
-      sms_enabled: true,
-      email_enabled: true 
-    };
+    console.log('User preferences found:', data);
+    return data;
+  }
+
+  async getUserContactInfo(userId) {
+    try {
+      console.log('Fetching contact info for user:', userId);
+      
+      const { data: userData, error } = await supabase
+        .from('user_profile')
+        .select('email, phone_number, name')
+        .eq('user_id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching user contact info:', error);
+        return null;
+      }
+      
+      // Format phone number to E.164 format if not already formatted
+      const formattedPhone = userData?.phone_number?.startsWith('+') 
+        ? userData.phone_number 
+        : userData?.phone_number ? `+${userData.phone_number?.replace(/\D/g, '')}` : null;
+      
+      const contactInfo = {
+        email: userData?.email,
+        phone: formattedPhone,
+        name: userData?.name
+      };
+      
+      console.log('User contact info retrieved:', contactInfo);
+      return contactInfo;
+    } catch (error) {
+      console.error('Error in getUserContactInfo:', error);
+      return null;
+    }
   }
 
   async sendWhatsAppMessage(phone, templateType, data) {
@@ -119,10 +194,20 @@ export class NotificationService {
         data
       });
 
-      const response = await this.axiosInstance.post(
-        'https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/',
-        payload
-      );
+      const response = await axios({
+        url: 'https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/',
+        method: 'post',
+        headers: {
+          'Content-Type': 'application/json',
+          'authkey': this.msg91Config.authKey
+        },
+        data: payload,
+        timeout: 30000, // Increase timeout to 30 seconds
+        retry: 3, // Add retry capability
+        retryDelay: (retryCount) => {
+          return retryCount * 2000; // Progressive delay: 2s, 4s, 6s
+        }
+      });
 
       console.log('WhatsApp notification sent successfully:', {
         to: phone,
@@ -132,33 +217,139 @@ export class NotificationService {
 
       return response.data;
     } catch (error) {
-      console.error('WhatsApp notification failed:', {
-        error: error.message,
-        phone,
-        template: templateType,
-        response: error.response?.data
-      });
+      if (error.code === 'ECONNABORTED') {
+        console.error(`WhatsApp notification timeout for ${phone}: ${error.message}`);
+        // You might want to queue this for retry later
+      }
       throw error;
     }
   }
 
-  async sendNotification(type, userId, userData, data) {
+  async sendEmailMessage(email, templateType, data, name = '') {
     try {
-      const prefs = await this.getUserPreferences(userId);
-      if (!prefs) return;
-
-      const notifications = [];
-
-      if (prefs.whatsapp_enabled && userData.phone) {
-        notifications.push(
-          this.sendWhatsAppMessage(userData.phone, type, data)
-        );
+      if (!email) {
+        throw new Error('Email address is required');
       }
 
-      // Add other notification methods here when implemented
-      await Promise.allSettled(notifications);
+      const template = EMAIL_TEMPLATES[templateType];
+      if (!template) {
+        throw new Error(`Invalid email template type: ${templateType}`);
+      }
+
+      // Prepare variables for the template
+      const variables = {};
+      Object.entries(template.variables).forEach(([key, placeholder]) => {
+        variables[placeholder] = data[key]?.toString() || '';
+      });
+
+      const payload = {
+        recipients: [
+          {
+            to: [
+              {
+                email: email,
+                name: name
+              }
+            ],
+            variables: variables
+          }
+        ],
+        from: {
+          email: `no-reply@${process.env.MSG91_REGISTERED_DOMAIN}`
+        },
+        domain: process.env.MSG91_REGISTERED_DOMAIN,
+        template_id: template.template_id
+      };
+
+      console.log('Sending email notification:', {
+        email,
+        template: template.template_id,
+        data,
+        payload: JSON.stringify(payload)
+      });
+
+      const response = await this.axiosInstance.post(
+        'https://api.msg91.com/api/v5/email/send',
+        payload
+      );
+
+      console.log('Email notification sent successfully:', {
+        to: email,
+        template: template.template_id,
+        response: response.data
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Email notification failed:', {
+        error: error.message,
+        email,
+        template: templateType,
+        response: error.response?.data,
+        stack: error.stack
+      });
+      return null;
+    }
+  }
+
+  async sendNotification(type, userId, data) {
+    try {
+      console.log('Starting notification process for user:', userId, 'type:', type);
+      console.log('Notification data:', data);
+      
+      // Get user preferences
+      const prefs = await this.getUserPreferences(userId);
+      if (!prefs) {
+        console.error('Failed to get user preferences, aborting notification');
+        return false;
+      }
+      
+      // Get user contact information
+      const contactInfo = await this.getUserContactInfo(userId);
+      if (!contactInfo) {
+        console.error('Failed to get user contact info, aborting notification');
+        return false;
+      }
+      
+      console.log('Preparing to send notifications with preferences:', prefs);
+      const notifications = [];
+
+      if (prefs.whatsapp_enabled && contactInfo.phone) {
+        console.log('WhatsApp notification enabled and phone available');
+        notifications.push(
+          this.sendWhatsAppMessage(contactInfo.phone, type, data)
+        );
+      } else {
+        console.log('Skipping WhatsApp notification:', 
+          !prefs.whatsapp_enabled ? 'disabled in preferences' : 'no phone number');
+      }
+
+      if (prefs.email_enabled && contactInfo.email) {
+        console.log('Email notification enabled and email available');
+        notifications.push(
+          this.sendEmailMessage(contactInfo.email, type, data, contactInfo.name || '')
+        );
+      } else {
+        console.log('Skipping email notification:', 
+          !prefs.email_enabled ? 'disabled in preferences' : 'no email address');
+      }
+
+      if (notifications.length === 0) {
+        console.log('No notifications to send based on preferences and contact info');
+        return false;
+      }
+
+      console.log(`Sending ${notifications.length} notification(s)`);
+      const results = await Promise.allSettled(notifications);
+      
+      console.log('Notification results:', results);
+      
+      // Check if any notifications succeeded
+      const anySuccess = results.some(r => r.status === 'fulfilled' && r.value !== null);
+      return anySuccess;
     } catch (error) {
       console.error('Error sending notifications:', error);
+      return false;
     }
   }
 }
