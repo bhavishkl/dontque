@@ -75,7 +75,7 @@ revalidateOnMount: true,
         event: '*', 
         schema: 'public', 
         table: 'queue_entries',
-        filter: `queue_id=eq.${params.queueId}`
+        filter: `queue_id=eq."${params.queueId}"`
       }, (payload) => {
         console.log('New queue entry:', payload);
         window.dispatchEvent(new CustomEvent('refetchQueueData'));

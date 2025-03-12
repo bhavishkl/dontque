@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Html5Qrcode } from 'html5-qrcode'
+import { Button } from "@nextui-org/react"
 
 export default function QRScannerPage() {
   const router = useRouter()
@@ -144,8 +145,14 @@ export default function QRScannerPage() {
         ></div>
       </div>
       
-      <div className="text-center mt-4 text-gray-400">
+      <div className="text-center mt-4 text-gray-400 space-y-4">
         <p>Point your camera at a QR code</p>
+        <Button
+          onClick={() => router.push('/user/home')}
+          className="mx-auto bg-gray-100 hover:bg-gray-200 text-gray-800"
+        >
+          Cancel
+        </Button>
       </div>
     </div>
   );
