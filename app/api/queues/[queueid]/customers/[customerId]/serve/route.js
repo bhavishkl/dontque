@@ -27,7 +27,7 @@ export async function POST(request, { params }) {
     }
 
     // Find the fourth person in queue (if exists)
-    const fourthPerson = customersInQueue[3];
+    const fourthPerson = customersInQueue[2];
     monitor.markStep('dataProcessed');
 
     // Calculate metrics
@@ -45,8 +45,12 @@ export async function POST(request, { params }) {
           NotificationTypes.TURN_APPROACHING,
           fourthPerson.user_id,
           {
+            customerName: fourthPerson.user_profile?.name || fourthPerson.name || 'Customer',
             queueName: queueData.name,
-            timeLeft: Math.round(2 * queueData.est_time_to_serve)
+            timeLeft: Math.round(2 * queueData.est_time_to_serve).toString(),
+            position: "3",
+            expectedTime: new Date(Date.now() + (2 * queueData.est_time_to_serve * 60000))
+              .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
           }
         )
       );

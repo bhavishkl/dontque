@@ -12,10 +12,13 @@ const WHATSAPP_TEMPLATES = {
     }
   },
   TURN_APPROACHING: {
-    name: 'turn_approaching_alert',
+    name: 'queue_turn_approach',
     components: {
-      body_1: { type: 'text', field: 'queueName' },
-      body_2: { type: 'text', field: 'timeLeft' }
+      body_1: { type: 'text', field: 'customerName' },
+      body_2: { type: 'text', field: 'queueName' },
+      body_3: { type: 'text', field: 'timeLeft' },
+      body_4: { type: 'text', field: 'position' },
+      body_5: { type: 'text', field: 'expectedTime' }
     }
   },
   CUSTOMER_SERVED: {

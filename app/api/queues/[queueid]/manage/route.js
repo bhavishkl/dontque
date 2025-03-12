@@ -6,6 +6,13 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.
 export async function GET(request, { params }) {
   try {
     const { queueid } = params;
+    
+    if (!queueid) {
+      return NextResponse.json({ 
+        error: 'Queue ID is required',
+        userMessage: 'Unable to load queue information. Please try again.' 
+      }, { status: 400 });
+    }
 
     // Fetch queue data
     const { data: queueData, error: queueError } = await supabase
@@ -16,7 +23,19 @@ export async function GET(request, { params }) {
 
     if (queueError) {
       console.error('Error fetching queue data:', queueError);
-      return NextResponse.json({ error: queueError.message }, { status: 500 });
+      
+      // Handle specific error cases
+      if (queueError.code === 'PGRST116') {
+        return NextResponse.json({ 
+          error: 'Queue not found',
+          userMessage: 'The requested queue does not exist or has been deleted.' 
+        }, { status: 404 });
+      }
+      
+      return NextResponse.json({ 
+        error: queueError.message,
+        userMessage: 'Unable to load queue information. Please try again later.' 
+      }, { status: 500 });
     }
 
     // Fetch customers in queue
@@ -35,23 +54,42 @@ export async function GET(request, { params }) {
 
     if (customersError) {
       console.error('Error fetching customers in queue:', customersError);
-      return NextResponse.json({ error: customersError.message }, { status: 500 });
+      return NextResponse.json({ 
+        error: customersError.message,
+        userMessage: 'Unable to load customer information. Please refresh the page.' 
+      }, { status: 500 });
+    }
+
+    // Handle case when queue exists but no customers are found
+    if (!customersInQueue || customersInQueue.length === 0) {
+      return NextResponse.json({
+        queueData,
+        customersInQueue: [],
+        message: 'Queue is currently empty'
+      });
     }
 
     // Format join_time for each customer
     const customersWithFormattedTime = customersInQueue.map((customer) => ({
       ...customer,
-      formattedJoinTime: new Date(customer.join_time).toLocaleTimeString()
+      formattedJoinTime: new Date(customer.join_time).toLocaleTimeString(),
+      user_profile: customer.user_profile || { 
+        name: 'Anonymous',
+        email: 'Not provided'
+      }
     }));
 
     return NextResponse.json({
       queueData,
       customersInQueue: customersWithFormattedTime
     });
+    
   } catch (error) {
     console.error('Unexpected error in GET function:', error);
-    return NextResponse.json({ error: 'An unexpected error occurred' }, { 
-      status: 500 
-    });
+    return NextResponse.json({ 
+      error: 'An unexpected error occurred',
+      userMessage: 'Something went wrong. Please try again later.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    }, { status: 500 });
   }
 }
