@@ -38,7 +38,7 @@ export async function GET(request, { params }) {
       }, { status: 500 });
     }
 
-    // Fetch customers in queue
+    // Fetch customers in queue ordered by join_time
     const { data: customersInQueue, error: customersError } = await supabase
       .from('queue_entries')
       .select(`
@@ -50,7 +50,7 @@ export async function GET(request, { params }) {
         )
       `)
       .eq('queue_id', queueid)
-      .order('position', { ascending: true });
+      .order('join_time', { ascending: true });
 
     if (customersError) {
       console.error('Error fetching customers in queue:', customersError);
