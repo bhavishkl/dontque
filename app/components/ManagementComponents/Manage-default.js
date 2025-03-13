@@ -11,11 +11,12 @@ import QueueQRCode from '@/app/components/QueueQRCode'
 import { useApi } from '@/app/hooks/useApi'
 
 export default function ManageDefault({ params, queueData: initialQueueData, isLoading: initialLoading }) {
-  const { data: queueData, isLoading, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage`, {
+  const { data: queueData, isLoading, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage?t=${Date.now()}`, {
     revalidateOnMount: true,
     refreshInterval: 10000,
-    revalidateOnFocus: false,
-    revalidateIfStale: true
+    revalidateIfStale: true,
+    dedupingInterval: 10000,
+    revalidateOnFocus: false
   })
 
   const router = useRouter()
@@ -63,7 +64,7 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
       if (!response.ok) {
         throw new Error('Failed to update queue status')
       }
-      refetchQueueData();
+      refetchQueueData(await fetch(`/api/queues/${params.queueId}/manage`).then(r => r.json()), { revalidate: true })
       toast.success(`Queue ${newStatus === 'active' ? 'activated' : 'paused'}`)
     } catch (error) {
       console.error('Error updating queue status:', error)
@@ -83,7 +84,7 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
       if (!response.ok) {
         throw new Error('Failed to update service time')
       }
-      refetchQueueData();
+      refetchQueueData(await fetch(`/api/queues/${params.queueId}/manage`).then(r => r.json()), { revalidate: true })
       toast.success(`Service time updated to ${queueData.queueData.est_time_to_serve} minutes`)
     } catch (error) {
       console.error('Error updating service time:', error)
@@ -115,7 +116,7 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
          addRecentActivity(servedCustomer.user_profile?.name || servedCustomer.name || 'Customer', 'served');
       }
       
-      refetchQueueData();
+      refetchQueueData(await fetch(`/api/queues/${params.queueId}/manage`).then(r => r.json()), { revalidate: true })
       toast.success('Customer served successfully')
     } catch (error) {
       console.error('Error serving customer:', error)
@@ -142,7 +143,7 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
       }
       
       toast.success('Customer marked as no-show');
-      refetchQueueData();
+      refetchQueueData(await fetch(`/api/queues/${params.queueId}/manage`).then(r => r.json()), { revalidate: true })
     } catch (error) {
       console.error('Error marking customer as no-show:', error);
       toast.error('Failed to mark customer as no-show');
@@ -152,7 +153,7 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
   };
 
   const handleAddKnownSuccess = async () => {
-    refetchQueueData()
+    refetchQueueData(await fetch(`/api/queues/${params.queueId}/manage`).then(r => r.json()), { revalidate: true })
   }
 
   const CustomerCard = ({ customer, index, onServed, onNoShow, loadingActions }) => {
