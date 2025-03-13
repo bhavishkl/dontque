@@ -15,11 +15,12 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.
 
 export default function ManageDefault({ params, queueData: initialQueueData, isLoading: initialLoading }) {
   const { data: queueData, isLoading, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage`, {
-revalidateOnMount: true,
+    revalidateOnMount: true,
+    refreshInterval: 10000,
+    revalidateOnFocus: false,
+    revalidateIfStale: true
   })
 
-  const [customersInQueue, setCustomersInQueue] = useState([])
-  const [serviceTime, setServiceTime] = useState('')
   const router = useRouter()
   const [isToggling, setIsToggling] = useState(false)
   const [activeTab, setActiveTab] = useState("cards")
@@ -54,38 +55,22 @@ revalidateOnMount: true,
   }, [params.queueId]);
 
   useEffect(() => {
-    if (queueData) {
-      setServiceTime(queueData.queueData.est_time_to_serve.toString())
-      setCustomersInQueue(prevCustomers => {
-        const newCustomers = queueData.customersInQueue.filter(newCustomer => 
-          !prevCustomers.some(prevCustomer => prevCustomer.entry_id === newCustomer.entry_id)
-        );
-        if (newCustomers.length > 0) {
-          toast.success('New customer joined the queue');
-        }
-        return [...prevCustomers, ...newCustomers];
-      })
-    }
-  }, [queueData])
-
-  useEffect(() => {
-    const subscription = supabase
+    const channel = supabase
       .channel(`queue_${params.queueId}`)
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
         table: 'queue_entries',
         filter: `queue_id=eq."${params.queueId}"`
-      }, (payload) => {
-        console.log('New queue entry:', payload);
-        window.dispatchEvent(new CustomEvent('refetchQueueData'));
+      }, () => {
+        refetchQueueData();
       })
       .subscribe();
 
     return () => {
-      subscription.unsubscribe();
+      supabase.removeChannel(channel);
     };
-  }, [params.queueId])
+  }, [params.queueId, refetchQueueData]);
 
   const handleToggleQueue = async () => {
     setIsToggling(true)
@@ -99,7 +84,7 @@ revalidateOnMount: true,
       if (!response.ok) {
         throw new Error('Failed to update queue status')
       }
-      window.dispatchEvent(new CustomEvent('refetchQueueData'));
+      refetchQueueData();
       toast.success(`Queue ${newStatus === 'active' ? 'activated' : 'paused'}`)
     } catch (error) {
       console.error('Error updating queue status:', error)
@@ -114,13 +99,13 @@ revalidateOnMount: true,
       const response = await fetch(`/api/queues/${params.queueId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ est_time_to_serve: parseInt(serviceTime) }),
+        body: JSON.stringify({ est_time_to_serve: parseInt(queueData.queueData.est_time_to_serve) }),
       })
       if (!response.ok) {
         throw new Error('Failed to update service time')
       }
-      window.dispatchEvent(new CustomEvent('refetchQueueData'));
-      toast.success(`Service time updated to ${serviceTime} minutes`)
+      refetchQueueData();
+      toast.success(`Service time updated to ${queueData.queueData.est_time_to_serve} minutes`)
     } catch (error) {
       console.error('Error updating service time:', error)
       toast.error('Failed to update service time')
@@ -146,14 +131,13 @@ revalidateOnMount: true,
         throw new Error(errorData.error || 'Failed to mark customer as served')
       }
       
-      const servedCustomer = customersInQueue.find(customer => customer.entry_id === entryId);
+      const servedCustomer = queueData.customersInQueue.find(customer => customer.entry_id === entryId);
       if (servedCustomer) {
          addRecentActivity(servedCustomer.user_profile?.name || servedCustomer.name || 'Customer', 'served');
       }
       
-      await refetchQueueData()
+      refetchQueueData();
       toast.success('Customer served successfully')
-      setCustomersInQueue(prevCustomers => prevCustomers.filter(customer => customer.entry_id !== entryId))
     } catch (error) {
       console.error('Error serving customer:', error)
       toast.error(error.message || 'Failed to serve customer')
@@ -173,14 +157,13 @@ revalidateOnMount: true,
       }
       const data = await response.json();
       
-      const noShowCustomer = customersInQueue.find(customer => customer.entry_id === entryId);
+      const noShowCustomer = queueData.customersInQueue.find(customer => customer.entry_id === entryId);
       if (noShowCustomer) {
          addRecentActivity(noShowCustomer.user_profile?.name || noShowCustomer.name || 'Customer', 'no-show');
       }
       
       toast.success('Customer marked as no-show');
       refetchQueueData();
-      setCustomersInQueue(prevCustomers => prevCustomers.filter(customer => customer.entry_id !== entryId));
     } catch (error) {
       console.error('Error marking customer as no-show:', error);
       toast.error('Failed to mark customer as no-show');
@@ -190,7 +173,7 @@ revalidateOnMount: true,
   };
 
   const handleAddKnownSuccess = async () => {
-    await refetchQueueData()
+    refetchQueueData()
   }
 
   const CustomerCard = ({ customer, index, onServed, onNoShow, loadingActions }) => {
@@ -309,6 +292,9 @@ revalidateOnMount: true,
       </div>
     );
   };
+
+  const customersInQueue = queueData?.customersInQueue || [];
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="sticky top-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg border-b border-divider z-10">
@@ -371,8 +357,8 @@ revalidateOnMount: true,
               <div className="flex items-center space-x-2">
                 <Input
                   type="number"
-                  value={serviceTime}
-                  onChange={(e) => setServiceTime(e.target.value)}
+                  value={queueData.queueData.est_time_to_serve}
+                  onChange={(e) => refetchQueueData({ est_time_to_serve: parseInt(e.target.value) })}
                   className="w-24"
                   size="sm"
                   labelPlacement="outside"
