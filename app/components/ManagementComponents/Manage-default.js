@@ -7,18 +7,19 @@ import { toast } from 'sonner'
 import { ArrowLeft, Users, Clock, TrendingUp, Settings, MessageSquare, UserMinus, RefreshCw, Check, X, BarChart2, AlertCircle, Activity } from 'lucide-react'
 import { Button, Input, Card, CardBody, CardHeader, Chip, Switch, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Skeleton, Tabs, Tab } from "@nextui-org/react"
 import AddKnownUserModal from '@/app/components/UniComp/AddKnownUserModal'
+import { createClient } from '@supabase/supabase-js'
 import QueueQRCode from '@/app/components/QueueQRCode'
 import { useApi } from '@/app/hooks/useApi'
 
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+
 export default function ManageDefault({ params, queueData: initialQueueData, isLoading: initialLoading }) {
-  const { data: queueData, isLoading, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage?t=${Date.now()}`, {
-    revalidateOnMount: true,
-    refreshInterval: 10000,
-    revalidateIfStale: true,
-    dedupingInterval: 10000,
-    revalidateOnFocus: false
+  const { data: queueData, isLoading, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage`, {
+revalidateOnMount: true,
   })
 
+  const [customersInQueue, setCustomersInQueue] = useState([])
+  const [serviceTime, setServiceTime] = useState('')
   const router = useRouter()
   const [isToggling, setIsToggling] = useState(false)
   const [activeTab, setActiveTab] = useState("cards")
@@ -52,6 +53,40 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
     setRecentActivity(stored);
   }, [params.queueId]);
 
+  useEffect(() => {
+    if (queueData) {
+      setServiceTime(queueData.queueData.est_time_to_serve.toString())
+      setCustomersInQueue(prevCustomers => {
+        const newCustomers = queueData.customersInQueue.filter(newCustomer => 
+          !prevCustomers.some(prevCustomer => prevCustomer.entry_id === newCustomer.entry_id)
+        );
+        if (newCustomers.length > 0) {
+          toast.success('New customer joined the queue');
+        }
+        return [...prevCustomers, ...newCustomers];
+      })
+    }
+  }, [queueData])
+
+  useEffect(() => {
+    const subscription = supabase
+      .channel(`queue_${params.queueId}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'queue_entries',
+        filter: `queue_id=eq."${params.queueId}"`
+      }, (payload) => {
+        console.log('New queue entry:', payload);
+        window.dispatchEvent(new CustomEvent('refetchQueueData'));
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [params.queueId])
+
   const handleToggleQueue = async () => {
     setIsToggling(true)
     try {
@@ -64,7 +99,7 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
       if (!response.ok) {
         throw new Error('Failed to update queue status')
       }
-      refetchQueueData(await fetch(`/api/queues/${params.queueId}/manage`).then(r => r.json()), { revalidate: true })
+      window.dispatchEvent(new CustomEvent('refetchQueueData'));
       toast.success(`Queue ${newStatus === 'active' ? 'activated' : 'paused'}`)
     } catch (error) {
       console.error('Error updating queue status:', error)
@@ -79,13 +114,13 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
       const response = await fetch(`/api/queues/${params.queueId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ est_time_to_serve: parseInt(queueData.queueData.est_time_to_serve) }),
+        body: JSON.stringify({ est_time_to_serve: parseInt(serviceTime) }),
       })
       if (!response.ok) {
         throw new Error('Failed to update service time')
       }
-      refetchQueueData(await fetch(`/api/queues/${params.queueId}/manage`).then(r => r.json()), { revalidate: true })
-      toast.success(`Service time updated to ${queueData.queueData.est_time_to_serve} minutes`)
+      window.dispatchEvent(new CustomEvent('refetchQueueData'));
+      toast.success(`Service time updated to ${serviceTime} minutes`)
     } catch (error) {
       console.error('Error updating service time:', error)
       toast.error('Failed to update service time')
@@ -111,13 +146,14 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
         throw new Error(errorData.error || 'Failed to mark customer as served')
       }
       
-      const servedCustomer = queueData.customersInQueue.find(customer => customer.entry_id === entryId);
+      const servedCustomer = customersInQueue.find(customer => customer.entry_id === entryId);
       if (servedCustomer) {
          addRecentActivity(servedCustomer.user_profile?.name || servedCustomer.name || 'Customer', 'served');
       }
       
-      refetchQueueData(await fetch(`/api/queues/${params.queueId}/manage`).then(r => r.json()), { revalidate: true })
+      await refetchQueueData()
       toast.success('Customer served successfully')
+      setCustomersInQueue(prevCustomers => prevCustomers.filter(customer => customer.entry_id !== entryId))
     } catch (error) {
       console.error('Error serving customer:', error)
       toast.error(error.message || 'Failed to serve customer')
@@ -137,13 +173,14 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
       }
       const data = await response.json();
       
-      const noShowCustomer = queueData.customersInQueue.find(customer => customer.entry_id === entryId);
+      const noShowCustomer = customersInQueue.find(customer => customer.entry_id === entryId);
       if (noShowCustomer) {
          addRecentActivity(noShowCustomer.user_profile?.name || noShowCustomer.name || 'Customer', 'no-show');
       }
       
       toast.success('Customer marked as no-show');
-      refetchQueueData(await fetch(`/api/queues/${params.queueId}/manage`).then(r => r.json()), { revalidate: true })
+      refetchQueueData();
+      setCustomersInQueue(prevCustomers => prevCustomers.filter(customer => customer.entry_id !== entryId));
     } catch (error) {
       console.error('Error marking customer as no-show:', error);
       toast.error('Failed to mark customer as no-show');
@@ -153,7 +190,7 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
   };
 
   const handleAddKnownSuccess = async () => {
-    refetchQueueData(await fetch(`/api/queues/${params.queueId}/manage`).then(r => r.json()), { revalidate: true })
+    await refetchQueueData()
   }
 
   const CustomerCard = ({ customer, index, onServed, onNoShow, loadingActions }) => {
@@ -272,9 +309,6 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
       </div>
     );
   };
-
-  const customersInQueue = queueData?.customersInQueue || [];
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="sticky top-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg border-b border-divider z-10">
@@ -337,8 +371,8 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
               <div className="flex items-center space-x-2">
                 <Input
                   type="number"
-                  value={queueData.queueData.est_time_to_serve}
-                  onChange={(e) => refetchQueueData({ est_time_to_serve: parseInt(e.target.value) })}
+                  value={serviceTime}
+                  onChange={(e) => setServiceTime(e.target.value)}
                   className="w-24"
                   size="sm"
                   labelPlacement="outside"
