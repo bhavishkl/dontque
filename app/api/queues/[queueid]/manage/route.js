@@ -79,10 +79,12 @@ export async function GET(request, { params }) {
       }
     }));
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       queueData,
       customersInQueue: customersWithFormattedTime
     });
+    response.headers.set('Cache-Control', 'no-store, max-age=0');
+    return response;
     
   } catch (error) {
     console.error('Unexpected error in GET function:', error);
