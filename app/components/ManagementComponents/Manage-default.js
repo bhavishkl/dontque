@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, cloneElement } from 'react'
+import { useState, useEffect, cloneElement, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -9,17 +9,12 @@ import { Button, Input, Card, CardBody, CardHeader, Chip, Switch, Table, TableHe
 import AddKnownUserModal from '@/app/components/UniComp/AddKnownUserModal'
 import { createClient } from '@supabase/supabase-js'
 import QueueQRCode from '@/app/components/QueueQRCode'
-import { useApi } from '@/app/hooks/useApi'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
-export default function ManageDefault({ params, queueData: initialQueueData, isLoading: initialLoading }) {
-  const { data: queueData, isLoading, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage`, {
-revalidateOnMount: true,
-  })
-
-  const [customersInQueue, setCustomersInQueue] = useState([])
-  const [serviceTime, setServiceTime] = useState('')
+export default function ManageDefault({ params }) {
+  const [queueData, setQueueData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter()
   const [isToggling, setIsToggling] = useState(false)
   const [activeTab, setActiveTab] = useState("cards")
@@ -87,6 +82,24 @@ revalidateOnMount: true,
     };
   }, [params.queueId])
 
+  const fetchQueueData = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/queues/${params.queueId}/manage`);
+      if (!response.ok) throw new Error('Failed to fetch queue data');
+      const data = await response.json();
+      setQueueData(data);
+    } catch (error) {
+      console.error('Error fetching queue data:', error);
+      toast.error('Failed to load queue data');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [params.queueId]);
+
+  useEffect(() => {
+    fetchQueueData();
+  }, [fetchQueueData]);
+
   const handleToggleQueue = async () => {
     setIsToggling(true)
     try {
@@ -99,7 +112,7 @@ revalidateOnMount: true,
       if (!response.ok) {
         throw new Error('Failed to update queue status')
       }
-      window.dispatchEvent(new CustomEvent('refetchQueueData'));
+      await fetchQueueData();
       toast.success(`Queue ${newStatus === 'active' ? 'activated' : 'paused'}`)
     } catch (error) {
       console.error('Error updating queue status:', error)
@@ -119,7 +132,7 @@ revalidateOnMount: true,
       if (!response.ok) {
         throw new Error('Failed to update service time')
       }
-      window.dispatchEvent(new CustomEvent('refetchQueueData'));
+      await fetchQueueData();
       toast.success(`Service time updated to ${serviceTime} minutes`)
     } catch (error) {
       console.error('Error updating service time:', error)
@@ -151,7 +164,7 @@ revalidateOnMount: true,
          addRecentActivity(servedCustomer.user_profile?.name || servedCustomer.name || 'Customer', 'served');
       }
       
-      await refetchQueueData()
+      await fetchQueueData()
       toast.success('Customer served successfully')
       setCustomersInQueue(prevCustomers => prevCustomers.filter(customer => customer.entry_id !== entryId))
     } catch (error) {
@@ -179,7 +192,7 @@ revalidateOnMount: true,
       }
       
       toast.success('Customer marked as no-show');
-      refetchQueueData();
+      fetchQueueData();
       setCustomersInQueue(prevCustomers => prevCustomers.filter(customer => customer.entry_id !== entryId));
     } catch (error) {
       console.error('Error marking customer as no-show:', error);
@@ -190,7 +203,7 @@ revalidateOnMount: true,
   };
 
   const handleAddKnownSuccess = async () => {
-    await refetchQueueData()
+    await fetchQueueData()
   }
 
   const CustomerCard = ({ customer, index, onServed, onNoShow, loadingActions }) => {
