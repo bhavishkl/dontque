@@ -13,11 +13,7 @@ import { useApi } from '@/app/hooks/useApi'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
-export default function ManageDefault({ params, queueData: initialQueueData, isLoading: initialLoading }) {
-  const { data: queueData, isLoading, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage`, {
-revalidateOnMount: true,
-  })
-
+export default function ManageDefault({ params, queueData, isLoading, refetchQueueData }) {
   const [customersInQueue, setCustomersInQueue] = useState([])
   const [serviceTime, setServiceTime] = useState('')
   const router = useRouter()
@@ -56,15 +52,7 @@ revalidateOnMount: true,
   useEffect(() => {
     if (queueData) {
       setServiceTime(queueData.queueData.est_time_to_serve.toString())
-      setCustomersInQueue(prevCustomers => {
-        const newCustomers = queueData.customersInQueue.filter(newCustomer => 
-          !prevCustomers.some(prevCustomer => prevCustomer.entry_id === newCustomer.entry_id)
-        );
-        if (newCustomers.length > 0) {
-          toast.success('New customer joined the queue');
-        }
-        return [...prevCustomers, ...newCustomers];
-      })
+      setCustomersInQueue(queueData.customersInQueue || [])
     }
   }, [queueData])
 
@@ -77,15 +65,20 @@ revalidateOnMount: true,
         table: 'queue_entries',
         filter: `queue_id=eq."${params.queueId}"`
       }, (payload) => {
-        console.log('New queue entry:', payload);
-        window.dispatchEvent(new CustomEvent('refetchQueueData'));
+        console.log('Queue entry change detected:', payload);
+        if (payload.eventType === 'DELETE') {
+          setCustomersInQueue(prev => 
+            prev.filter(c => c.entry_id !== payload.old.entry_id)
+          );
+        }
+        refetchQueueData();
       })
       .subscribe();
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [params.queueId])
+  }, [params.queueId, refetchQueueData])
 
   const handleToggleQueue = async () => {
     setIsToggling(true)
@@ -99,7 +92,7 @@ revalidateOnMount: true,
       if (!response.ok) {
         throw new Error('Failed to update queue status')
       }
-      window.dispatchEvent(new CustomEvent('refetchQueueData'));
+      refetchQueueData();
       toast.success(`Queue ${newStatus === 'active' ? 'activated' : 'paused'}`)
     } catch (error) {
       console.error('Error updating queue status:', error)
@@ -119,7 +112,7 @@ revalidateOnMount: true,
       if (!response.ok) {
         throw new Error('Failed to update service time')
       }
-      window.dispatchEvent(new CustomEvent('refetchQueueData'));
+      refetchQueueData();
       toast.success(`Service time updated to ${serviceTime} minutes`)
     } catch (error) {
       console.error('Error updating service time:', error)
@@ -151,7 +144,7 @@ revalidateOnMount: true,
          addRecentActivity(servedCustomer.user_profile?.name || servedCustomer.name || 'Customer', 'served');
       }
       
-      await refetchQueueData()
+      refetchQueueData();
       toast.success('Customer served successfully')
       setCustomersInQueue(prevCustomers => prevCustomers.filter(customer => customer.entry_id !== entryId))
     } catch (error) {
@@ -190,7 +183,7 @@ revalidateOnMount: true,
   };
 
   const handleAddKnownSuccess = async () => {
-    await refetchQueueData()
+    refetchQueueData()
   }
 
   const CustomerCard = ({ customer, index, onServed, onNoShow, loadingActions }) => {
