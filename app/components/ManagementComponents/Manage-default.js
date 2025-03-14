@@ -52,18 +52,19 @@ revalidateOnMount: true,
 
   useEffect(() => {
     if (queueData) {
-      setServiceTime(queueData.queueData.est_time_to_serve.toString())
-      setCustomersInQueue(prevCustomers => {
-        const newCustomers = queueData.customersInQueue.filter(newCustomer => 
-          !prevCustomers.some(prevCustomer => prevCustomer.entry_id === newCustomer.entry_id)
-        );
+      setServiceTime(queueData.queueData.est_time_to_serve.toString());
+      setCustomersInQueue(prev => {
+        const prevIds = new Set(prev.map(c => c.entry_id));
+        const newCustomers = queueData.customersInQueue.filter(c => !prevIds.has(c.entry_id));
+        
         if (newCustomers.length > 0) {
-          toast.success('New customer joined the queue');
+          toast.success(`${newCustomers.length} new customer(s) joined`);
         }
-        return [...prevCustomers, ...newCustomers];
-      })
+        
+        return [...prev, ...newCustomers];
+      });
     }
-  }, [queueData])
+  }, [queueData]);
 
   const handleToggleQueue = async () => {
     setIsToggling(true)
