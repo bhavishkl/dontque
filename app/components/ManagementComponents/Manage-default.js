@@ -55,18 +55,39 @@ revalidateOnMount: true,
 
   useEffect(() => {
     if (queueData) {
-      setServiceTime(queueData.queueData.est_time_to_serve.toString())
+      setServiceTime(queueData.queueData.est_time_to_serve.toString());
       setCustomersInQueue(prevCustomers => {
-        const newCustomers = queueData.customersInQueue.filter(newCustomer => 
-          !prevCustomers.some(prevCustomer => prevCustomer.entry_id === newCustomer.entry_id)
+        // Create a map of current entries from API
+        const currentEntries = new Map(
+          queueData.customersInQueue.map(c => [c.entry_id, c])
         );
-        if (newCustomers.length > 0) {
-          toast.success('New customer joined the queue');
+        
+        // Merge strategy: 
+        // 1. Keep entries that exist in both prev and current (update if needed)
+        // 2. Remove entries that no longer exist in current
+        // 3. Add new entries from current
+        const merged = prevCustomers
+          .filter(c => currentEntries.has(c.entry_id))
+          .map(c => currentEntries.get(c.entry_id) || c)
+          .concat(
+            queueData.customersInQueue.filter(
+              newC => !prevCustomers.some(prevC => prevC.entry_id === newC.entry_id)
+            )
+          );
+
+        // Detect new entries for notification
+        const newEntries = queueData.customersInQueue.filter(
+          newC => !prevCustomers.some(prevC => prevC.entry_id === newC.entry_id)
+        );
+        
+        if (newEntries.length > 0) {
+          toast.success(`${newEntries.length} new customer(s) joined`);
         }
-        return [...prevCustomers, ...newCustomers];
-      })
+
+        return merged;
+      });
     }
-  }, [queueData])
+  }, [queueData]);
 
   useEffect(() => {
     const subscription = supabase
@@ -77,8 +98,10 @@ revalidateOnMount: true,
         table: 'queue_entries',
         filter: `queue_id=eq."${params.queueId}"`
       }, (payload) => {
-        console.log('New queue entry:', payload);
-        window.dispatchEvent(new CustomEvent('refetchQueueData'));
+        if (payload.commit_timestamp) { // Add this check
+          console.log('New queue entry:', payload);
+          window.dispatchEvent(new CustomEvent('refetchQueueData'));
+        }
       })
       .subscribe();
 
