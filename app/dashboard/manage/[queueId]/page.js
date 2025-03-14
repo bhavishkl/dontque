@@ -12,6 +12,9 @@ const ManagementComponents = {
   }),
   default: dynamic(() => import('@/app/components/ManagementComponents/Manage-default'), {
     loading: () => <div className="flex justify-center items-center min-h-screen"><Spinner /></div>
+  }),
+  default2: dynamic(() => import('@/app/components/ManagementComponents/Manage-default-2'), {
+    loading: () => <div className="flex justify-center items-center min-h-screen"><Spinner /></div>
   })
 }
 
