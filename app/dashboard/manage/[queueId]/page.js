@@ -3,7 +3,7 @@
 import { Spinner } from "@nextui-org/react"
 import { useApi } from '@/app/hooks/useApi'
 import dynamic from 'next/dynamic'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 // Dynamic imports with loading fallback
 const ManagementComponents = {
@@ -16,28 +16,19 @@ const ManagementComponents = {
 }
 
 export default function QueueManagementPage({ params }) {
-  // Add timestamp to prevent caching
-  const timestamp = useState(() => Date.now())[0]
-  
-  const { data: queueData, isLoading, isError, mutate: refetchQueueData } = useApi(
-    `/api/queues/${params.queueId}/manage?_t=${timestamp}`, 
-    {
-      revalidateOnMount: true,
-      revalidateOnFocus: true,
-      dedupingInterval: 0, // Disable deduping
-      refreshInterval: 15000, // Refresh every 15 seconds
-      onSuccess: (data) => {
-        if (data?.queueData?.queue_id) {
-          fetch(`/api/queues/${params.queueId}/stats`)
-        }
+  const { data: queueData, isLoading, isError, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage`, {
+    revalidateOnMount: true,
+    dedupingInterval: 5000,
+    onSuccess: (data) => {
+      if (data?.id) {
+        fetch(`/api/queues/${params.queueId}/stats`)
       }
     }
-  )
+  })
 
   // Add event listener for refetch requests
   useEffect(() => {
     const handleRefetch = () => {
-      console.log("Refetching queue data from event")
       refetchQueueData()
     }
 
@@ -59,10 +50,5 @@ export default function QueueManagementPage({ params }) {
   const serviceType = queueData?.queueData?.service_type
   const ManagementComponent = ManagementComponents[serviceType] || ManagementComponents.default
   
-  return <ManagementComponent 
-    params={params} 
-    queueData={queueData} 
-    isLoading={isLoading} 
-    refetchQueueData={refetchQueueData}
-  />
+  return <ManagementComponent params={params} queueData={queueData} isLoading={isLoading} />
 }

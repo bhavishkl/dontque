@@ -13,7 +13,11 @@ import { useApi } from '@/app/hooks/useApi'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
-export default function ManageDefault({ params, queueData, isLoading, refetchQueueData }) {
+export default function ManageDefault({ params, queueData: initialQueueData, isLoading: initialLoading }) {
+  const { data: queueData, isLoading, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage`, {
+revalidateOnMount: true,
+  })
+
   const [customersInQueue, setCustomersInQueue] = useState([])
   const [serviceTime, setServiceTime] = useState('')
   const router = useRouter()
@@ -52,7 +56,15 @@ export default function ManageDefault({ params, queueData, isLoading, refetchQue
   useEffect(() => {
     if (queueData) {
       setServiceTime(queueData.queueData.est_time_to_serve.toString())
-      setCustomersInQueue(queueData.customersInQueue || [])
+      setCustomersInQueue(prevCustomers => {
+        const newCustomers = queueData.customersInQueue.filter(newCustomer => 
+          !prevCustomers.some(prevCustomer => prevCustomer.entry_id === newCustomer.entry_id)
+        );
+        if (newCustomers.length > 0) {
+          toast.success('New customer joined the queue');
+        }
+        return [...prevCustomers, ...newCustomers];
+      })
     }
   }, [queueData])
 
@@ -65,20 +77,15 @@ export default function ManageDefault({ params, queueData, isLoading, refetchQue
         table: 'queue_entries',
         filter: `queue_id=eq."${params.queueId}"`
       }, (payload) => {
-        console.log('Queue entry change detected:', payload);
-        if (payload.eventType === 'DELETE') {
-          setCustomersInQueue(prev => 
-            prev.filter(c => c.entry_id !== payload.old.entry_id)
-          );
-        }
-        refetchQueueData();
+        console.log('New queue entry:', payload);
+        window.dispatchEvent(new CustomEvent('refetchQueueData'));
       })
       .subscribe();
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [params.queueId, refetchQueueData])
+  }, [params.queueId])
 
   const handleToggleQueue = async () => {
     setIsToggling(true)
@@ -92,7 +99,7 @@ export default function ManageDefault({ params, queueData, isLoading, refetchQue
       if (!response.ok) {
         throw new Error('Failed to update queue status')
       }
-      refetchQueueData();
+      window.dispatchEvent(new CustomEvent('refetchQueueData'));
       toast.success(`Queue ${newStatus === 'active' ? 'activated' : 'paused'}`)
     } catch (error) {
       console.error('Error updating queue status:', error)
@@ -112,7 +119,7 @@ export default function ManageDefault({ params, queueData, isLoading, refetchQue
       if (!response.ok) {
         throw new Error('Failed to update service time')
       }
-      refetchQueueData();
+      window.dispatchEvent(new CustomEvent('refetchQueueData'));
       toast.success(`Service time updated to ${serviceTime} minutes`)
     } catch (error) {
       console.error('Error updating service time:', error)
@@ -144,7 +151,7 @@ export default function ManageDefault({ params, queueData, isLoading, refetchQue
          addRecentActivity(servedCustomer.user_profile?.name || servedCustomer.name || 'Customer', 'served');
       }
       
-      refetchQueueData();
+      await refetchQueueData()
       toast.success('Customer served successfully')
       setCustomersInQueue(prevCustomers => prevCustomers.filter(customer => customer.entry_id !== entryId))
     } catch (error) {
@@ -183,7 +190,7 @@ export default function ManageDefault({ params, queueData, isLoading, refetchQue
   };
 
   const handleAddKnownSuccess = async () => {
-    refetchQueueData()
+    await refetchQueueData()
   }
 
   const CustomerCard = ({ customer, index, onServed, onNoShow, loadingActions }) => {
