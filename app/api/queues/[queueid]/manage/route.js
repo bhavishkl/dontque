@@ -11,12 +11,7 @@ export async function GET(request, { params }) {
       return NextResponse.json({ 
         error: 'Queue ID is required',
         userMessage: 'Unable to load queue information. Please try again.' 
-      }, { 
-        status: 400,
-        headers: {
-          'Cache-Control': 'no-store'
-        }
-      });
+      }, { status: 400 });
     }
 
 
@@ -37,23 +32,13 @@ export async function GET(request, { params }) {
         return NextResponse.json({ 
           error: 'Queue not found',
           userMessage: 'The requested queue does not exist or has been deleted.' 
-        }, { 
-          status: 404,
-          headers: {
-            'Cache-Control': 'no-store'
-          }
-        });
+        }, { status: 404 });
       }
 
       return NextResponse.json({ 
         error: queueError.message,
         userMessage: 'Unable to load queue information. Please try again later.' 
-      }, { 
-        status: 500,
-        headers: {
-          'Cache-Control': 'no-store'
-        }
-      });
+      }, { status: 500 });
     }
 
 
@@ -81,12 +66,7 @@ export async function GET(request, { params }) {
       return NextResponse.json({ 
         error: customersError.message,
         userMessage: 'Unable to load customer information. Please refresh the page.' 
-      }, { 
-        status: 500,
-        headers: {
-          'Cache-Control': 'no-store'
-        }
-      });
+      }, { status: 500 });
     }
 
 
@@ -100,10 +80,6 @@ export async function GET(request, { params }) {
         queueData,
         customersInQueue: [],
         message: 'Queue is currently empty'
-      }, {
-        headers: {
-          'Cache-Control': 'no-store'
-        }
       });
     }
 
@@ -122,10 +98,6 @@ export async function GET(request, { params }) {
     return NextResponse.json({
       queueData,
       customersInQueue: customersWithFormattedTime
-    }, {
-      headers: {
-        'Cache-Control': 'no-store'
-      }
     });
 
   } catch (error) {
@@ -134,11 +106,6 @@ export async function GET(request, { params }) {
       error: 'An unexpected error occurred',
       userMessage: 'Something went wrong. Please try again later.',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    }, { 
-      status: 500,
-      headers: {
-        'Cache-Control': 'no-store'
-      }
-    });
+    }, { status: 500 });
   }
 }
