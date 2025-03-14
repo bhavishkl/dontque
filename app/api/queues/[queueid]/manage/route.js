@@ -14,6 +14,9 @@ export async function GET(request, { params }) {
       }, { status: 400 });
     }
 
+    const requestId = Math.random().toString(36).slice(2, 8);
+    console.log(`[${requestId}] GET /manage started for queue: ${queueid}`);
+
     // Fetch queue data
     const { data: queueData, error: queueError } = await supabase
       .from('queues')
@@ -38,6 +41,12 @@ export async function GET(request, { params }) {
       }, { status: 500 });
     }
 
+    console.log(`[${requestId}] Queue data fetched:`, {
+      status: queueData?.status,
+      current_queue: queueData?.current_queue,
+      updated_at: queueData?.updated_at
+    });
+
     // Fetch customers in queue ordered by join_time
     const { data: customersInQueue, error: customersError } = await supabase
       .from('queue_entries')
@@ -60,6 +69,11 @@ export async function GET(request, { params }) {
       }, { status: 500 });
     }
 
+    console.log(`[${requestId}] Customer entries fetched:`, {
+      count: customersInQueue?.length,
+      entry_ids: customersInQueue?.map(c => c.entry_id)
+    });
+
     // Handle case when queue exists but no customers are found
     if (!customersInQueue || customersInQueue.length === 0) {
       return NextResponse.json({
@@ -78,6 +92,8 @@ export async function GET(request, { params }) {
         email: 'Not provided'
       }
     }));
+
+    console.log(`[${requestId}] Response sent with ${customersWithFormattedTime?.length} customers`);
 
     return NextResponse.json({
       queueData,

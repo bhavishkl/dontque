@@ -14,9 +14,20 @@ import { useApi } from '@/app/hooks/useApi'
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
 export default function ManageDefault({ params, queueData: initialQueueData, isLoading: initialLoading }) {
-  const { data: queueData, isLoading, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage`, {
-revalidateOnMount: true,
-  })
+  const { data: queueData, isLoading, mutate: refetchQueueData } = useApi(
+    `/api/queues/${params.queueId}/manage`, 
+    {
+      revalidateOnMount: true,
+      onSuccess: (data) => {
+        console.log('API Response Data:', {
+          queueVersion: data?.queueData?.updated_at,
+          customerCount: data?.customersInQueue?.length,
+          customerIds: data?.customersInQueue?.map(c => c.entry_id)
+        });
+      },
+      onError: (err) => console.error('API Error:', err)
+    }
+  )
 
   const [customersInQueue, setCustomersInQueue] = useState([])
   const [serviceTime, setServiceTime] = useState('')
@@ -55,6 +66,14 @@ revalidateOnMount: true,
 
   useEffect(() => {
     if (queueData) {
+      console.log('Updating local state with:', {
+        received: queueData.customersInQueue.length,
+        existing: customersInQueue.length,
+        newEntries: queueData.customersInQueue.filter(
+          newC => !customersInQueue.some(prevC => prevC.entry_id === newC.entry_id)
+        ).length
+      });
+      
       setServiceTime(queueData.queueData.est_time_to_serve.toString());
       setCustomersInQueue(prevCustomers => {
         // Create a map of current entries from API
@@ -84,6 +103,12 @@ revalidateOnMount: true,
           toast.success(`${newEntries.length} new customer(s) joined`);
         }
 
+        console.log('Merged customers:', {
+          previousCount: prevCustomers.length,
+          newCount: merged.length,
+          diff: merged.length - prevCustomers.length
+        });
+
         return merged;
       });
     }
@@ -98,10 +123,13 @@ revalidateOnMount: true,
         table: 'queue_entries',
         filter: `queue_id=eq."${params.queueId}"`
       }, (payload) => {
-        if (payload.commit_timestamp) { // Add this check
-          console.log('New queue entry:', payload);
-          window.dispatchEvent(new CustomEvent('refetchQueueData'));
-        }
+        console.log('Realtime event:', {
+          eventType: payload.eventType,
+          commitTS: payload.commit_timestamp,
+          new: payload.new,
+          old: payload.old
+        });
+        window.dispatchEvent(new CustomEvent('refetchQueueData'));
       })
       .subscribe();
 
