@@ -6,7 +6,7 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.
 export async function GET(request, { params }) {
   try {
     const { queueid } = params;
-    
+
     if (!queueid) {
       return NextResponse.json({ 
         error: 'Queue ID is required',
@@ -14,8 +14,8 @@ export async function GET(request, { params }) {
       }, { status: 400 });
     }
 
-    const requestId = Math.random().toString(36).slice(2, 8);
-    console.log(`[${requestId}] GET /manage started for queue: ${queueid}`);
+
+
 
     // Fetch queue data
     const { data: queueData, error: queueError } = await supabase
@@ -26,7 +26,7 @@ export async function GET(request, { params }) {
 
     if (queueError) {
       console.error('Error fetching queue data:', queueError);
-      
+
       // Handle specific error cases
       if (queueError.code === 'PGRST116') {
         return NextResponse.json({ 
@@ -34,18 +34,18 @@ export async function GET(request, { params }) {
           userMessage: 'The requested queue does not exist or has been deleted.' 
         }, { status: 404 });
       }
-      
+
       return NextResponse.json({ 
         error: queueError.message,
         userMessage: 'Unable to load queue information. Please try again later.' 
       }, { status: 500 });
     }
 
-    console.log(`[${requestId}] Queue data fetched:`, {
-      status: queueData?.status,
-      current_queue: queueData?.current_queue,
-      updated_at: queueData?.updated_at
-    });
+
+
+
+
+
 
     // Fetch customers in queue ordered by join_time
     const { data: customersInQueue, error: customersError } = await supabase
@@ -69,10 +69,10 @@ export async function GET(request, { params }) {
       }, { status: 500 });
     }
 
-    console.log(`[${requestId}] Customer entries fetched:`, {
-      count: customersInQueue?.length,
-      entry_ids: customersInQueue?.map(c => c.entry_id)
-    });
+
+
+
+
 
     // Handle case when queue exists but no customers are found
     if (!customersInQueue || customersInQueue.length === 0) {
@@ -93,13 +93,13 @@ export async function GET(request, { params }) {
       }
     }));
 
-    console.log(`[${requestId}] Response sent with ${customersWithFormattedTime?.length} customers`);
+
 
     return NextResponse.json({
       queueData,
       customersInQueue: customersWithFormattedTime
     });
-    
+
   } catch (error) {
     console.error('Unexpected error in GET function:', error);
     return NextResponse.json({ 

@@ -14,20 +14,9 @@ import { useApi } from '@/app/hooks/useApi'
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
 export default function ManageDefault({ params, queueData: initialQueueData, isLoading: initialLoading }) {
-  const { data: queueData, isLoading, mutate: refetchQueueData } = useApi(
-    `/api/queues/${params.queueId}/manage`, 
-    {
-      revalidateOnMount: true,
-      onSuccess: (data) => {
-        console.log('API Response Data:', {
-          queueVersion: data?.queueData?.updated_at,
-          customerCount: data?.customersInQueue?.length,
-          customerIds: data?.customersInQueue?.map(c => c.entry_id)
-        });
-      },
-      onError: (err) => console.error('API Error:', err)
-    }
-  )
+  const { data: queueData, isLoading, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage`, {
+revalidateOnMount: true,
+  })
 
   const [customersInQueue, setCustomersInQueue] = useState([])
   const [serviceTime, setServiceTime] = useState('')
@@ -66,53 +55,18 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
 
   useEffect(() => {
     if (queueData) {
-      console.log('Updating local state with:', {
-        received: queueData.customersInQueue.length,
-        existing: customersInQueue.length,
-        newEntries: queueData.customersInQueue.filter(
-          newC => !customersInQueue.some(prevC => prevC.entry_id === newC.entry_id)
-        ).length
-      });
-      
-      setServiceTime(queueData.queueData.est_time_to_serve.toString());
+      setServiceTime(queueData.queueData.est_time_to_serve.toString())
       setCustomersInQueue(prevCustomers => {
-        // Create a map of current entries from API
-        const currentEntries = new Map(
-          queueData.customersInQueue.map(c => [c.entry_id, c])
+        const newCustomers = queueData.customersInQueue.filter(newCustomer => 
+          !prevCustomers.some(prevCustomer => prevCustomer.entry_id === newCustomer.entry_id)
         );
-        
-        // Merge strategy: 
-        // 1. Keep entries that exist in both prev and current (update if needed)
-        // 2. Remove entries that no longer exist in current
-        // 3. Add new entries from current
-        const merged = prevCustomers
-          .filter(c => currentEntries.has(c.entry_id))
-          .map(c => currentEntries.get(c.entry_id) || c)
-          .concat(
-            queueData.customersInQueue.filter(
-              newC => !prevCustomers.some(prevC => prevC.entry_id === newC.entry_id)
-            )
-          );
-
-        // Detect new entries for notification
-        const newEntries = queueData.customersInQueue.filter(
-          newC => !prevCustomers.some(prevC => prevC.entry_id === newC.entry_id)
-        );
-        
-        if (newEntries.length > 0) {
-          toast.success(`${newEntries.length} new customer(s) joined`);
+        if (newCustomers.length > 0) {
+          toast.success('New customer joined the queue');
         }
-
-        console.log('Merged customers:', {
-          previousCount: prevCustomers.length,
-          newCount: merged.length,
-          diff: merged.length - prevCustomers.length
-        });
-
-        return merged;
-      });
+        return [...prevCustomers, ...newCustomers];
+      })
     }
-  }, [queueData]);
+  }, [queueData])
 
   useEffect(() => {
     const subscription = supabase
@@ -123,12 +77,7 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
         table: 'queue_entries',
         filter: `queue_id=eq."${params.queueId}"`
       }, (payload) => {
-        console.log('Realtime event:', {
-          eventType: payload.eventType,
-          commitTS: payload.commit_timestamp,
-          new: payload.new,
-          old: payload.old
-        });
+        console.log('New queue entry:', payload);
         window.dispatchEvent(new CustomEvent('refetchQueueData'));
       })
       .subscribe();
