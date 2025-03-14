@@ -9,15 +9,12 @@ import { Button, Input, Card, CardBody, CardHeader, Chip, Switch, Table, TableHe
 import AddKnownUserModal from '@/app/components/UniComp/AddKnownUserModal'
 import { createClient } from '@supabase/supabase-js'
 import QueueQRCode from '@/app/components/QueueQRCode'
-import { useApi } from '@/app/hooks/useApi'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
 export default function ManageDefault({ params, queueData: initialQueueData, isLoading: initialLoading }) {
-  const { data: queueData, isLoading, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage`, {
-revalidateOnMount: true,
-  })
-
+  const [queueData, setQueueData] = useState(initialQueueData)
+  const [isLoading, setIsLoading] = useState(initialLoading)
   const [customersInQueue, setCustomersInQueue] = useState([])
   const [serviceTime, setServiceTime] = useState('')
   const router = useRouter()
@@ -86,6 +83,33 @@ revalidateOnMount: true,
       subscription.unsubscribe();
     };
   }, [params.queueId])
+
+  const refetchQueueData = async () => {
+    try {
+      setIsLoading(true)
+      const response = await fetch(`/api/queues/${params.queueId}/manage`)
+      if (!response.ok) throw new Error('Failed to fetch queue data')
+      const data = await response.json()
+      setQueueData(data)
+    } catch (error) {
+      console.error('Error fetching queue data:', error)
+      toast.error('Failed to fetch queue data')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!initialQueueData) {
+      refetchQueueData()
+    }
+  }, [])
+
+  useEffect(() => {
+    const handleRefetch = () => refetchQueueData()
+    window.addEventListener('refetchQueueData', handleRefetch)
+    return () => window.removeEventListener('refetchQueueData', handleRefetch)
+  }, [])
 
   const handleToggleQueue = async () => {
     setIsToggling(true)
