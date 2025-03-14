@@ -7,11 +7,8 @@ import { toast } from 'sonner'
 import { ArrowLeft, Users, Clock, TrendingUp, Settings, MessageSquare, UserMinus, RefreshCw, Check, X, BarChart2, AlertCircle, Activity } from 'lucide-react'
 import { Button, Input, Card, CardBody, CardHeader, Chip, Switch, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Skeleton, Tabs, Tab } from "@nextui-org/react"
 import AddKnownUserModal from '@/app/components/UniComp/AddKnownUserModal'
-import { createClient } from '@supabase/supabase-js'
 import QueueQRCode from '@/app/components/QueueQRCode'
 import { useApi } from '@/app/hooks/useApi'
-
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
 export default function ManageDefault({ params, queueData: initialQueueData, isLoading: initialLoading }) {
   const { data: queueData, isLoading, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage`, {
@@ -67,25 +64,6 @@ revalidateOnMount: true,
       })
     }
   }, [queueData])
-
-  useEffect(() => {
-    const subscription = supabase
-      .channel(`queue_${params.queueId}`)
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'queue_entries',
-        filter: `queue_id=eq."${params.queueId}"`
-      }, (payload) => {
-        console.log('New queue entry:', payload);
-        window.dispatchEvent(new CustomEvent('refetchQueueData'));
-      })
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [params.queueId])
 
   const handleToggleQueue = async () => {
     setIsToggling(true)
