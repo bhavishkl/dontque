@@ -18,13 +18,13 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
 revalidateOnMount: true,
   })
 
+  const [customersInQueue, setCustomersInQueue] = useState([])
+  const [serviceTime, setServiceTime] = useState('')
   const router = useRouter()
   const [isToggling, setIsToggling] = useState(false)
   const [activeTab, setActiveTab] = useState("cards")
   const [loadingActions, setLoadingActions] = useState({})
   const [recentActivity, setRecentActivity] = useState([])
-  const [serviceTime, setServiceTime] = useState('')
-  const [customersInQueue, setCustomersInQueue] = useState([])
 
   const formatRelativeTime = (timestamp) => {
     const diff = Date.now() - new Date(timestamp);
@@ -56,7 +56,15 @@ revalidateOnMount: true,
   useEffect(() => {
     if (queueData) {
       setServiceTime(queueData.queueData.est_time_to_serve.toString())
-      setCustomersInQueue(queueData.customersInQueue || [])
+      setCustomersInQueue(prevCustomers => {
+        const newCustomers = queueData.customersInQueue.filter(newCustomer => 
+          !prevCustomers.some(prevCustomer => prevCustomer.entry_id === newCustomer.entry_id)
+        );
+        if (newCustomers.length > 0) {
+          toast.success('New customer joined the queue');
+        }
+        return [...prevCustomers, ...newCustomers];
+      })
     }
   }, [queueData])
 
@@ -70,9 +78,7 @@ revalidateOnMount: true,
         filter: `queue_id=eq."${params.queueId}"`
       }, (payload) => {
         console.log('New queue entry:', payload);
-        window.dispatchEvent(new CustomEvent('refetchQueueData', { 
-          detail: { timestamp: Date.now() }
-        }));
+        window.dispatchEvent(new CustomEvent('refetchQueueData'));
       })
       .subscribe();
 
@@ -93,9 +99,7 @@ revalidateOnMount: true,
       if (!response.ok) {
         throw new Error('Failed to update queue status')
       }
-      window.dispatchEvent(new CustomEvent('refetchQueueData', { 
-        detail: { timestamp: Date.now() }
-      }));
+      window.dispatchEvent(new CustomEvent('refetchQueueData'));
       toast.success(`Queue ${newStatus === 'active' ? 'activated' : 'paused'}`)
     } catch (error) {
       console.error('Error updating queue status:', error)
@@ -115,9 +119,7 @@ revalidateOnMount: true,
       if (!response.ok) {
         throw new Error('Failed to update service time')
       }
-      window.dispatchEvent(new CustomEvent('refetchQueueData', { 
-        detail: { timestamp: Date.now() }
-      }));
+      window.dispatchEvent(new CustomEvent('refetchQueueData'));
       toast.success(`Service time updated to ${serviceTime} minutes`)
     } catch (error) {
       console.error('Error updating service time:', error)
@@ -144,13 +146,14 @@ revalidateOnMount: true,
         throw new Error(errorData.error || 'Failed to mark customer as served')
       }
       
-      const servedCustomer = queueData.customersInQueue.find(customer => customer.entry_id === entryId);
+      const servedCustomer = customersInQueue.find(customer => customer.entry_id === entryId);
       if (servedCustomer) {
          addRecentActivity(servedCustomer.user_profile?.name || servedCustomer.name || 'Customer', 'served');
       }
       
       await refetchQueueData()
       toast.success('Customer served successfully')
+      setCustomersInQueue(prevCustomers => prevCustomers.filter(customer => customer.entry_id !== entryId))
     } catch (error) {
       console.error('Error serving customer:', error)
       toast.error(error.message || 'Failed to serve customer')
@@ -170,13 +173,14 @@ revalidateOnMount: true,
       }
       const data = await response.json();
       
-      const noShowCustomer = queueData.customersInQueue.find(customer => customer.entry_id === entryId);
+      const noShowCustomer = customersInQueue.find(customer => customer.entry_id === entryId);
       if (noShowCustomer) {
          addRecentActivity(noShowCustomer.user_profile?.name || noShowCustomer.name || 'Customer', 'no-show');
       }
       
       toast.success('Customer marked as no-show');
       refetchQueueData();
+      setCustomersInQueue(prevCustomers => prevCustomers.filter(customer => customer.entry_id !== entryId));
     } catch (error) {
       console.error('Error marking customer as no-show:', error);
       toast.error('Failed to mark customer as no-show');
@@ -408,7 +412,7 @@ revalidateOnMount: true,
       <Tabs selectedKey={activeTab} onSelectionChange={setActiveTab}>
         <Tab key="cards" title="Queue Cards">
           <CustomerCardStack
-            customers={queueData.customersInQueue}
+            customers={customersInQueue}
             onServed={handleServed}
             onNoShow={handleNoShow}
             loadingActions={loadingActions}
@@ -428,7 +432,7 @@ revalidateOnMount: true,
                   <TableColumn>Actions</TableColumn>
                 </TableHeader>
                 <TableBody>
-                  {queueData.customersInQueue.map((customer, index) => (
+                  {customersInQueue.map((customer, index) => (
                     <TableRow key={customer.entry_id}>
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>{customer.user_profile?.name || customer.name || 'Walk-in Customer'}</TableCell>
@@ -470,7 +474,7 @@ revalidateOnMount: true,
             {[
               {
                 title: "Current Queue",
-                value: queueData.customersInQueue.length,
+                value: customersInQueue.length,
                 icon: <Users className="h-4 w-4" />,
                 color: "primary"
               },
