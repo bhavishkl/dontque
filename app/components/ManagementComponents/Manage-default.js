@@ -18,13 +18,13 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
 revalidateOnMount: true,
   })
 
-  const [customersInQueue, setCustomersInQueue] = useState([])
-  const [serviceTime, setServiceTime] = useState('')
   const router = useRouter()
   const [isToggling, setIsToggling] = useState(false)
-  const [activeTab, setActiveTab] = useState("queue")
+  const [activeTab, setActiveTab] = useState("cards")
   const [loadingActions, setLoadingActions] = useState({})
   const [recentActivity, setRecentActivity] = useState([])
+  const [serviceTime, setServiceTime] = useState('')
+  const [customersInQueue, setCustomersInQueue] = useState([])
 
   const formatRelativeTime = (timestamp) => {
     const diff = Date.now() - new Date(timestamp);
@@ -56,15 +56,7 @@ revalidateOnMount: true,
   useEffect(() => {
     if (queueData) {
       setServiceTime(queueData.queueData.est_time_to_serve.toString())
-      setCustomersInQueue(prevCustomers => {
-        const newCustomers = queueData.customersInQueue.filter(newCustomer => 
-          !prevCustomers.some(prevCustomer => prevCustomer.entry_id === newCustomer.entry_id)
-        );
-        if (newCustomers.length > 0) {
-          toast.success('New customer joined the queue');
-        }
-        return [...prevCustomers, ...newCustomers];
-      })
+      setCustomersInQueue(queueData.customersInQueue || [])
     }
   }, [queueData])
 
@@ -78,7 +70,9 @@ revalidateOnMount: true,
         filter: `queue_id=eq."${params.queueId}"`
       }, (payload) => {
         console.log('New queue entry:', payload);
-        window.dispatchEvent(new CustomEvent('refetchQueueData'));
+        window.dispatchEvent(new CustomEvent('refetchQueueData', { 
+          detail: { timestamp: Date.now() }
+        }));
       })
       .subscribe();
 
@@ -99,7 +93,9 @@ revalidateOnMount: true,
       if (!response.ok) {
         throw new Error('Failed to update queue status')
       }
-      window.dispatchEvent(new CustomEvent('refetchQueueData'));
+      window.dispatchEvent(new CustomEvent('refetchQueueData', { 
+        detail: { timestamp: Date.now() }
+      }));
       toast.success(`Queue ${newStatus === 'active' ? 'activated' : 'paused'}`)
     } catch (error) {
       console.error('Error updating queue status:', error)
@@ -119,7 +115,9 @@ revalidateOnMount: true,
       if (!response.ok) {
         throw new Error('Failed to update service time')
       }
-      window.dispatchEvent(new CustomEvent('refetchQueueData'));
+      window.dispatchEvent(new CustomEvent('refetchQueueData', { 
+        detail: { timestamp: Date.now() }
+      }));
       toast.success(`Service time updated to ${serviceTime} minutes`)
     } catch (error) {
       console.error('Error updating service time:', error)
@@ -146,14 +144,13 @@ revalidateOnMount: true,
         throw new Error(errorData.error || 'Failed to mark customer as served')
       }
       
-      const servedCustomer = customersInQueue.find(customer => customer.entry_id === entryId);
+      const servedCustomer = queueData.customersInQueue.find(customer => customer.entry_id === entryId);
       if (servedCustomer) {
          addRecentActivity(servedCustomer.user_profile?.name || servedCustomer.name || 'Customer', 'served');
       }
       
       await refetchQueueData()
       toast.success('Customer served successfully')
-      setCustomersInQueue(prevCustomers => prevCustomers.filter(customer => customer.entry_id !== entryId))
     } catch (error) {
       console.error('Error serving customer:', error)
       toast.error(error.message || 'Failed to serve customer')
@@ -173,14 +170,13 @@ revalidateOnMount: true,
       }
       const data = await response.json();
       
-      const noShowCustomer = customersInQueue.find(customer => customer.entry_id === entryId);
+      const noShowCustomer = queueData.customersInQueue.find(customer => customer.entry_id === entryId);
       if (noShowCustomer) {
          addRecentActivity(noShowCustomer.user_profile?.name || noShowCustomer.name || 'Customer', 'no-show');
       }
       
       toast.success('Customer marked as no-show');
       refetchQueueData();
-      setCustomersInQueue(prevCustomers => prevCustomers.filter(customer => customer.entry_id !== entryId));
     } catch (error) {
       console.error('Error marking customer as no-show:', error);
       toast.error('Failed to mark customer as no-show');
@@ -193,6 +189,122 @@ revalidateOnMount: true,
     await refetchQueueData()
   }
 
+  const CustomerCard = ({ customer, index, onServed, onNoShow, loadingActions }) => {
+    return (
+      <Card className="w-full dark:bg-gray-800/50 shadow-lg hover:shadow-xl transition-all">
+        <CardBody>
+          <div className="flex flex-col space-y-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <div className="bg-gradient-to-br from-primary to-primary-500 text-white rounded-full w-12 h-12 flex items-center justify-center text-xl font-bold shadow-sm">
+                  {customer.user_profile?.name?.[0] || customer.name?.[0] || 'W'}
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold dark:text-white">
+                    {customer.user_profile?.name || customer.name || 'Walk-in Customer'}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Queue ID: {customer.entry_id}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-6 text-sm bg-default-50 dark:bg-gray-700/50 p-4 rounded-lg">
+              <div>
+                <p className="text-gray-500 dark:text-gray-400 mb-1">Waiting time</p>
+                <p className="font-semibold dark:text-white">{customer.waitingTime || '15m 20s'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 dark:text-gray-400 mb-1">Est. service time</p>
+                <p className="font-semibold dark:text-white">{customer.estimatedServiceTime || '20m'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 dark:text-gray-400 mb-1">Joined at</p>
+                <p className="font-semibold dark:text-white">{customer.formattedJoinTime}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 dark:text-gray-400 mb-1">Status</p>
+                <Chip size="sm" color="primary" variant="flat">
+                  {customer.status || 'Waiting'}
+                </Chip>
+              </div>
+            </div>
+  
+            <div className="flex flex-col space-y-2">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Additional notes</p>
+              <Input 
+                placeholder="Add notes here..." 
+                variant="bordered" 
+                className="dark:bg-gray-700/50"
+                size="sm"
+              />
+            </div>
+  
+            <div className="flex justify-between items-center pt-4">
+              <div className="flex space-x-2">
+                <Button 
+                  size="sm" 
+                  color="success" 
+                  variant="flat" 
+                  onClick={() => onServed(customer.entry_id)}
+                  isLoading={loadingActions[customer.entry_id]?.serve}
+                  className="font-medium"
+                >
+                  <Check className="mr-1 h-4 w-4" />
+                  Served
+                </Button>
+                <Button 
+                  size="sm" 
+                  color="danger" 
+                  variant="flat" 
+                  onClick={() => onNoShow(customer.entry_id)}
+                  isLoading={loadingActions[customer.entry_id]?.noShow}
+                  className="font-medium"
+                >
+                  <X className="mr-1 h-4 w-4" />
+                  No Show
+                </Button>
+              </div>
+              <Button 
+                size="sm" 
+                color="primary" 
+                variant="light"
+                className="font-medium"
+              >
+                <MessageSquare className="mr-1 h-4 w-4" />
+                Notify
+              </Button>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
+    );
+  };
+  
+  const CustomerCardStack = ({ customers, onServed, onNoShow, loadingActions }) => {
+    return (
+      <div className="relative w-full max-w-md mx-auto">
+        {customers.map((customer, index) => (
+          <div
+            key={customer.entry_id}
+            className="absolute w-full"
+            style={{
+              top: `${index * 4}px`,
+              left: `${index * 4}px`,
+              zIndex: customers.length - index,
+            }}
+          >
+            <CustomerCard
+              customer={customer}
+              index={index}
+              onServed={onServed}
+              onNoShow={onNoShow}
+              loadingActions={loadingActions}
+            />
+          </div>
+        ))}
+      </div>
+    );
+  };
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="sticky top-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg border-b border-divider z-10">
@@ -294,6 +406,14 @@ revalidateOnMount: true,
       )}
 
       <Tabs selectedKey={activeTab} onSelectionChange={setActiveTab}>
+        <Tab key="cards" title="Queue Cards">
+          <CustomerCardStack
+            customers={queueData.customersInQueue}
+            onServed={handleServed}
+            onNoShow={handleNoShow}
+            loadingActions={loadingActions}
+          />
+        </Tab>
         <Tab key="queue" title="Queue List">
           <Card className="dark:bg-gray-800">
             <CardHeader>
@@ -308,7 +428,7 @@ revalidateOnMount: true,
                   <TableColumn>Actions</TableColumn>
                 </TableHeader>
                 <TableBody>
-                  {customersInQueue.map((customer, index) => (
+                  {queueData.customersInQueue.map((customer, index) => (
                     <TableRow key={customer.entry_id}>
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>{customer.user_profile?.name || customer.name || 'Walk-in Customer'}</TableCell>
@@ -350,7 +470,7 @@ revalidateOnMount: true,
             {[
               {
                 title: "Current Queue",
-                value: customersInQueue.length,
+                value: queueData.customersInQueue.length,
                 icon: <Users className="h-4 w-4" />,
                 color: "primary"
               },

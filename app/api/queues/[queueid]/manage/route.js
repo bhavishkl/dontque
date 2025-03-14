@@ -82,6 +82,12 @@ export async function GET(request, { params }) {
     return NextResponse.json({
       queueData,
       customersInQueue: customersWithFormattedTime
+    }, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'CDN-Cache-Control': 'no-cache',
+        'Vercel-CDN-Cache-Control': 'no-cache'
+      }
     });
     
   } catch (error) {
