@@ -12,21 +12,11 @@ const ManagementComponents = {
   }),
   default: dynamic(() => import('@/app/components/ManagementComponents/Manage-default'), {
     loading: () => <div className="flex justify-center items-center min-h-screen"><Spinner /></div>
-  }),
-  default2: dynamic(() => import('@/app/components/ManagementComponents/Manage-default-2'), {
-    loading: () => <div className="flex justify-center items-center min-h-screen"><Spinner /></div>
   })
 }
 
 export default function QueueManagementPage({ params }) {
   const { data: queueData, isLoading, isError, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage`, {
-    revalidateOnMount: true,
-    dedupingInterval: 5000,
-    onSuccess: (data) => {
-      if (data?.id) {
-        fetch(`/api/queues/${params.queueId}/stats`)
-      }
-    }
   })
 
   // Add event listener for refetch requests
