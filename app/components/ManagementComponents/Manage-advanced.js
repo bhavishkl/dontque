@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardBody, CardHeader, Button, Tabs, Tab, Chip, Switch, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Skeleton } from "@nextui-org/react"
-import { ArrowLeft, Settings, Plus, Clock, User, ChevronDown, ChevronUp, Play, Pause } from "lucide-react"
+import { Card, CardBody, CardHeader, Button, Tabs, Tab, Chip, Switch, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Skeleton, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@nextui-org/react"
+import { ArrowLeft, Settings, Plus, Clock, User, ChevronDown, ChevronUp, Play, Pause, Bell } from "lucide-react"
 import Link from "next/link"
 import { toast } from 'sonner'
 import AddKnownUserModal from '@/app/components/UniComp/AddKnownUserModal'
@@ -264,18 +264,16 @@ export default function ManageAdvanced({ params, queueData, isLoading: pageLoadi
           {isToggling ? "Updating..." : (isCounterActive ? "Pause Counter" : "Activate Counter")}
         </Button>
       </div>
-      <div className="flex items-center space-x-4">
-        <div className="flex items-center space-x-2">
-          <Input
-            type="time"
-            value={serviceStartTime}
-            onChange={(e) => setServiceStartTime(e.target.value)}
-            className="w-32"
-          />
-          <Button onClick={handleUpdateStartTime}>
-            Update Start Time
-          </Button>
-        </div>
+      <div className="flex items-center space-x-2">
+        <Input
+          type="time"
+          value={serviceStartTime}
+          onChange={(e) => setServiceStartTime(e.target.value)}
+          className="w-32"
+        />
+        <Button onClick={handleUpdateStartTime}>
+          Update
+        </Button>
         <AddKnownUserModal 
           queueId={params.queueId} 
           onSuccess={() => toast.success('User added successfully')} 
@@ -314,14 +312,11 @@ export default function ManageAdvanced({ params, queueData, isLoading: pageLoadi
           <Button onClick={handleUpdateStartTime}>
             Update
           </Button>
+          <AddKnownUserModal 
+            queueId={params.queueId} 
+            onSuccess={() => toast.success('User added successfully')} 
+          />
         </div>
-      </div>
-
-      <div className="mt-4">
-        <AddKnownUserModal 
-          queueId={params.queueId} 
-          onSuccess={() => toast.success('User added successfully')} 
-        />
       </div>
     </div>
   )
@@ -330,144 +325,128 @@ export default function ManageAdvanced({ params, queueData, isLoading: pageLoadi
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <header className="sticky top-0 bg-white dark:bg-gray-800 shadow-sm z-10">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="flex items-center text-blue-600 dark:text-blue-400">
-            <ArrowLeft className="mr-2" />
-            <span className="font-semibold">Back to Dashboard</span>
-          </Link>
-          <h1 className="text-2xl font-bold dark:text-white">
-            {pageLoading ? (
-              <Skeleton className="w-40 h-8" />
-            ) : (
-              queueData?.queueData?.name || 'Error'
-            )}
-          </h1>
-          <Button variant="bordered" startContent={<Settings />}>
-            Queue Settings
-          </Button>
+        <div className="container mx-auto px-4">
+          {/* Top Navigation */}
+          <div className="py-3 flex justify-between items-center">
+            <Link 
+              href="/dashboard" 
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+            </Link>
+            <div className="flex gap-2">
+              <Button 
+                isIconOnly
+                variant="flat"
+                className="bg-gray-100 dark:bg-gray-700"
+                size="sm"
+              >
+                <Bell className="h-4 w-4" />
+              </Button>
+              <Button 
+                isIconOnly
+                variant="flat"
+                className="bg-gray-100 dark:bg-gray-700"
+                size="sm"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          
+          {/* Queue Title */}
+          <div className="pb-3">
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white text-center">
+              {pageLoading ? (
+                <Skeleton className="w-40 h-8 mx-auto" />
+              ) : (
+                queueData?.queueData?.name || 'Error'
+              )}
+            </h1>
+          </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {/* Counter Selection Tabs */}
-        <div className="flex items-center space-x-4 mb-6 overflow-x-auto pb-2">
-          <Button
-            color="primary"
-            startContent={<Plus />}
-            className="min-w-fit"
-          >
-            Add Counter
-          </Button>
-          <div className="flex space-x-2">
-            {countersLoading ? (
-              <Skeleton className="h-10 w-[120px]" />
-            ) : counters.length === 0 ? (
-              <div className="text-gray-500">No counters available</div>
-            ) : (
-              counters.map((counter) => (
-                <Button
-                  key={counter.counter_id}
-                  variant={selectedCounter === counter.counter_id ? "solid" : "flat"}
-                  className="min-w-[120px]"
-                  onClick={() => handleCounterSelect(counter.counter_id)}
-                >
-                  {counter.name}
-                  <Chip 
-                    size="sm" 
-                    className="ml-2"
-                    color={counter.status === 'active' ? "success" : "default"}
-                  >
-                    {counter.status === 'active' ? "Active" : "Paused"}
-                  </Chip>
-                </Button>
-              ))
-            )}
-          </div>
+        {/* Counter Selection */}
+        <div className="flex items-center justify-between mb-6">
+          <Dropdown>
+            <DropdownTrigger>
+              <Button 
+                variant="flat" 
+                endContent={<ChevronDown className="h-4 w-4" />}
+              >
+                {countersLoading ? (
+                  <Skeleton className="h-4 w-24" />
+                ) : (
+                  selectedCounter ? 
+                    `${counters.find(c => c.counter_id === selectedCounter)?.name || 'Counter'} (${isCounterActive ? 'Active' : 'Inactive'})` : 
+                    'Select Counter'
+                )}
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu 
+              aria-label="Counter selection"
+              selectedKeys={new Set([selectedCounter])}
+              onSelectionChange={(keys) => handleCounterSelect(Array.from(keys)[0])}
+              selectionMode="single"
+            >
+              {counters.map((counter) => (
+                <DropdownItem key={counter.counter_id}>
+                  <div className="flex items-center justify-between">
+                    <span>{counter.name}</span>
+                    <Chip 
+                      size="sm" 
+                      color={counter.status === 'active' ? "success" : "default"}
+                    >
+                      {counter.status === 'active' ? "Active" : "Inactive"}
+                    </Chip>
+                  </div>
+                </DropdownItem>
+              ))}
+            </DropdownMenu>
+          </Dropdown>
         </div>
 
+        {/* Counter Actions */}
         <Card className="mb-6">
           <CardBody>
-            {/* Counter Actions - Mobile View */}
+            {/* Mobile View */}
             <div className="md:hidden">
-              <Button
-                className="w-full mb-4"
-                variant="light"
-                endContent={isActionsExpanded ? <ChevronUp /> : <ChevronDown />}
-                onClick={() => setIsActionsExpanded(!isActionsExpanded)}
-              >
-                Counter Actions
-              </Button>
-              {isActionsExpanded && (
-                <Card className="mb-4">
-                  <CardBody>
-                    {renderMobileCounterActions()}
-                  </CardBody>
-                </Card>
-              )}
+              {renderMobileCounterActions()}
             </div>
-
-            {/* Counter Actions - Desktop View */}
+            {/* Desktop View */}
             <div className="hidden md:block">
-              <Card className="mb-4">
-                <CardBody>
-                  {renderCounterActions()}
-                </CardBody>
-              </Card>
+              {renderCounterActions()}
             </div>
-
-            {/* Recent Activity Section */}
-            {selectedCounter && recentActivity.length > 0 && (
-              <Card className="mb-4">
-                <CardBody>
-                  <h3 className="text-lg font-semibold mb-2">Recent Activity</h3>
-                  <div className="space-y-1">
-                    {recentActivity.map((activity, index) => (
-                      <div key={index} className="text-sm text-gray-700 dark:text-gray-300">
-                        {activity.userName} {activity.action} {formatRelativeTime(activity.timestamp)}
-                      </div>
-                    ))}
-                  </div>
-                </CardBody>
-              </Card>
-            )}
-
-            {/* Queue Management Tabs */}
-            <Tabs 
-              aria-label="Queue Management Options" 
-              selectedKey={activeTab}
-              onSelectionChange={setActiveTab}
-            >
-              <Tab key="queue-cards" title="Queue Cards">
-                <Card>
-                  <CardBody>
-                    <p className="text-lg">Queue Cards View for Counter {selectedCounter}</p>
-                  </CardBody>
-                </Card>
-              </Tab>
-              <Tab key="queue-list" title="Queue List">
-                <Card>
-                  <CardBody>
-                    <QueueList counterId={selectedCounter} queueId={params.queueId} />
-                  </CardBody>
-                </Card>
-              </Tab>
-              <Tab key="analytics" title="Analytics">
-                <Card>
-                  <CardBody>
-                    <p className="text-lg">Analytics for Counter {selectedCounter}</p>
-                  </CardBody>
-                </Card>
-              </Tab>
-              <Tab key="settings" title="Settings">
-                <Card>
-                  <CardBody>
-                    <p className="text-lg">Settings for Counter {selectedCounter}</p>
-                  </CardBody>
-                </Card>
-              </Tab>
-            </Tabs>
           </CardBody>
         </Card>
+
+        {/* Queue Management */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg">
+          <Tabs 
+            aria-label="Queue Management Options" 
+            selectedKey={activeTab}
+            onSelectionChange={setActiveTab}
+          >
+            <Tab key="queue-cards" title="Queue Cards">
+              <QueueList counterId={selectedCounter} queueId={params.queueId} />
+            </Tab>
+            <Tab key="queue-list" title="Queue List">
+              <QueueList counterId={selectedCounter} queueId={params.queueId} />
+            </Tab>
+            <Tab key="analytics" title="Analytics">
+              <div className="p-4">
+                <h3>Analytics Content</h3>
+              </div>
+            </Tab>
+            <Tab key="settings" title="Settings">
+              <div className="p-4">
+                <h3>Settings Content</h3>
+              </div>
+            </Tab>
+          </Tabs>
+        </div>
       </main>
     </div>
   )

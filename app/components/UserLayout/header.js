@@ -262,12 +262,6 @@ const Header = () => {
             <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
               {!userLoading && role === 'admin' && (
                 <>
-                  <NavGroup title="Admin">
-                    <NavLink href="/admin/dashboard" icon={PieChart}>Admin Dashboard</NavLink>
-                    <NavLink href="/admin/users" icon={Users}>Manage Users</NavLink>
-                    <NavLink href="/admin/businesses" icon={Users}>Manage Businesses</NavLink>
-                  </NavGroup>
-                  
                   <NavGroup title="Business">
                     <NavLink href="/dashboard" icon={PieChart}>Queue Dashboard</NavLink>
                     <NavLink href="/dashboard/business-profile" icon={User}>Business Profile</NavLink>
