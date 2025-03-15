@@ -12,107 +12,115 @@ export async function POST(request, { params }) {
 
   try {
     monitor.markStep('startProcess');
+    
+    // Get the request body which contains queue data from frontend
     const { queueData, customersInQueue } = await request.json();
     
     if (!queueData || !customersInQueue) {
       throw new Error('Missing required queue data');
     }
 
+    // Find the customer being served
     const entryData = customersInQueue.find(c => c.entry_id === customerId);
     if (!entryData) {
       throw new Error('Customer not found in queue');
     }
 
+    // Find the fourth person in queue (if exists)
     const fourthPerson = customersInQueue[2];
     monitor.markStep('dataProcessed');
 
+    // Calculate metrics
     const actualWaitTime = Math.floor((new Date() - new Date(entryData.join_time)) / 60000);
     const newTotalServed = queueData.total_served + 1;
     monitor.markStep('metricsCalculated');
 
-    // Prepare notifications but don't send yet
-    const notifications = {
-      fourthPerson: fourthPerson ? {
-        type: NotificationTypes.TURN_APPROACHING,
-        userId: fourthPerson.user_id,
-        data: {
-          customerName: fourthPerson.user_profile?.name || fourthPerson.name || 'Customer',
-          queueName: queueData.name,
-          timeLeft: Math.round(2 * queueData.est_time_to_serve).toString(),
-          position: "3",
-          expectedTime: new Date(Date.now() + (2 * queueData.est_time_to_serve * 60000))
-            .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-        }
-      } : null,
-      servedCustomer: {
-        type: NotificationTypes.CUSTOMER_SERVED,
-        userId: entryData.user_id,
-        data: {
-          queueName: queueData.name,
-          actualWaitTime: actualWaitTime.toString()
-        }
-      }
-    };
-
-    // Database operations
-    const [archiveResult, deleteResult, updateResult] = await Promise.all([
-      supabase.from('queue_entries_archive').insert({
-        entry_id: entryData.entry_id,
-        queue_id: entryData.queue_id,
-        user_id: entryData.user_id,
-        status: 'served',
-        wait_time: entryData.estimated_wait_time,
-        actual_wait_time: actualWaitTime,
-        join_time: entryData.join_time,
-        leave_time: new Date().toISOString(),
-        added_by: entryData.added_by,
-      }),
-      supabase.from('queue_entries').delete()
-        .match({ queue_id: queueId, entry_id: customerId }),
-      supabase.from('queues').update({ 
-        total_served: newTotalServed,
-        next_serve_at: new Date().toISOString()
-      })
-      .eq('queue_id', queueId)
-      .select()
-      .single()
-    ]);
-
-    if (archiveResult.error || deleteResult.error || updateResult.error) {
-      throw new Error('Database operation failed');
-    }
-
-    // Send notifications after successful database operations
+    // Start preparing notifications in parallel with database operations
     const notificationPromises = [];
-    if (notifications.fourthPerson) {
+
+    // Prepare fourth person notification if exists
+    if (fourthPerson) {
       notificationPromises.push(
         notificationService.sendNotification(
-          notifications.fourthPerson.type,
-          notifications.fourthPerson.userId,
-          notifications.fourthPerson.data
+          NotificationTypes.TURN_APPROACHING,
+          fourthPerson.user_id,
+          {
+            customerName: fourthPerson.user_profile?.name || fourthPerson.name || 'Customer',
+            queueName: queueData.name,
+            timeLeft: Math.round(2 * queueData.est_time_to_serve).toString(),
+            position: "3",
+            expectedTime: new Date(Date.now() + (2 * queueData.est_time_to_serve * 60000))
+              .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+          }
         )
       );
     }
+
+    // Parallel database operations
+    const [archiveResult, deleteResult, updateResult] = await Promise.all([
+      supabase
+        .from('queue_entries_archive')
+        .insert({
+          entry_id: entryData.entry_id,
+          queue_id: entryData.queue_id,
+          user_id: entryData.user_id,
+          status: 'served',
+          wait_time: entryData.estimated_wait_time,
+          actual_wait_time: actualWaitTime,
+          join_time: entryData.join_time,
+          leave_time: new Date().toISOString(),
+          added_by: entryData.added_by,
+        }),
+      supabase
+        .from('queue_entries')
+        .delete()
+        .match({ queue_id: queueId, entry_id: customerId }),
+      supabase
+        .from('queues')
+        .update({ 
+          total_served: newTotalServed,
+          next_serve_at: new Date().toISOString()
+        })
+        .eq('queue_id', queueId)
+        .select()
+        .single()
+    ]);
+    monitor.markStep('databaseOperations');
+
+    // Prepare served notification
     notificationPromises.push(
       notificationService.sendNotification(
-        notifications.servedCustomer.type,
-        notifications.servedCustomer.userId,
-        notifications.servedCustomer.data
+        NotificationTypes.CUSTOMER_SERVED,
+        entryData.user_id,
+        {
+          queueName: queueData.name,
+          actualWaitTime: actualWaitTime.toString()
+        }
       )
     );
 
-    // Handle notifications in background
+    // Handle notifications settlement
     Promise.allSettled(notificationPromises)
       .then(results => {
         console.log('Notification promises settled:', {
           total: results.length,
           fulfilled: results.filter(r => r.status === 'fulfilled').length,
-          rejected: results.filter(r => r.status === 'rejected').length
+          rejected: results.filter(r => r.status === 'rejected').length,
+          errors: results
+            .filter(r => r.status === 'rejected')
+            .map(r => r.reason?.message)
         });
       })
-      .catch(console.error);
+      .catch(error => {
+        console.error('Error in parallel notifications:', error);
+      });
 
-    monitor.markStep('complete');
+    monitor.markStep('notificationsInitiated');
+
+    if (archiveResult.error || deleteResult.error || updateResult.error) {
+      throw new Error('Database operation failed');
+    }
+
     const metrics = monitor.end();
     
     return NextResponse.json({ 
@@ -122,7 +130,11 @@ export async function POST(request, { params }) {
     });
 
   } catch (error) {
-    console.error('Error serving customer:', error);
+    console.error('Error serving customer:', {
+      error: error.message,
+      queueId,
+      customerId
+    });
     const metrics = monitor.end();
     return NextResponse.json({ 
       error: error.message || 'An unexpected error occurred',
