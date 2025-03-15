@@ -4,7 +4,7 @@ import { useState, useEffect, cloneElement } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { ArrowLeft, Users, Clock, TrendingUp, Settings, MessageSquare, UserMinus, RefreshCw, Check, X, BarChart2, AlertCircle, Activity, QrCode, Play, Pause } from 'lucide-react'
+import { ArrowLeft, Users, Clock, TrendingUp, Settings, MessageSquare, UserMinus, RefreshCw, Check, X, BarChart2, AlertCircle, Activity, QrCode, Play, Pause, Bell } from 'lucide-react'
 import { Button, Input, Card, CardBody, CardHeader, Chip, Switch, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Skeleton, Tabs, Tab } from "@nextui-org/react"
 import AddKnownUserModal from '@/app/components/UniComp/AddKnownUserModal'
 import { createClient } from '@supabase/supabase-js'
@@ -25,6 +25,7 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
   const [activeTab, setActiveTab] = useState("cards")
   const [loadingActions, setLoadingActions] = useState({})
   const [recentActivity, setRecentActivity] = useState([])
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   const formatRelativeTime = (timestamp) => {
     const diff = Date.now() - new Date(timestamp);
@@ -56,15 +57,7 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
   useEffect(() => {
     if (queueData) {
       setServiceTime(queueData.queueData.est_time_to_serve.toString())
-      setCustomersInQueue(prevCustomers => {
-        const newCustomers = queueData.customersInQueue.filter(newCustomer => 
-          !prevCustomers.some(prevCustomer => prevCustomer.entry_id === newCustomer.entry_id)
-        );
-        if (newCustomers.length > 0) {
-          toast.success('New customer joined the queue');
-        }
-        return [...prevCustomers, ...newCustomers];
-      })
+      setCustomersInQueue(queueData.customersInQueue || [])
     }
   }, [queueData])
 
@@ -196,33 +189,76 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
     await refetchQueueData()
   }
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await refetchQueueData()
+      toast.success('Queue refreshed')
+    } catch (error) {
+      toast.error('Failed to refresh')
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <header className="sticky top-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg border-b border-divider z-10">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="flex items-center text-primary hover:text-primary-500 transition-colors">
-            <ArrowLeft className="mr-2 h-5 w-5" />
-            <span className="font-medium">Back to Dashboard</span>
-          </Link>
-          <h1 className="text-2xl font-bold dark:text-white">
-            {isLoading ? <Skeleton className="w-40 h-8" /> : queueData?.queueData?.name || 'Error'}
-          </h1>
-          <Button 
-            variant="bordered" 
-            startContent={<Settings className="h-4 w-4" />}
-            className="hover:bg-default-100 transition-colors"
-          >
-            Queue Settings
-          </Button>
+      <header className="sticky top-0 bg-white dark:bg-gray-800 shadow-sm z-10">
+        <div className="container mx-auto px-4">
+          <div className="py-3 flex justify-between items-center">
+            <Link 
+              href="/dashboard" 
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+            </Link>
+            <div className="flex gap-2">
+              <Button 
+                isIconOnly
+                variant="flat"
+                className="bg-gray-100 dark:bg-gray-700"
+                size="sm"
+                onClick={handleRefresh}
+                isLoading={isRefreshing}
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
+              <Button 
+                isIconOnly
+                variant="flat"
+                className="bg-gray-100 dark:bg-gray-700"
+                size="sm"
+              >
+                <Bell className="h-4 w-4" />
+              </Button>
+              <Button 
+                isIconOnly
+                variant="flat"
+                className="bg-gray-100 dark:bg-gray-700"
+                size="sm"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          
+          <div className="pb-3">
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white text-center">
+              {initialLoading ? (
+                <Skeleton className="w-40 h-8 mx-auto" />
+              ) : (
+                queueData?.queueData?.name || 'Error'
+              )}
+            </h1>
+          </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8">
         {isLoading ? (
           <>
-            <Skeleton className="w-full h-20 mb-8" />
-            <Skeleton className="w-full h-96" />
-            <div className="grid gap-6 md:grid-cols-4 mt-8">
+            <Skeleton className="w-full h-96 mb-8" />
+            <div className="grid gap-6 md:grid-cols-4">
               {[...Array(4)].map((_, index) => (
                 <Skeleton key={index} className="h-32" />
               ))}
@@ -230,91 +266,6 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
           </>
         ) : queueData ? (
           <>
-            {/* Counter Actions */}
-            <Card className="mb-8 dark:bg-gray-800/50">
-              <CardBody>
-                {/* Mobile View */}
-                <div className="md:hidden">
-                  <div className="gap-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <Chip color={queueData.queueData.status === 'active' ? "success" : "default"}>
-                        {queueData.queueData.status === 'active' ? "Active" : "Paused"}
-                      </Chip>
-                      <Button
-                        color={queueData.queueData.status === 'active' ? "warning" : "success"}
-                        variant="flat"
-                        startContent={queueData.queueData.status === 'active' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                        onClick={handleToggleQueue}
-                        isLoading={isToggling}
-                      >
-                        {isToggling ? "Updating..." : (queueData.queueData.status === 'active' ? "Pause Queue" : "Activate Queue")}
-                      </Button>
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                      <span className="text-sm">Service Time</span>
-                      <div className="flex gap-2">
-                        <Input
-                          type="number"
-                          value={serviceTime}
-                          onChange={(e) => setServiceTime(e.target.value)}
-                          className="flex-1"
-                          endContent={<span className="text-default-400 text-sm">min</span>}
-                        />
-                        <Button 
-                          onClick={handleUpdateServiceTime}
-                          color="primary"
-                        >
-                          Update
-                        </Button>
-                        <AddKnownUserModal queueId={params.queueId} onSuccess={handleAddKnownSuccess} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Desktop View */}
-                <div className="hidden md:block">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center space-x-4">
-                      <Chip color={queueData.queueData.status === 'active' ? "success" : "default"}>
-                        {queueData.queueData.status === 'active' ? "Active" : "Paused"}
-                      </Chip>
-                      <Button
-                        color={queueData.queueData.status === 'active' ? "warning" : "success"}
-                        variant="flat"
-                        startContent={queueData.queueData.status === 'active' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                        onClick={handleToggleQueue}
-                        isLoading={isToggling}
-                      >
-                        {isToggling ? "Updating..." : (queueData.queueData.status === 'active' ? "Pause Queue" : "Activate Queue")}
-                      </Button>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Input
-                        type="number"
-                        value={serviceTime}
-                        onChange={(e) => setServiceTime(e.target.value)}
-                        className="w-32"
-                        endContent={<span className="text-default-400 text-sm">min</span>}
-                      />
-                      <Button 
-                        onClick={handleUpdateServiceTime}
-                        color="primary"
-                      >
-                        Update
-                      </Button>
-                      <AddKnownUserModal 
-                        queueId={params.queueId} 
-                        onSuccess={handleAddKnownSuccess}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-
-            {/* Queue Management Tabs */}
             <div className="bg-white dark:bg-gray-800 rounded-lg mb-8">
               <div className="tabs-scrollbar">
                 <Tabs 
@@ -368,7 +319,6 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
                 </Tabs>
               </div>
               
-              {/* Tab content remains the same */}
               {activeTab === "queue-cards" && (
                 <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {customersInQueue.length > 0 ? customersInQueue.map((customer, index) => (
@@ -615,7 +565,87 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
               )}
             </div>
 
-            {/* Stats Grid - Moved to bottom */}
+            <Card className="dark:bg-gray-800/50 mb-8">
+              <CardBody>
+                <div className="md:hidden">
+                  <div className="gap-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <Chip color={queueData.queueData.status === 'active' ? "success" : "default"}>
+                        {queueData.queueData.status === 'active' ? "Active" : "Paused"}
+                      </Chip>
+                      <Button
+                        color={queueData.queueData.status === 'active' ? "warning" : "success"}
+                        variant="flat"
+                        startContent={queueData.queueData.status === 'active' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                        onClick={handleToggleQueue}
+                        isLoading={isToggling}
+                      >
+                        {isToggling ? "Updating..." : (queueData.queueData.status === 'active' ? "Pause Queue" : "Activate Queue")}
+                      </Button>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <span className="text-sm">Service Time</span>
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          value={serviceTime}
+                          onChange={(e) => setServiceTime(e.target.value)}
+                          className="flex-1"
+                          endContent={<span className="text-default-400 text-sm">min</span>}
+                        />
+                        <Button 
+                          onClick={handleUpdateServiceTime}
+                          color="primary"
+                        >
+                          Update
+                        </Button>
+                        <AddKnownUserModal queueId={params.queueId} onSuccess={handleAddKnownSuccess} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="hidden md:block">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center space-x-4">
+                      <Chip color={queueData.queueData.status === 'active' ? "success" : "default"}>
+                        {queueData.queueData.status === 'active' ? "Active" : "Paused"}
+                      </Chip>
+                      <Button
+                        color={queueData.queueData.status === 'active' ? "warning" : "success"}
+                        variant="flat"
+                        startContent={queueData.queueData.status === 'active' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                        onClick={handleToggleQueue}
+                        isLoading={isToggling}
+                      >
+                        {isToggling ? "Updating..." : (queueData.queueData.status === 'active' ? "Pause Queue" : "Activate Queue")}
+                      </Button>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        type="number"
+                        value={serviceTime}
+                        onChange={(e) => setServiceTime(e.target.value)}
+                        className="w-32"
+                        endContent={<span className="text-default-400 text-sm">min</span>}
+                      />
+                      <Button 
+                        onClick={handleUpdateServiceTime}
+                        color="primary"
+                      >
+                        Update
+                      </Button>
+                      <AddKnownUserModal 
+                        queueId={params.queueId} 
+                        onSuccess={handleAddKnownSuccess}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+
             <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
               <Card className="bg-white/60 dark:bg-gray-800/60 shadow-sm hover:shadow-md transition-all">
                 <CardBody className="py-3 px-4">
