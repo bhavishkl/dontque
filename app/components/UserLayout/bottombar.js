@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Search, PlusCircle, History, User } from 'lucide-react';
 import { useUserInfo } from '../../hooks/useUserName';
 import { useSession } from "next-auth/react";
+import { NavigationIcons } from '../../utils/navigationIcons';
 
 const BottomBar = () => {
     const pathname = usePathname();
@@ -16,11 +16,46 @@ const BottomBar = () => {
     }
 
     const navItems = [
-        { icon: Home, label: 'Home', href: '/user/home' },
-        { icon: Search, label: 'Explore', href: '/user/queues' },
-        { icon: PlusCircle, label: 'Feedback', href: '/feedback' },
-        { icon: History, label: 'History', href: '/user/queue-history' },
-        { icon: User, label: 'Profile', href: '/user/dashboard' },
+        { 
+            icon: {
+                outlined: NavigationIcons.HomeOutlined,
+                filled: NavigationIcons.HomeFilled
+            },
+            label: 'Home',
+            href: '/user/home'
+        },
+        {
+            icon: {
+                outlined: NavigationIcons.SearchOutlined,
+                filled: NavigationIcons.SearchOutlined
+            },
+            label: 'Explore',
+            href: '/user/queues'
+        },
+        {
+            icon: {
+                outlined: NavigationIcons.FeedbackOutlined,
+                filled: NavigationIcons.FeedbackFilled
+            },
+            label: 'Feedback',
+            href: '/feedback'
+        },
+        {
+            icon: {
+                outlined: NavigationIcons.HistoryOutlined,
+                filled: NavigationIcons.HistoryFilled
+            },
+            label: 'History',
+            href: '/user/queue-history'
+        },
+        {
+            icon: {
+                outlined: NavigationIcons.ProfileOutlined,
+                filled: NavigationIcons.ProfileFilled
+            },
+            label: 'Profile',
+            href: '/user/dashboard'
+        }
     ];
 
     return (
@@ -32,6 +67,7 @@ const BottomBar = () => {
             <div className="relative flex items-center justify-around h-16 px-2">
                 {navItems.map((item, index) => {
                     const isActive = pathname === item.href;
+                    const Icon = isActive ? item.icon.filled : item.icon.outlined;
                     
                     // Special styling for the center "Feedback" button
                     if (index === 2) {
@@ -46,9 +82,11 @@ const BottomBar = () => {
                                     ${isActive 
                                         ? 'bg-orange-500 text-white' 
                                         : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'}
-                                    shadow-md transform transition-transform duration-200 hover:scale-105
+                                    shadow-md transform transition-all duration-300 ease-in-out hover:scale-105
                                 `}>
-                                    <item.icon className="h-6 w-6" />
+                                    <Icon className={`transform transition-all duration-300 ease-in-out ${
+                                        isActive ? 'h-8 w-8' : 'h-6 w-6'
+                                    }`} />
                                 </div>
                             </Link>
                         );
@@ -61,16 +99,15 @@ const BottomBar = () => {
                             className="flex flex-col items-center justify-center w-1/5"
                         >
                             <div className="relative">
-                                <item.icon 
-                                    className={`h-6 w-6 transition-colors duration-200 ${
+                                <Icon 
+                                    className={`transform transition-all duration-300 ease-in-out ${
                                         isActive 
-                                            ? 'text-orange-500 dark:text-orange-400' 
-                                            : 'text-gray-600 dark:text-gray-400'
-                                    }`} 
-                                    strokeWidth={isActive ? 2.5 : 1.5}
+                                            ? 'h-8 w-8 text-orange-500 dark:text-orange-400' 
+                                            : 'h-6 w-6 text-gray-600 dark:text-gray-400'
+                                    }`}
                                 />
                             </div>
-                            <span className={`text-xs mt-1 font-medium transition-colors duration-200 ${
+                            <span className={`text-[10px] mt-0.5 font-medium transition-all duration-300 ease-in-out ${
                                 isActive 
                                     ? 'text-orange-500 dark:text-orange-400' 
                                     : 'text-gray-600 dark:text-gray-400'

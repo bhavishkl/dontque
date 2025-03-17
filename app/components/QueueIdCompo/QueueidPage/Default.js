@@ -9,8 +9,6 @@ import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
 import { createClient } from '@supabase/supabase-js'
 import { useApi } from '@/app/hooks/useApi'
-// Remove the direct import
-// import LeaveQueueConfirmationModal from '@/app/components/QueueIdCompo/LeaveQueueConfirmationModal'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
@@ -20,6 +18,7 @@ const QueueInfoSec = lazy(() => import('@/app/components/QueueIdCompo/QueueidPag
 const NotificationPreferencesModal = lazy(() => import('@/app/components/NotificationPreferencesModal'));
 // Add dynamic import for LeaveQueueConfirmationModal
 const LeaveQueueConfirmationModal = lazy(() => import('@/app/components/QueueIdCompo/LeaveQueueConfirmationModal'));
+const QueueJoinedAnimation = lazy(() => import('@/app/components/QueueIdCompo/QueueidPage/JoinedAnimation'));
 
 const calculatePersonalizedServeTime = (nextServeAt, position, estTimeToServe, serviceStartTime) => {
   // If position is 1 and service has started, they're next up - return current time
@@ -79,6 +78,7 @@ export default function QueueDetailsPage({ params, queueData: initialQueueData }
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [isLeavingQueue, setIsLeavingQueue] = useState(false);
+  const [showJoinedAnimation, setShowJoinedAnimation] = useState(false);
 
   if (isError) {
     return <div>Error: {error.message}</div>
@@ -146,8 +146,20 @@ export default function QueueDetailsPage({ params, queueData: initialQueueData }
         throw new Error(data.error || 'Failed to join queue');
       }
   
-      toast.success('Successfully joined the queue');
-      await mutate();
+      // Show animation before updating queue data
+      setShowJoinedAnimation(true);
+  
+      // Wait for animation to complete
+      setTimeout(async () => {
+        await mutate();
+        toast.success('Successfully joined the queue');
+        
+        // Hide animation after showing queue entry
+        setTimeout(() => {
+          setShowJoinedAnimation(false);
+        }, 1000);
+      }, 1500);
+  
     } catch (err) {
       console.error('Error joining queue:', err);
       toast.error(err.message || 'Failed to join queue. Please try again.');
@@ -598,6 +610,10 @@ export default function QueueDetailsPage({ params, queueData: initialQueueData }
           isLoading={isLeavingQueue}
           position={queueData?.userQueueEntry?.position}
           waitTime={queueData?.userQueueEntry?.wait_time_formatted}
+        />
+        <QueueJoinedAnimation 
+          show={showJoinedAnimation}
+          queuePosition={queueData?.current_queue_count || 1}
         />
       </Suspense>
     </div>
