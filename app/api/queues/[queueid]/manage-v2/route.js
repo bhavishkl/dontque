@@ -20,7 +20,7 @@ export async function GET(request, { params }) {
     const [queueResult, customersResult] = await Promise.all([
       // Queue data fetch
       supabase
-        .from('queues')
+        .from('queue_stats_extended')
         .select('*')
         .eq('queue_id', queueid)
         .single(),

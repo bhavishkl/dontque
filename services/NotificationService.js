@@ -3,6 +3,19 @@ import { supabase } from '../app/lib/supabase';
 
 // Define WhatsApp template configurations
 const WHATSAPP_TEMPLATES = {
+  QUEUE_DELAY: {
+    name: 'queue_status_default',
+    components: {
+      body_1: { type: 'text', field: 'queueName' },
+      body_2: { type: 'text', field: 'originalTime' },
+      body_3: { type: 'text', field: 'newTime' },
+      button: {
+        type: 'url',
+        field: 'statusUrl',
+        url: '{{1}}'
+      }
+    }
+  },
   QUEUE_JOIN: {
     name: 'queue_joined',
     components: {
@@ -175,14 +188,23 @@ export class NotificationService {
               code: "en",
               policy: "deterministic"
             },
+            namespace: null,
             to_and_components: [
               {
                 to: [phone],
                 components: Object.entries(template.components).reduce((acc, [key, config]) => {
-                  acc[key] = {
-                    type: 'text',
-                    value: data[config.field]?.toString() || "0"
-                  };
+                  if (key.startsWith('body_')) {
+                    acc[key] = {
+                      type: 'text',
+                      value: data[config.field]?.toString() || "0"
+                    };
+                  } else if (key === 'button') {
+                    acc.button_1 = {
+                      type: 'text',
+                      subtype: 'url',
+                      value: data[config.field]?.toString() || ""
+                    };
+                  }
                   return acc;
                 }, {})
               }
@@ -194,7 +216,8 @@ export class NotificationService {
       console.log('Sending WhatsApp message:', {
         phone,
         template: template.name,
-        data
+        data,
+        payload: JSON.stringify(payload)
       });
 
       const response = await axios({
@@ -205,11 +228,7 @@ export class NotificationService {
           'authkey': this.msg91Config.authKey
         },
         data: payload,
-        timeout: 30000, // Increase timeout to 30 seconds
-        retry: 3, // Add retry capability
-        retryDelay: (retryCount) => {
-          return retryCount * 2000; // Progressive delay: 2s, 4s, 6s
-        }
+        timeout: 30000
       });
 
       console.log('WhatsApp notification sent successfully:', {
@@ -220,11 +239,13 @@ export class NotificationService {
 
       return response.data;
     } catch (error) {
-      if (error.code === 'ECONNABORTED') {
-        console.error(`WhatsApp notification timeout for ${phone}: ${error.message}`);
-        // You might want to queue this for retry later
-      }
-      throw error;
+      console.error('WhatsApp notification failed:', {
+        error: error.message,
+        phone,
+        template: templateType,
+        response: error.response?.data
+      });
+      return null;
     }
   }
 
@@ -358,6 +379,7 @@ export class NotificationService {
 }
 
 export const NotificationTypes = {
+  QUEUE_DELAY: 'QUEUE_DELAY',
   QUEUE_JOIN: 'QUEUE_JOIN',
   TURN_APPROACHING: 'TURN_APPROACHING',
   CUSTOMER_SERVED: 'CUSTOMER_SERVED'

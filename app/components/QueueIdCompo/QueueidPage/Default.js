@@ -20,10 +20,18 @@ const NotificationPreferencesModal = lazy(() => import('@/app/components/Notific
 const LeaveQueueConfirmationModal = lazy(() => import('@/app/components/QueueIdCompo/LeaveQueueConfirmationModal'));
 const QueueJoinedAnimation = lazy(() => import('@/app/components/QueueIdCompo/QueueidPage/JoinedAnimation'));
 
-const calculatePersonalizedServeTime = (nextServeAt, position, estTimeToServe, serviceStartTime) => {
-  // If position is 1 and service has started, they're next up - return current time
+const calculatePersonalizedServeTime = (nextServeAt, position, estTimeToServe, serviceStartTime, delayedUntil) => {
+  const now = new Date();
+  
+  // If position is 1 and service has started, they're next up
   if (position === 1) {
-    const now = new Date();
+    // Check if there's a delay in effect
+    if (delayedUntil) {
+      const delayTime = new Date(delayedUntil);
+      if (delayTime > now) {
+        return delayTime;
+      }
+    }
     
     // If there's a service start time, check if we've passed it
     if (serviceStartTime) {
@@ -37,27 +45,36 @@ const calculatePersonalizedServeTime = (nextServeAt, position, estTimeToServe, s
       }
     }
     
-    // If we're past service start time or there isn't one, return current time
-    // as they should be served immediately
+    // If we're past service start time and any delays, return current time
     return now;
   }
   
   // For all other positions, continue with existing logic
   if (!nextServeAt || !position || !estTimeToServe) return null;
   
-  const now = new Date();
-  const baseTime = nextServeAt ? new Date(nextServeAt) : new Date();
+  // Start with the base time (either nextServeAt or now)
+  let baseTime = nextServeAt ? new Date(nextServeAt) : new Date();
   
+  // Check if there's a delay in effect
+  if (delayedUntil) {
+    const delayTime = new Date(delayedUntil);
+    if (delayTime > baseTime) {
+      baseTime = delayTime;
+    }
+  }
+  
+  // Check service start time
   if (serviceStartTime) {
     const [hours, minutes] = serviceStartTime.split(':').map(Number);
     const serviceStart = new Date(now);
     serviceStart.setHours(hours, minutes, 0, 0);
     
-    if (now < serviceStart) {
-      baseTime.setHours(hours, minutes, 0, 0);
+    if (now < serviceStart && serviceStart > baseTime) {
+      baseTime = serviceStart;
     }
   }
   
+  // Calculate wait time based on position and service time
   const waitTimeInMinutes = (position - 1) * estTimeToServe;
   return new Date(baseTime.getTime() + waitTimeInMinutes * 60000);
 };
@@ -234,6 +251,28 @@ export default function QueueDetailsPage({ params, queueData: initialQueueData }
     setIsLeaveModalOpen(true);
   }
 
+  const getDelayMessage = () => {
+    if (!queueData?.delayed_until) return null;
+    
+    const formatTime = (timeString) => {
+      const date = new Date(timeString);
+      return date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    };
+
+    // Get original start time (service start time or next serve time)
+    const originalStartTime = queueData.service_start_time ? 
+      new Date(`${new Date().toDateString()} ${queueData.service_start_time}`) :
+      new Date(queueData.next_serve_at);
+
+    const newStartTime = new Date(queueData.delayed_until);
+
+    return `Start time delayed from ${formatTime(originalStartTime)} to ${formatTime(newStartTime)}`;
+  };
+
   return (
     <div className="min-h-screen dark:bg-gray-900">
       <header className=" dark:bg-gray-800 shadow-sm">
@@ -254,8 +293,28 @@ export default function QueueDetailsPage({ params, queueData: initialQueueData }
         ) : (
           <div className="grid gap-8 md:grid-cols-2">
             <div className="space-y-6">
-                  <QueueInfoSec queueData={queueData} />
+              <QueueInfoSec queueData={queueData} />
 
+              {/* Delay Alert - Moved below QueueInfoSec */}
+              {queueData?.delayed_until && (
+                <Card className="bg-orange-100 dark:bg-orange-900/20 border-l-4 border-orange-500">
+                  <CardBody className="p-4">
+                    <div className="flex items-center gap-3">
+                      <AlertCircle className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                      <div>
+                        <p className="font-medium text-orange-800 dark:text-orange-200">
+                          Queue Delay Notice
+                        </p>
+                        <p className="text-sm text-orange-700 dark:text-orange-300">
+                          {getDelayMessage()}
+                        </p>
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+              )}
+
+              {/* Queue Status Section - Remains below Delay Alert */}
               {!queueData?.userQueueEntry && (
                 <Card className="dark:bg-gray-800">
                   <CardHeader className="pb-2">
@@ -380,7 +439,8 @@ export default function QueueDetailsPage({ params, queueData: initialQueueData }
                                   queueData.next_serve_at,
                                   queueData.userQueueEntry.position,
                                   queueData.est_time_to_serve,
-                                  queueData.service_start_time
+                                  queueData.service_start_time,
+                                  queueData.delayed_until
                                 );
                                 return personalizedTime ? (
                                   <div className="flex flex-col">
@@ -419,7 +479,8 @@ export default function QueueDetailsPage({ params, queueData: initialQueueData }
                             queueData.next_serve_at,
                             queueData.userQueueEntry.position,
                             queueData.est_time_to_serve,
-                            queueData.service_start_time
+                            queueData.service_start_time,
+                            queueData.delayed_until
                           );
 
                           if (!personalizedTime) {

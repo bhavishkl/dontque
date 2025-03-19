@@ -1,17 +1,22 @@
 'use client'
 
-import { useState, useEffect, cloneElement } from 'react'
+import { useState, useEffect, cloneElement, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { ArrowLeft, Users, Clock, TrendingUp, Settings, MessageSquare, UserMinus, RefreshCw, Check, X, BarChart2, AlertCircle, Activity, QrCode, Play, Pause, Bell } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Users, Clock, TrendingUp, Settings, MessageSquare, UserMinus, RefreshCw, Check, X, BarChart2, AlertCircle, Activity, QrCode, Play, Pause, Bell } from 'lucide-react'
 import { Button, Input, Card, CardBody, CardHeader, Chip, Switch, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Skeleton, Tabs, Tab } from "@nextui-org/react"
-import AddKnownUserModal from '@/app/components/UniComp/AddKnownUserModal'
 import { createClient } from '@supabase/supabase-js'
 import QueueQRCode from '@/app/components/QueueQRCode'
 import { useApi } from '@/app/hooks/useApi'
+import dynamic from 'next/dynamic'
+import AddKnownUserModal from '@/app/components/UniComp/AddKnownUserModal'
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+)
 
 export default function ManageDefault({ params, queueData: initialQueueData, isLoading: initialLoading }) {
   const { data: queueData, isLoading, mutate: refetchQueueData } = useApi(`/api/queues/${params.queueId}/manage-v2?includeMetrics=true`, {
@@ -26,6 +31,29 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
   const [loadingActions, setLoadingActions] = useState({})
   const [recentActivity, setRecentActivity] = useState([])
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [currentCardIndex, setCurrentCardIndex] = useState(0)
+  const [isDelayModalOpen, setIsDelayModalOpen] = useState(false)
+  const [isPauseModalOpen, setIsPauseModalOpen] = useState(false)
+  const [shouldLoadDelayModal, setShouldLoadDelayModal] = useState(false)
+  const [shouldLoadPauseModal, setShouldLoadPauseModal] = useState(false)
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false)
+  const [shouldLoadAddUserModal, setShouldLoadAddUserModal] = useState(false)
+
+  const DelayModal = dynamic(
+    () => import('./DelayModal'),
+    { 
+      loading: () => null,
+      ssr: false 
+    }
+  )
+
+  const PauseConfirmationModal = dynamic(
+    () => import('./PauseConfirmationModal'),
+    { 
+      loading: () => null,
+      ssr: false 
+    }
+  )
 
   const formatRelativeTime = (timestamp) => {
     const diff = Date.now() - new Date(timestamp);
@@ -93,9 +121,8 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
         throw new Error('Failed to update queue status')
       }
       
-      // Refetch queue data after successful toggle
       await refetchQueueData()
-      
+      setIsPauseModalOpen(false)
       toast.success(`Queue ${newStatus === 'active' ? 'activated' : 'paused'}`)
     } catch (error) {
       console.error('Error updating queue status:', error)
@@ -185,10 +212,6 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
     }
   };
 
-  const handleAddKnownSuccess = async () => {
-    await refetchQueueData()
-  }
-
   const handleRefresh = async () => {
     setIsRefreshing(true)
     try {
@@ -199,6 +222,66 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
     } finally {
       setIsRefreshing(false)
     }
+  }
+
+  const nextCard = () => {
+    setCurrentCardIndex(prev => 
+      prev + 1 >= customersInQueue.length ? 0 : prev + 1
+    )
+  }
+
+  const previousCard = () => {
+    setCurrentCardIndex(prev => 
+      prev - 1 < 0 ? customersInQueue.length - 1 : prev - 1
+    )
+  }
+
+  const handleDelayClick = () => {
+    setShouldLoadDelayModal(true);
+    setIsDelayModalOpen(true);
+  };
+
+  const handleDelay = async (delayData) => {
+    try {
+      const response = await fetch(`/api/queues/${params.queueId}/delay`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          delayUntil: delayData.delayUntil,
+          queueData: queueData.queueData,
+          customersInQueue: queueData.customersInQueue
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to add delay');
+      }
+
+      await refetchQueueData();
+      setIsDelayModalOpen(false);
+      toast.success('Queue delay added successfully');
+    } catch (error) {
+      console.error('Error adding delay:', error);
+      toast.error(error.message || 'Failed to add delay');
+    }
+  };
+
+  const handlePauseClick = () => {
+    setShouldLoadPauseModal(true)
+    setIsPauseModalOpen(true)
+  }
+
+  const handleAddUserClick = () => {
+    setShouldLoadAddUserModal(true);
+    setIsAddUserModalOpen(true);
+  }
+
+  const handleUserAdded = async () => {
+    await refetchQueueData();
   }
 
   return (
@@ -320,88 +403,116 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
               </div>
               
               {activeTab === "queue-cards" && (
-                <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {customersInQueue.length > 0 ? customersInQueue.map((customer, index) => (
-                    <Card key={customer.entry_id} className="w-full dark:bg-gray-800/50 shadow-md hover:shadow-lg transition-all">
-                      <CardBody className="p-4">
-                        <div className="flex flex-col space-y-4">
-                          <div className="flex justify-between items-center">
-                            <div className="flex items-center space-x-3">
-                              <div className="bg-gradient-to-br from-primary to-primary-500 text-white rounded-full w-10 h-10 flex items-center justify-center text-lg font-bold shadow-sm">
-                                {customer.user_profile?.name?.[0] || customer.name?.[0] || 'W'}
+                <div className="mt-6">
+                  {customersInQueue.length > 0 ? (
+                    <div className="relative max-w-md mx-auto">
+                      <Card className="w-full dark:bg-gray-800/50 shadow-md hover:shadow-lg transition-all">
+                        <CardBody className="p-4">
+                          <div className="flex flex-col space-y-4">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center space-x-3">
+                                <div className="bg-gradient-to-br from-primary to-primary-500 text-white rounded-full w-10 h-10 flex items-center justify-center text-lg font-bold shadow-sm">
+                                  {customersInQueue[currentCardIndex].user_profile?.name?.[0] || 
+                                   customersInQueue[currentCardIndex].name?.[0] || 'W'}
+                                </div>
+                                <div>
+                                  <h3 className="text-lg font-semibold dark:text-white">
+                                    {customersInQueue[currentCardIndex].user_profile?.name || 
+                                     customersInQueue[currentCardIndex].name || 'Walk-in Customer'}
+                                  </h3>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Queue ID: {customersInQueue[currentCardIndex].entry_id.substring(0, 8)}...
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <h3 className="text-lg font-semibold dark:text-white">
-                                  {customer.user_profile?.name || customer.name || 'Walk-in Customer'}
-                                </h3>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Queue ID: {customer.entry_id.substring(0, 8)}...</p>
-                              </div>
-                            </div>
-                            <Chip size="sm" color="primary" variant="flat">
-                              #{index + 1}
-                            </Chip>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-4 text-sm bg-default-50 dark:bg-gray-700/50 p-3 rounded-lg">
-                            <div>
-                              <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Waiting time</p>
-                              <p className="font-semibold dark:text-white">{customer.waitingTime || '15m 20s'}</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Est. service</p>
-                              <p className="font-semibold dark:text-white">{customer.estimatedServiceTime || '20m'}</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Joined at</p>
-                              <p className="font-semibold dark:text-white">{customer.formattedJoinTime}</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Status</p>
                               <Chip size="sm" color="primary" variant="flat">
-                                {customer.status || 'Waiting'}
+                                #{currentCardIndex + 1}
                               </Chip>
                             </div>
-                          </div>
+                            
+                            <div className="grid grid-cols-2 gap-4 text-sm bg-default-50 dark:bg-gray-700/50 p-3 rounded-lg">
+                              <div>
+                                <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Waiting time</p>
+                                <p className="font-semibold dark:text-white">{customersInQueue[currentCardIndex].waitingTime || '15m 20s'}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Est. service</p>
+                                <p className="font-semibold dark:text-white">{customersInQueue[currentCardIndex].estimatedServiceTime || '20m'}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Joined at</p>
+                                <p className="font-semibold dark:text-white">{customersInQueue[currentCardIndex].formattedJoinTime}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-500 dark:text-gray-400 text-xs mb-1">Status</p>
+                                <Chip size="sm" color="primary" variant="flat">
+                                  {customersInQueue[currentCardIndex].status || 'Waiting'}
+                                </Chip>
+                              </div>
+                            </div>
                 
-                          <div className="flex justify-between items-center">
-                            <div className="flex space-x-1">
+                            <div className="flex justify-between items-center">
+                              <div className="flex space-x-1">
+                                <Button 
+                                  size="sm" 
+                                  color="success" 
+                                  variant="flat" 
+                                  onClick={() => handleServed(customersInQueue[currentCardIndex].entry_id)}
+                                  isLoading={loadingActions[customersInQueue[currentCardIndex].entry_id]?.serve}
+                                  className="font-medium min-w-0 px-2"
+                                >
+                                  <Check className="h-4 w-4 sm:mr-1" />
+                                  <span>Served</span>
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  color="danger" 
+                                  variant="flat" 
+                                  onClick={() => handleNoShow(customersInQueue[currentCardIndex].entry_id)}
+                                  isLoading={loadingActions[customersInQueue[currentCardIndex].entry_id]?.noShow}
+                                  className="font-medium min-w-0 px-2"
+                                >
+                                  <X className="h-4 w-4 sm:mr-1" />
+                                  <span>No Show</span>
+                                </Button>
+                              </div>
                               <Button 
                                 size="sm" 
-                                color="success" 
-                                variant="flat" 
-                                onClick={() => handleServed(customer.entry_id)}
-                                isLoading={loadingActions[customer.entry_id]?.serve}
-                                className="font-medium min-w-0 px-2"
+                                color="primary" 
+                                variant="light"
+                                className="font-medium min-w-0 px-3"
                               >
-                                <Check className="h-4 w-4 sm:mr-1" />
-                                <span>Served</span>
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                color="danger" 
-                                variant="flat" 
-                                onClick={() => handleNoShow(customer.entry_id)}
-                                isLoading={loadingActions[customer.entry_id]?.noShow}
-                                className="font-medium min-w-0 px-2"
-                              >
-                                <X className="h-4 w-4 sm:mr-1" />
-                                <span>No Show</span>
+                                <MessageSquare className="h-4 w-4 sm:mr-1" />
+                                <span className="sm:inline hidden">Notify</span>
                               </Button>
                             </div>
-                            <Button 
-                              size="sm" 
-                              color="primary" 
-                              variant="light"
-                              className="font-medium min-w-0 px-3"
-                            >
-                              <MessageSquare className="h-4 w-4 sm:mr-1" />
-                              <span className="sm:inline hidden">Notify</span>
-                            </Button>
                           </div>
-                        </div>
-                      </CardBody>
-                    </Card>
-                  )) : (
+                        </CardBody>
+                      </Card>
+
+                      <div className="flex justify-center items-center mt-4 gap-2">
+                        <Button
+                          isIconOnly
+                          variant="flat"
+                          onClick={previousCard}
+                          className="bg-default-100 dark:bg-gray-700"
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm text-default-600">
+                          {currentCardIndex + 1} / {customersInQueue.length}
+                        </span>
+                        <Button
+                          isIconOnly
+                          variant="flat"
+                          onClick={nextCard}
+                          className="bg-default-100 dark:bg-gray-700"
+                        >
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
                     <div className="col-span-full p-8 text-center">
                       <div className="mx-auto w-16 h-16 mb-4 flex items-center justify-center rounded-full bg-default-100">
                         <Users className="h-8 w-8 text-default-400" />
@@ -565,88 +676,7 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
               )}
             </div>
 
-            <Card className="dark:bg-gray-800/50 mb-8">
-              <CardBody>
-                <div className="md:hidden">
-                  <div className="gap-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <Chip color={queueData.queueData.status === 'active' ? "success" : "default"}>
-                        {queueData.queueData.status === 'active' ? "Active" : "Paused"}
-                      </Chip>
-                      <Button
-                        color={queueData.queueData.status === 'active' ? "warning" : "success"}
-                        variant="flat"
-                        startContent={queueData.queueData.status === 'active' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                        onClick={handleToggleQueue}
-                        isLoading={isToggling}
-                      >
-                        {isToggling ? "Updating..." : (queueData.queueData.status === 'active' ? "Pause Queue" : "Activate Queue")}
-                      </Button>
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                      <span className="text-sm">Service Time</span>
-                      <div className="flex gap-2">
-                        <Input
-                          type="number"
-                          value={serviceTime}
-                          onChange={(e) => setServiceTime(e.target.value)}
-                          className="flex-1"
-                          endContent={<span className="text-default-400 text-sm">min</span>}
-                        />
-                        <Button 
-                          onClick={handleUpdateServiceTime}
-                          color="primary"
-                        >
-                          Update
-                        </Button>
-                        <AddKnownUserModal queueId={params.queueId} onSuccess={handleAddKnownSuccess} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="hidden md:block">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center space-x-4">
-                      <Chip color={queueData.queueData.status === 'active' ? "success" : "default"}>
-                        {queueData.queueData.status === 'active' ? "Active" : "Paused"}
-                      </Chip>
-                      <Button
-                        color={queueData.queueData.status === 'active' ? "warning" : "success"}
-                        variant="flat"
-                        startContent={queueData.queueData.status === 'active' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                        onClick={handleToggleQueue}
-                        isLoading={isToggling}
-                      >
-                        {isToggling ? "Updating..." : (queueData.queueData.status === 'active' ? "Pause Queue" : "Activate Queue")}
-                      </Button>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Input
-                        type="number"
-                        value={serviceTime}
-                        onChange={(e) => setServiceTime(e.target.value)}
-                        className="w-32"
-                        endContent={<span className="text-default-400 text-sm">min</span>}
-                      />
-                      <Button 
-                        onClick={handleUpdateServiceTime}
-                        color="primary"
-                      >
-                        Update
-                      </Button>
-                      <AddKnownUserModal 
-                        queueId={params.queueId} 
-                        onSuccess={handleAddKnownSuccess}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </CardBody>
-            </Card>
-
-            <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+            <div className="grid gap-3 grid-cols-2 md:grid-cols-4 mb-8">
               <Card className="bg-white/60 dark:bg-gray-800/60 shadow-sm hover:shadow-md transition-all">
                 <CardBody className="py-3 px-4">
                   <div className="flex items-center justify-between">
@@ -711,6 +741,106 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
                 </CardBody>
               </Card>
             </div>
+
+            <Card className="dark:bg-gray-800/50 mb-8">
+              <CardBody>
+                <div className="md:hidden">
+                  <div className="gap-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <Chip color={queueData.queueData.status === 'active' ? "success" : "default"}>
+                        {queueData.queueData.status === 'active' ? "Active" : "Paused"}
+                      </Chip>
+                      <div className="flex gap-2">
+                        <Button
+                          color={queueData.queueData.status === 'active' ? "warning" : "success"}
+                          variant="flat"
+                          startContent={queueData.queueData.status === 'active' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                          onClick={handlePauseClick}
+                        >
+                          {queueData.queueData.status === 'active' ? "Pause Queue" : "Activate Queue"}
+                        </Button>
+                        <Button
+                          color="warning"
+                          variant="flat"
+                          startContent={<Clock className="h-4 w-4" />}
+                          onClick={handleDelayClick}
+                        >
+                          Add Delay
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <span className="text-sm">Service Time</span>
+                      <div className="flex items-center space-x-2">
+                        <Input
+                          type="number"
+                          value={serviceTime}
+                          onChange={(e) => setServiceTime(e.target.value)}
+                          className="w-32"
+                          endContent={<span className="text-default-400 text-sm">min</span>}
+                        />
+                        <Button 
+                          onClick={handleUpdateServiceTime}
+                          color="primary"
+                        >
+                          Update
+                        </Button>
+                        <AddKnownUserModal
+                          queueId={params.queueId}
+                          onSuccess={handleUserAdded}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="hidden md:block">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center space-x-4">
+                      <Chip color={queueData.queueData.status === 'active' ? "success" : "default"}>
+                        {queueData.queueData.status === 'active' ? "Active" : "Paused"}
+                      </Chip>
+                      <Button
+                        color={queueData.queueData.status === 'active' ? "warning" : "success"}
+                        variant="flat"
+                        startContent={queueData.queueData.status === 'active' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                        onClick={handlePauseClick}
+                      >
+                        {queueData.queueData.status === 'active' ? "Pause Queue" : "Activate Queue"}
+                      </Button>
+                      <Button
+                        color="warning"
+                        variant="flat"
+                        startContent={<Clock className="h-4 w-4" />}
+                        onClick={handleDelayClick}
+                      >
+                        Add Delay
+                      </Button>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        type="number"
+                        value={serviceTime}
+                        onChange={(e) => setServiceTime(e.target.value)}
+                        className="w-32"
+                        endContent={<span className="text-default-400 text-sm">min</span>}
+                      />
+                      <Button 
+                        onClick={handleUpdateServiceTime}
+                        color="primary"
+                      >
+                        Update
+                      </Button>
+                      <AddKnownUserModal
+                        queueId={params.queueId}
+                        onSuccess={handleUserAdded}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
           </>
         ) : (
           <div className="p-8 text-center dark:text-white">
@@ -723,6 +853,38 @@ export default function ManageDefault({ params, queueData: initialQueueData, isL
           </div>
         )}
       </main>
+
+      {shouldLoadDelayModal && (
+        <Suspense fallback={null}>
+          <DelayModal 
+            isOpen={isDelayModalOpen}
+            onClose={() => setIsDelayModalOpen(false)}
+            onSubmit={handleDelay}
+          />
+        </Suspense>
+      )}
+
+      {shouldLoadAddUserModal && (
+        <Suspense fallback={null}>
+          <AddKnownUserModal
+            isOpen={isAddUserModalOpen}
+            onClose={() => setIsAddUserModalOpen(false)}
+            queueId={params.queueId}
+            onSuccess={handleUserAdded}
+          />
+        </Suspense>
+      )}
+      {shouldLoadPauseModal && (
+        <Suspense fallback={null}>
+          <PauseConfirmationModal 
+            isOpen={isPauseModalOpen}
+            onClose={() => setIsPauseModalOpen(false)}
+            onConfirm={handleToggleQueue}
+            isActive={queueData?.queueData?.status === 'active'}
+            isLoading={isToggling}
+          />
+        </Suspense>
+      )}
     </div>
   )
 }
