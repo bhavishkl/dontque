@@ -45,6 +45,7 @@ export async function POST(request, { params }) {
           NotificationTypes.TURN_APPROACHING,
           fourthPerson.user_id,
           {
+            imageUrl: 'http://localhost:3000/queue_next.png',
             customerName: fourthPerson.user_profile?.name || fourthPerson.name || 'Customer',
             queueName: queueData.name,
             timeLeft: Math.round(2 * queueData.est_time_to_serve).toString(),

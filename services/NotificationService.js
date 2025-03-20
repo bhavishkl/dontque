@@ -25,8 +25,9 @@ const WHATSAPP_TEMPLATES = {
     }
   },
   TURN_APPROACHING: {
-    name: 'queue_turn_approach',
+    name: 'queue_turn_next',
     components: {
+      header_1: { type: 'image', field: 'imageUrl' },
       body_1: { type: 'text', field: 'customerName' },
       body_2: { type: 'text', field: 'queueName' },
       body_3: { type: 'text', field: 'timeLeft' },
@@ -176,6 +177,17 @@ export class NotificationService {
         throw new Error(`Invalid template type: ${templateType}`);
       }
 
+      // Add image validation
+      if (template.components.header_1?.type === 'image') {
+        const imageUrl = data.imageUrl;
+        if (!imageUrl?.startsWith('https://')) {
+          throw new Error('Image URL must use HTTPS');
+        }
+        if (!/\.(jpeg|jpg|png)$/i.test(imageUrl)) {
+          throw new Error('Invalid image format - must be JPEG/PNG');
+        }
+      }
+
       const payload = {
         integrated_number: this.msg91Config.integratedNumber,
         content_type: "template",
@@ -193,7 +205,12 @@ export class NotificationService {
               {
                 to: [phone],
                 components: Object.entries(template.components).reduce((acc, [key, config]) => {
-                  if (key.startsWith('body_')) {
+                  if (key.startsWith('header_')) {
+                    acc[key] = {
+                      type: 'image',
+                      value: data[config.field]?.toString() || ""
+                    };
+                  } else if (key.startsWith('body_')) {
                     acc[key] = {
                       type: 'text',
                       value: data[config.field]?.toString() || "0"
