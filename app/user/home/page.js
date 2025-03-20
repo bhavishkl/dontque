@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Button, useDisclosure, Card, CardBody, Skeleton, Chip, Select, SelectItem } from "@nextui-org/react"
+import { Button, useDisclosure, Card, CardBody, Skeleton, Chip, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Spinner } from "@nextui-org/react"
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { categories } from '../../utils/category'
-import { Clock, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, MapPin, Star, Edit2, Crosshair } from 'lucide-react'
+import { Clock, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, MapPin, Star, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApi } from '../../hooks/useApi'
 import debounce from 'lodash/debounce'
@@ -194,6 +194,15 @@ export default function Home() {
     [mutate]
   );
 
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+
+  // Add mounted state check
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search)
     const categoryParam = searchParams.get('category')
@@ -247,7 +256,27 @@ export default function Home() {
     }
   }, [needsNameUpdate])
 
-  const [isManualSelection, setIsManualSelection] = useState(false)
+  const handleLocationSelect = (city) => {
+    const newLocation = {
+      city: city,
+      latitude: cityCoordinates[city].lat,
+      longitude: cityCoordinates[city].lng,
+      timestamp: new Date().toISOString(),
+      isManuallySet: true
+    };
+    sessionStorage.setItem('userLocation', JSON.stringify(newLocation));
+    refreshLocation();
+    setLocationModalOpen(false);
+  };
+
+  const handleCurrentLocation = async () => {
+    try {
+      await requestLocation();
+      setLocationModalOpen(false);
+    } catch (error) {
+      toast.error('Failed to detect location');
+    }
+  };
 
   return (
     <div className="min-h-screen dark:bg-gray-900 dark:text-gray-100">
@@ -263,74 +292,25 @@ export default function Home() {
                 <p className="text-lg sm:text-xl text-orange-50">Find and join queues near you instantly.</p>
                 <div className="flex items-center gap-2 text-orange-50/80 text-sm">
                   <MapPin className="h-4 w-4" />
-                  {isManualSelection ? (
-                    <div className="flex items-center gap-2">
-                      <Select
-                        aria-label="Select City"
-                        selectedKeys={userLocation?.city ? [userLocation.city] : []}
-                        className="bg-white/10 backdrop-blur-md rounded-lg"
-                        style={{ width: "160px" }}
-                        onSelectionChange={(keys) => {
-                          const selectedCity = Array.from(keys)[0]?.toString();
-                          if (selectedCity) {
-                            const newLocation = {
-                              city: selectedCity,
-                              latitude: cityCoordinates[selectedCity].lat,
-                              longitude: cityCoordinates[selectedCity].lng,
-                              timestamp: new Date().toISOString(),
-                              isManuallySet: true // Add flag for manual selection
-                            };
-                            sessionStorage.setItem('userLocation', JSON.stringify(newLocation));
-                            refreshLocation();
-                          }
-                        }}
-                      >
-                        {Object.keys(cityCoordinates).map((city) => (
-                          <SelectItem key={city} value={city}>
-                            {city}
-                          </SelectItem>
-                        ))}
-                      </Select>
-                      <Button
-                        size="sm"
-                        color="primary"
-                        variant="flat"
-                        className="bg-white/20 text-white"
-                        onClick={() => setIsManualSelection(false)}
-                      >
-                        Apply
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span suppressHydrationWarning>
-                        {userLocation?.city || 'Loading location...'}
+                  <Button
+                    variant="light"
+                    className="p-0 h-auto text-current font-normal hover:bg-orange-100/20 hover:rounded-full px-2 transition-all duration-200"
+                    onPress={() => setLocationModalOpen(true)}
+                    suppressHydrationWarning
+                  >
+                    {!isMounted ? (
+                      "Detecting location..."
+                    ) : isLocationLoading ? (
+                      "Detecting location..."
+                    ) : userLocation?.city ? (
+                      <span className="flex items-center gap-1">
+                        {userLocation.city}
+                        <Pencil className="h-3.5 w-3.5" />
                       </span>
-                      <div className="flex gap-1">
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="flat"
-                          className="bg-white/10 hover:bg-white/20 text-white"
-                          onClick={() => setIsManualSelection(true)}
-                        >
-                          <Edit2 className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="flat"
-                          className="bg-white/10 hover:bg-white/20 text-white"
-                          onClick={() => {
-                            sessionStorage.removeItem('userLocation');
-                            requestLocation();
-                          }}
-                        >
-                          <Crosshair className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+                    ) : (
+                      "Set your location"
+                    )}
+                  </Button>
                 </div>
               </div>
               <div className="md:w-1/2 w-full">
@@ -342,6 +322,55 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* Location Modal */}
+        <Modal 
+          isOpen={locationModalOpen} 
+          onClose={() => setLocationModalOpen(false)}
+          placement="center"
+          className="dark:bg-gray-800"
+        >
+          <ModalContent>
+            <div className="p-4">
+              <ModalHeader className="flex flex-col gap-1 px-0">
+                <h3 className="text-lg font-medium">Select your location</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Choose your city to find queues near you
+                </p>
+              </ModalHeader>
+              <ModalBody className="px-0">
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.keys(cityCoordinates).map((city) => (
+                    <Button
+                      key={city}
+                      variant="flat"
+                      className={`justify-start h-12 text-left ${
+                        userLocation?.city === city 
+                          ? "bg-orange-100 dark:bg-orange-700 text-orange-600 dark:text-orange-200"
+                          : "bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600"
+                      } transition-colors duration-200`}
+                      onPress={() => handleLocationSelect(city)}
+                    >
+                      {city}
+                    </Button>
+                  ))}
+                </div>
+              </ModalBody>
+              <ModalFooter className="px-0 pt-4">
+                <Button
+                  fullWidth
+                  variant="flat"
+                  onPress={handleCurrentLocation}
+                  disabled={isLocationLoading}
+                  className="h-12"
+                  startContent={isLocationLoading ? <Spinner size="sm" /> : <MapPin className="h-4 w-4" />}
+                >
+                  {isLocationLoading ? "Detecting..." : "Use my current location"}
+                </Button>
+              </ModalFooter>
+            </div>
+          </ModalContent>
+        </Modal>
 
         {/* Categories */}
         <section className="py-4 sm:py-8 dark:bg-gray-800">
