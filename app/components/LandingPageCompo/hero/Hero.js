@@ -7,7 +7,7 @@ import { Clock, Users, ArrowRight } from 'lucide-react'
 
 export default function Hero() {
   return (
-    <section className="relative bg-white pt-24 pb-0">
+    <section className="relative bg-orange-500 pt-24 pb-0">
       <div className="absolute inset-x-0 top-0 h-96 bg-[linear-gradient(to_right,#f1f1f1_1px,transparent_1px),linear-gradient(to_bottom,#f1f1f1_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:linear-gradient(to_bottom,white_10%,transparent)]"></div>
 
       <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
