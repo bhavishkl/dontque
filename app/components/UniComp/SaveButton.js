@@ -69,7 +69,7 @@ export default function SaveButton({ queueId, className }) {
         // When unsaved: no fill, use stroke to display a border outline in gray.
         fill={isSaved ? 'currentColor' : 'none'}
         stroke={isSaved ? 'none' : 'currentColor'}
-        className={`h-5 w-5 ${isSaved ? 'text-yellow-500' : 'text-gray-400'}`}
+        className={`h-5 w-5 ${isSaved ? 'text-gray-600' : 'text-gray-400'}`}
       />
     </Button>
   );
