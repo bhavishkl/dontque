@@ -17,7 +17,14 @@ export async function GET(req) {
       .from('queue_entries')
       .select(`
         *,
-        queue:queues(*)
+        queue:queues(
+          queue_id,
+          name,
+          location,
+          service_type,
+          current_queue,
+          status
+        )
       `)
       .eq('user_id', session.user.id)
       .eq('status', 'waiting')
@@ -29,7 +36,12 @@ export async function GET(req) {
       id: entry.queue.queue_id,
       name: entry.queue.name,
       position: entry.position,
-      estimatedWaitTime: entry.estimated_wait_time
+      estimatedWaitTime: entry.estimated_wait_time,
+      join_time: entry.join_time,
+      location: entry.queue.location,
+      service_type: entry.queue.service_type,
+      current_queue: entry.queue.current_queue,
+      queue_status: entry.queue.status
     }))
 
     return NextResponse.json(formattedData)
