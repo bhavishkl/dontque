@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { Users, Clock, Settings, Plus, PieChart, DollarSign, Trash2, Search, MoreVertical } from 'lucide-react'
+import { Users, Clock, Settings, Plus, PieChart, DollarSign, Trash2, Search, MoreVertical, Play, Pause, Star, TrendingUp, Eye } from 'lucide-react'
 import { Button } from "@nextui-org/button"
-import { Card, CardBody } from "@nextui-org/card"
+import { Card, CardBody, CardHeader } from "@nextui-org/card"
 import { Skeleton } from "@nextui-org/skeleton"
 import { useSession } from "next-auth/react"
 import { useRouter } from 'next/navigation'
@@ -17,7 +17,8 @@ import {
 } from "@nextui-org/react"
 import { Input } from "@nextui-org/input"
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@nextui-org/dropdown"
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@nextui-org/table"
+import { Badge } from "@nextui-org/badge"
+import { Chip } from "@nextui-org/chip"
 
 // Dynamically import the DeleteModal component
 const DeleteModal = dynamic(
@@ -184,25 +185,28 @@ export default function QueueOwnerDashboard() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 bg-background/70 backdrop-blur-lg border-b border-divider z-10">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl sm:text-2xl font-bold">Dashboard</h1>
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="light" 
-              startContent={<Settings className="w-4 h-4" />}
-              className="hidden sm:flex"
-            >
-              Settings
-            </Button>
-            <Link href="/dashboard/create-queue">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <h1 className="text-xl sm:text-2xl font-bold">Dashboard</h1>
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <Button 
-                color="primary" 
-                startContent={<Plus className="w-4 h-4" />}
-                className="font-medium"
+                variant="light" 
+                startContent={<Settings className="w-4 h-4" />}
+                className="hidden sm:flex"
               >
-                Create Queue
+                Settings
               </Button>
-            </Link>
+              <Link href="/dashboard/create-queue" className="flex-1 sm:flex-none">
+                <Button 
+                  color="primary" 
+                  startContent={<Plus className="w-4 h-4" />}
+                  className="font-medium w-full sm:w-auto"
+                >
+                  <span className="hidden sm:inline">Create Queue</span>
+                  <span className="sm:hidden">Create</span>
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </header>
@@ -221,18 +225,18 @@ export default function QueueOwnerDashboard() {
             </div>
           </div>
         ) : (
-          <div className="grid gap-4 grid-cols-2 md:grid-cols-4 mb-8">
+          <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4 mb-6 sm:mb-8">
             <Card className="bg-background/60 shadow-md hover:shadow-xl transition-all duration-200 border border-divider">
-              <CardBody className="gap-3">
+              <CardBody className="gap-2 sm:gap-3 p-3 sm:p-4">
                 <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm text-default-500">Active Queues</p>
-                    <div className="text-2xl font-semibold mt-1">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm text-default-500 truncate">Active Queues</p>
+                    <div className="text-lg sm:text-2xl font-semibold mt-1">
                       {overallStats.activeQueues}/{overallStats.totalQueues}
                     </div>
                   </div>
-                  <div className="p-2 rounded-full bg-primary/10">
-                    <PieChart className="h-5 w-5 text-primary" />
+                  <div className="p-1.5 sm:p-2 rounded-full bg-primary/10 flex-shrink-0">
+                    <PieChart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                   </div>
                 </div>
                 <div className="h-1 w-full bg-default-100 rounded-full overflow-hidden">
@@ -245,53 +249,53 @@ export default function QueueOwnerDashboard() {
             </Card>
 
             <Card className="bg-background/60 shadow-md hover:shadow-xl transition-all duration-200 border border-divider">
-              <CardBody className="gap-3">
+              <CardBody className="gap-2 sm:gap-3 p-3 sm:p-4">
                 <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm text-default-500">Customers Today</p>
-                    <div className="text-2xl font-semibold mt-1">{overallStats.totalServedToday}</div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm text-default-500 truncate">Customers Today</p>
+                    <div className="text-lg sm:text-2xl font-semibold mt-1">{overallStats.totalServedToday}</div>
                   </div>
-                  <div className="p-2 rounded-full bg-success/10">
-                    <Users className="h-5 w-5 text-success" />
+                  <div className="p-1.5 sm:p-2 rounded-full bg-success/10 flex-shrink-0">
+                    <Users className="h-4 w-4 sm:h-5 sm:w-5 text-success" />
                   </div>
                 </div>
-                <p className="text-sm text-default-400">
-                  Currently waiting: {overallStats.totalCustomers}
+                <p className="text-xs sm:text-sm text-default-400 truncate">
+                  Waiting: {overallStats.totalCustomers}
                 </p>
               </CardBody>
             </Card>
 
             <Card className="bg-background/60 shadow-md hover:shadow-xl transition-all duration-200 border border-divider">
-              <CardBody className="gap-3">
+              <CardBody className="gap-2 sm:gap-3 p-3 sm:p-4">
                 <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm text-default-500">Avg. Wait Time</p>
-                    <div className="text-2xl font-semibold mt-1">{overallStats.avgWaitTime} min</div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm text-default-500 truncate">Avg. Wait Time</p>
+                    <div className="text-lg sm:text-2xl font-semibold mt-1">{overallStats.avgWaitTime} min</div>
                   </div>
-                  <div className="p-2 rounded-full bg-warning/10">
-                    <Clock className="h-5 w-5 text-warning" />
+                  <div className="p-1.5 sm:p-2 rounded-full bg-warning/10 flex-shrink-0">
+                    <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-warning" />
                   </div>
                 </div>
-                <p className="text-sm text-default-400">
-                  Peak hours: {overallStats.peakHours}
+                <p className="text-xs sm:text-sm text-default-400 truncate">
+                  Peak: {overallStats.peakHours}
                 </p>
               </CardBody>
             </Card>
 
             <Card className="bg-background/60 shadow-md hover:shadow-xl transition-all duration-200 border border-divider">
-              <CardBody className="gap-3">
+              <CardBody className="gap-2 sm:gap-3 p-3 sm:p-4">
                 <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm text-default-500">Revenue Impact</p>
-                    <div className="text-2xl font-semibold mt-1">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm text-default-500 truncate">Revenue Impact</p>
+                    <div className="text-lg sm:text-2xl font-semibold mt-1">
                       {overallStats.businessValue.roi}%
                     </div>
                   </div>
-                  <div className="p-2 rounded-full bg-secondary/10">
-                    <DollarSign className="h-5 w-5 text-secondary" />
+                  <div className="p-1.5 sm:p-2 rounded-full bg-secondary/10 flex-shrink-0">
+                    <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-secondary" />
                   </div>
                 </div>
-                <p className="text-sm text-default-400">
+                <p className="text-xs sm:text-sm text-default-400 truncate">
                   +₹{overallStats.businessValue.totalExtraRevenue.toLocaleString()}
                 </p>
               </CardBody>
@@ -299,10 +303,10 @@ export default function QueueOwnerDashboard() {
           </div>
         )}
 
-        {/* Queue Table - Merged directly into page */}
+        {/* Queue Cards - Replacing the table */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h2 className="text-xl font-semibold">Your Queues</h2>
-          <div className="w-full sm:w-auto max-w-sm">
+          <h2 className="text-lg sm:text-xl font-semibold">Your Queues</h2>
+          <div className="w-full sm:w-auto sm:max-w-sm">
             <Input
               type="search"
               placeholder="Search queues..."
@@ -310,110 +314,200 @@ export default function QueueOwnerDashboard() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full"
+              size="sm"
             />
           </div>
         </div>
 
-        <Card className="bg-background/60 shadow-sm">
-          <CardBody>
-            <Table aria-label="Queues table" className="min-h-[400px]">
-              <TableHeader>
-                <TableColumn>QUEUE NAME</TableColumn>
-                <TableColumn>CURRENT</TableColumn>
-                <TableColumn>7-DAY AVG WAIT TIME</TableColumn>
-                <TableColumn>SERVED TODAY</TableColumn>
-                <TableColumn>STATUS</TableColumn>
-                <TableColumn>RATING</TableColumn>
-                <TableColumn>ACTIONS</TableColumn>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  Array(5).fill().map((_, index) => (
-                    <TableRow key={index}>
-                      <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-1/2" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-1/2" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-1/2" /></TableCell>
-                      <TableCell><Skeleton className="h-6 w-6 rounded-full" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                      <TableCell><Skeleton className="h-8 w-full" /></TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  filteredQueues.map((queue) => (
-                    <TableRow key={queue.queue_id} className="dark:bg-gray-800 dark:text-white">
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {queue.name}
-                          {queue.service_type === 'advanced' && (
-                            <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 text-purple-400 rounded-full border border-purple-400/20">
-                              PRO
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{queue.current_queue}</TableCell>
-                      <TableCell>{queue.seven_day_avg_wait_time?.toFixed(1) || '0'} min</TableCell>
-                      <TableCell>{queue.total_served}</TableCell>
-                      <TableCell>
-                        <div>
-                          <div 
-                            className={`w-2 h-2 rounded-full ${
-                              queue.status === 'active' 
-                                ? 'bg-success-500' 
-                                : 'bg-warning-500'
-                            }`}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <span className="text-yellow-400 text-lg">★</span>
-                          <span className="text-sm text-default-600">
-                            {queue.avg_rating?.toFixed(1) || '0.0'}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Link href={`/dashboard/manage/${queue.queue_id}`} className="inline-flex items-center justify-center gap-1 px-4 py-2 text-sm font-medium bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors duration-200">Manage</Link>
-                          <Button 
-                            size="sm" 
-                            variant="bordered" 
-                            className="w-24"
-                            onClick={() => handlePauseQueue(queue.queue_id, queue.status)}
-                          >
-                            {queue.status === 'active' ? 'Pause' : 'Activate'}
-                          </Button>
-                          <Dropdown>
-                            <DropdownTrigger>
-                              <Button isIconOnly variant="light" size="sm">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownTrigger>
-                            <DropdownMenu aria-label="More Actions">
-                              <DropdownItem onClick={() => router.push(`/dashboard/edit-queue/${queue.queue_id}`)}>Edit Queue</DropdownItem>
-                              <DropdownItem 
-                                className="text-danger" 
-                                color="danger" 
-                                onClick={() => handleDeleteQueue(queue.queue_id, queue.name)}
-                              >
-                                Delete Queue
-                              </DropdownItem>
-                              <DropdownItem>
-                                <Link href={`/dashboard/analytics/${queue.queue_id}`}>View Analytics</Link>
-                              </DropdownItem>
-                            </DropdownMenu>
-                          </Dropdown>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array(6).fill().map((_, index) => (
+              <Card key={index} className="bg-background/60 shadow-sm">
+                <CardBody className="p-6">
+                  <div className="space-y-4">
+                    <Skeleton className="h-6 w-3/4" />
+                    <div className="grid grid-cols-2 gap-4">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                    </div>
+                    <div className="flex gap-2">
+                      <Skeleton className="h-8 w-20" />
+                      <Skeleton className="h-8 w-20" />
+                    </div>
+                  </div>
+                </CardBody>
+              </Card>
+            ))}
+          </div>
+        ) : filteredQueues.length === 0 ? (
+          <Card className="bg-background/60 shadow-sm">
+            <CardBody className="p-12 text-center">
+              <div className="space-y-4">
+                <div className="w-16 h-16 mx-auto bg-default-100 rounded-full flex items-center justify-center">
+                  <PieChart className="w-8 h-8 text-default-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-default-700">No queues found</h3>
+                  <p className="text-sm text-default-500 mt-1">
+                    {searchTerm ? 'Try adjusting your search terms' : 'Create your first queue to get started'}
+                  </p>
+                </div>
+                {!searchTerm && (
+                  <Link href="/dashboard/create-queue">
+                    <Button color="primary" startContent={<Plus className="w-4 h-4" />}>
+                      Create Queue
+                    </Button>
+                  </Link>
                 )}
-              </TableBody>
-            </Table>
-          </CardBody>
-        </Card>
+              </div>
+            </CardBody>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredQueues.map((queue) => (
+              <Card 
+                key={queue.queue_id} 
+                className="bg-background/60 shadow-sm hover:shadow-md transition-all duration-200 border border-divider/50 hover:border-divider"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between w-full">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-semibold text-default-900 truncate">
+                          {queue.name}
+                        </h3>
+                        {queue.service_type === 'advanced' && (
+                          <Chip 
+                            size="sm" 
+                            variant="flat" 
+                            color="secondary"
+                            className="text-xs"
+                          >
+                            PRO
+                          </Chip>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${
+                          queue.status === 'active' 
+                            ? 'bg-success-500' 
+                            : 'bg-warning-500'
+                        }`} />
+                        <span className="text-sm text-default-500 capitalize">
+                          {queue.status}
+                        </span>
+                      </div>
+                    </div>
+                    <Dropdown>
+                      <DropdownTrigger>
+                        <Button isIconOnly variant="light" size="sm" className="text-default-400">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownTrigger>
+                      <DropdownMenu aria-label="Queue Actions">
+                        <DropdownItem 
+                          startContent={<Eye className="w-4 h-4" />}
+                          onClick={() => router.push(`/dashboard/manage/${queue.queue_id}`)}
+                        >
+                          Manage Queue
+                        </DropdownItem>
+                        <DropdownItem 
+                          startContent={<TrendingUp className="w-4 h-4" />}
+                          onClick={() => router.push(`/dashboard/analytics/${queue.queue_id}`)}
+                        >
+                          View Analytics
+                        </DropdownItem>
+                        <DropdownItem 
+                          startContent={<Settings className="w-4 h-4" />}
+                          onClick={() => router.push(`/dashboard/edit-queue/${queue.queue_id}`)}
+                        >
+                          Edit Queue
+                        </DropdownItem>
+                        <DropdownItem 
+                          className="text-danger" 
+                          color="danger"
+                          startContent={<Trash2 className="w-4 h-4" />}
+                          onClick={() => handleDeleteQueue(queue.queue_id, queue.name)}
+                        >
+                          Delete Queue
+                        </DropdownItem>
+                      </DropdownMenu>
+                    </Dropdown>
+                  </div>
+                </CardHeader>
+                
+                <CardBody className="pt-0">
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="text-center p-3 bg-default-50 rounded-lg">
+                      <div className="text-2xl font-bold text-primary">
+                        {queue.current_queue}
+                      </div>
+                      <div className="text-xs text-default-500">Current</div>
+                    </div>
+                    <div className="text-center p-3 bg-default-50 rounded-lg">
+                      <div className="text-2xl font-bold text-success">
+                        {queue.total_served}
+                      </div>
+                      <div className="text-xs text-default-500">Served Today</div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-default-400" />
+                        <span className="text-sm text-default-600">Avg Wait Time</span>
+                      </div>
+                      <span className="text-sm font-medium">
+                        {queue.seven_day_avg_wait_time?.toFixed(1) || '0'} min
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Star className="w-4 h-4 text-default-400" />
+                        <span className="text-sm text-default-600">Rating</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-yellow-400 text-sm">★</span>
+                        <span className="text-sm font-medium">
+                          {queue.avg_rating?.toFixed(1) || '0.0'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Link 
+                      href={`/dashboard/manage/${queue.queue_id}`} 
+                      className="flex-1"
+                    >
+                      <Button 
+                        color="primary" 
+                        variant="flat" 
+                        size="sm" 
+                        className="w-full"
+                        startContent={<Eye className="w-4 h-4" />}
+                      >
+                        Manage
+                      </Button>
+                    </Link>
+                    <Button 
+                      size="sm" 
+                      variant="bordered"
+                      onClick={() => handlePauseQueue(queue.queue_id, queue.status)}
+                      startContent={queue.status === 'active' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                    >
+                      {queue.status === 'active' ? 'Pause' : 'Activate'}
+                    </Button>
+                  </div>
+                </CardBody>
+              </Card>
+            ))}
+          </div>
+        )}
       </main>
 
       <DeleteModal 
