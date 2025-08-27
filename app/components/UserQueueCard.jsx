@@ -1,5 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Card, CardBody, CardHeader, Badge, Progress, Chip, Button } from '@nextui-org/react'
 import { MapPin, Calendar, Clock, ChevronRight } from 'lucide-react'
 
@@ -32,8 +33,13 @@ function formatJoinTime(joinTime) {
 }
 
 export default function UserQueueCard({ queue }) {
+	const router = useRouter()
 	const waitTimeStatus = getWaitTimeStatus(queue.estimatedWaitTime)
 	const positionStatus = getPositionStatus(queue.position)
+
+	const handleViewDetails = () => {
+		router.push(`/user/queue/${queue.id}`)
+	}
 
 	return (
 		<Card 
@@ -122,17 +128,16 @@ export default function UserQueueCard({ queue }) {
 				</div>
 
 				<div className="flex gap-2">
-					<Link href={`/user/queue/${queue.id}`} className="flex-1">
-						<Button 
-							color="primary" 
-							variant="flat" 
-							size="sm" 
-							className="w-full"
-							endContent={<ChevronRight className="w-3 h-3" />}
-						>
-							View Details
-						</Button>
-					</Link>
+					<Button 
+						color="primary" 
+						variant="flat" 
+						size="sm" 
+						className="flex-1"
+						endContent={<ChevronRight className="w-3 h-3" />}
+						onClick={handleViewDetails}
+					>
+						View Details
+					</Button>
 					<Button 
 						size="sm" 
 						variant="bordered"

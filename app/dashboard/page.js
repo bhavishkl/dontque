@@ -480,20 +480,16 @@ export default function QueueOwnerDashboard() {
                   </div>
                   
                   <div className="flex gap-2">
-                    <Link 
-                      href={`/dashboard/manage/${queue.queue_id}`} 
+                    <Button 
+                      color="primary" 
+                      variant="flat" 
+                      size="sm" 
                       className="flex-1"
+                      startContent={<Eye className="w-4 h-4" />}
+                      onClick={() => router.push(`/dashboard/manage/${queue.queue_id}`)}
                     >
-                      <Button 
-                        color="primary" 
-                        variant="flat" 
-                        size="sm" 
-                        className="w-full"
-                        startContent={<Eye className="w-4 h-4" />}
-                      >
-                        Manage
-                      </Button>
-                    </Link>
+                      Manage
+                    </Button>
                     <Button 
                       size="sm" 
                       variant="bordered"

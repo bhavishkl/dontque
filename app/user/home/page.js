@@ -453,33 +453,39 @@ export default function Home() {
           <div className="container mx-auto px-4">
             <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-4">Your Queues</h3>
             {isCurrentLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Array(3).fill().map((_, index) => (
-                  <Card key={index} className="bg-white dark:bg-gray-800 shadow-sm">
-                    <CardBody className="p-6">
-                      <div className="space-y-4">
-                        <Skeleton className="h-6 w-3/4" />
-                        <div className="grid grid-cols-2 gap-4">
-                          <Skeleton className="h-4 w-full" />
-                          <Skeleton className="h-4 w-full" />
-                          <Skeleton className="h-4 w-full" />
-                          <Skeleton className="h-4 w-full" />
+              <div className="overflow-x-auto custom-scrollbar">
+                <div className="flex gap-4 pb-2" style={{ width: 'max-content' }}>
+                  {Array(3).fill().map((_, index) => (
+                    <Card key={index} className="bg-white dark:bg-gray-800 shadow-sm" style={{ width: '320px', minWidth: '320px' }}>
+                      <CardBody className="p-6">
+                        <div className="space-y-4">
+                          <Skeleton className="h-6 w-3/4" />
+                          <div className="grid grid-cols-2 gap-4">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                          </div>
+                          <Skeleton className="h-2 w-full" />
+                          <div className="flex gap-2">
+                            <Skeleton className="h-8 w-20" />
+                            <Skeleton className="h-8 w-20" />
+                          </div>
                         </div>
-                        <Skeleton className="h-2 w-full" />
-                        <div className="flex gap-2">
-                          <Skeleton className="h-8 w-20" />
-                          <Skeleton className="h-8 w-20" />
-                        </div>
-                      </div>
-                    </CardBody>
-                  </Card>
-                ))}
+                      </CardBody>
+                    </Card>
+                  ))}
+                </div>
               </div>
             ) : currentQueues && currentQueues.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {currentQueues.map((queue) => (
-                  <UserQueueCard key={queue.id} queue={queue} />
-                ))}
+              <div className="overflow-x-auto custom-scrollbar">
+                <div className="flex gap-4 pb-2" style={{ width: 'max-content' }}>
+                  {currentQueues.map((queue) => (
+                    <div key={queue.id} style={{ width: '320px', minWidth: '320px' }}>
+                      <UserQueueCard queue={queue} />
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : (
               <Card className="dark:bg-gray-800 border-none shadow-lg">
