@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useSession } from "next-auth/react"
 import { useRouter } from 'next/navigation'
-import { Clock, Users, MapPin, Calendar, ArrowRight, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react'
+import { Clock, Users, MapPin, Calendar, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react'
 import { Button, Card, CardBody, CardHeader, Badge, Skeleton, Progress, Chip } from "@nextui-org/react"
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -100,55 +100,6 @@ export default function CurrentQueues() {
           renderCurrentQueuesSkeleton()
         ) : currentQueues && currentQueues.length > 0 ? (
           <div className="space-y-6">
-            {/* Summary Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Card className="bg-background/60 shadow-sm border border-divider/50">
-                <CardBody className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-full bg-primary/10">
-                      <Users className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-default-500">Active Queues</p>
-                      <p className="text-xl font-semibold">{currentQueues.length}</p>
-                    </div>
-                  </div>
-                </CardBody>
-              </Card>
-
-              <Card className="bg-background/60 shadow-sm border border-divider/50">
-                <CardBody className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-full bg-warning/10">
-                      <Clock className="h-4 w-4 text-warning" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-default-500">Total Wait Time</p>
-                      <p className="text-xl font-semibold">
-                        {currentQueues.reduce((sum, queue) => sum + (queue.estimatedWaitTime || 0), 0)} min
-                      </p>
-                    </div>
-                  </div>
-                </CardBody>
-              </Card>
-
-              <Card className="bg-background/60 shadow-sm border border-divider/50">
-                <CardBody className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-full bg-success/10">
-                      <TrendingUp className="h-4 w-4 text-success" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-default-500">Best Position</p>
-                      <p className="text-xl font-semibold">
-                        #{Math.min(...currentQueues.map(q => q.position))}
-                      </p>
-                    </div>
-                  </div>
-                </CardBody>
-              </Card>
-            </div>
-
             {/* Queue Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {currentQueues.map((queue) => {
@@ -211,10 +162,10 @@ export default function CurrentQueues() {
                           <div className="text-xs text-default-500">Est. Wait (min)</div>
                         </div>
                         <div className="text-center p-3 bg-default-50 rounded-lg">
-                          <div className="text-lg font-bold text-success">
-                            {queue.current_queue || 0}
+                          <div className="text-lg font-bold text-secondary">
+                            #{queue.position}
                           </div>
-                          <div className="text-xs text-default-500">Total in Queue</div>
+                          <div className="text-xs text-default-500">Your Position</div>
                         </div>
                       </div>
 
