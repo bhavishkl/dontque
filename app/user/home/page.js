@@ -16,6 +16,7 @@ import { useLocation } from '../../hooks/useLocation';
 import SearchBar from '@/app/components/SearchBar';
 import dynamic from 'next/dynamic';
 import { cityCoordinates } from '../../utils/cities';
+import UserQueueCard from '@/app/components/UserQueueCard'
 
 const SaveButton = dynamic(() => import('@/app/components/UniComp/SaveButton'))
 const UpdateNameModal = dynamic(() => import('@/app/components/UpdateNameModal'))
@@ -279,31 +280,7 @@ export default function Home() {
     }
   };
 
-  const getWaitTimeStatus = (estimatedWaitTime) => {
-    if ((estimatedWaitTime || 0) <= 5) return { color: 'success', text: 'Almost there!' }
-    if ((estimatedWaitTime || 0) <= 15) return { color: 'warning', text: 'Getting closer' }
-    return { color: 'default', text: 'Please be patient' }
-  }
-
-  const getPositionStatus = (position) => {
-    if ((position || 0) <= 3) return { color: 'success', text: 'Next up!' }
-    if ((position || 0) <= 10) return { color: 'warning', text: 'Getting close' }
-    return { color: 'default', text: 'In queue' }
-  }
-
-  const formatJoinTime = (joinTime) => {
-    if (!joinTime) return '—'
-    const now = new Date()
-    const join = new Date(joinTime)
-    const diffInMinutes = Math.floor((now - join) / (1000 * 60))
-    if (diffInMinutes < 60) return `${diffInMinutes} min ago`
-    if (diffInMinutes < 1440) {
-      const hours = Math.floor(diffInMinutes / 60)
-      return `${hours} hr${hours > 1 ? 's' : ''} ago`
-    }
-    const days = Math.floor(diffInMinutes / 1440)
-    return `${days} day${days > 1 ? 's' : ''} ago`
-  }
+  // Card helpers moved to UserQueueCard
 
   return (
     <div className="min-h-screen dark:bg-gray-900 dark:text-gray-100">
@@ -500,79 +477,9 @@ export default function Home() {
               </div>
             ) : currentQueues && currentQueues.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {currentQueues.map((queue) => {
-                  const waitTimeStatus = getWaitTimeStatus(queue.estimatedWaitTime)
-                  const positionStatus = getPositionStatus(queue.position)
-                  return (
-                    <Card key={queue.id} className="bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-200">
-                      <CardBody className="p-6">
-                        <div className="flex items-start justify-between w-full mb-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className="text-lg font-semibold truncate">{queue.name}</h4>
-                              {queue.service_type === 'advanced' && (
-                                <Chip size="sm" variant="flat" color="secondary" className="text-xs">PRO</Chip>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                              <MapPin className="w-3 h-3" />
-                              <span className="truncate">{queue.location || 'Location not specified'}</span>
-                            </div>
-                          </div>
-                          <Badge color={positionStatus.color} variant="flat" className="text-xs font-medium">
-                            #{queue.position}
-                          </Badge>
-                        </div>
-
-                        <div className="mb-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm text-gray-600 dark:text-gray-300">Queue Progress</span>
-                            <span className="text-xs text-gray-500">{positionStatus.text}</span>
-                          </div>
-                          <Progress value={Math.max(0, 100 - (queue.position * 10))} color={positionStatus.color} className="h-2" />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3 mb-4">
-                          <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/60 rounded-lg">
-                            <div className="text-lg font-bold text-orange-600 dark:text-orange-400">{queue.estimatedWaitTime || 0}</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">Est. Wait (min)</div>
-                          </div>
-                          <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/60 rounded-lg">
-                            <div className="text-lg font-bold text-sky-600 dark:text-sky-400">#{queue.position}</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">Your Position</div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2 mb-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="w-3 h-3 text-gray-400" />
-                              <span className="text-xs text-gray-600 dark:text-gray-300">Joined</span>
-                            </div>
-                            <span className="text-xs text-gray-500">{formatJoinTime(queue.join_time)}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-3 h-3 text-gray-400" />
-                              <span className="text-xs text-gray-600 dark:text-gray-300">Wait Status</span>
-                            </div>
-                            <Chip size="sm" variant="flat" color={waitTimeStatus.color} className="text-xs">{waitTimeStatus.text}</Chip>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <Link href={`/user/queue/${queue.id}`} className="flex-1">
-                            <Button className="w-full" color="primary" variant="flat" size="sm">
-                              View Details
-                              <ChevronRight className="w-4 h-4 ml-1" />
-                            </Button>
-                          </Link>
-                          <Button size="sm" variant="bordered" className="text-xs">Leave Queue</Button>
-                        </div>
-                      </CardBody>
-                    </Card>
-                  )
-                })}
+                {currentQueues.map((queue) => (
+                  <UserQueueCard key={queue.id} queue={queue} />
+                ))}
               </div>
             ) : (
               <Card className="dark:bg-gray-800 border-none shadow-lg">
