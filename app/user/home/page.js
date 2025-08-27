@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Button, useDisclosure, Card, CardBody, Skeleton, Chip, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Spinner } from "@nextui-org/react"
+import { Button, useDisclosure, Card, CardBody, Skeleton, Chip, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Spinner, Badge, Progress } from "@nextui-org/react"
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { categories } from '../../utils/category'
-import { Clock, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, MapPin, Star, Pencil } from 'lucide-react'
+import { Clock, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, MapPin, Star, Pencil, Calendar } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApi } from '../../hooks/useApi'
 import debounce from 'lodash/debounce'
@@ -173,6 +173,7 @@ export default function Home() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { data: savedQueues, isLoading: isSavedLoading } = useApi('/api/user/saved-queues')
   const { location: userLocation, isLoading: isLocationLoading, refreshLocation, requestLocation } = useLocation();
+  const { data: currentQueues, isLoading: isCurrentLoading, isError: isCurrentError } = useApi('/api/user/current-queues')
   const [showNameModal, setShowNameModal] = useState(false)
   const { data: userData, isLoading: isUserLoading } = useApi(
     session?.user?.id ? `/api/user?userId=${session.user.id}` : null
@@ -277,6 +278,32 @@ export default function Home() {
       toast.error('Failed to detect location');
     }
   };
+
+  const getWaitTimeStatus = (estimatedWaitTime) => {
+    if ((estimatedWaitTime || 0) <= 5) return { color: 'success', text: 'Almost there!' }
+    if ((estimatedWaitTime || 0) <= 15) return { color: 'warning', text: 'Getting closer' }
+    return { color: 'default', text: 'Please be patient' }
+  }
+
+  const getPositionStatus = (position) => {
+    if ((position || 0) <= 3) return { color: 'success', text: 'Next up!' }
+    if ((position || 0) <= 10) return { color: 'warning', text: 'Getting close' }
+    return { color: 'default', text: 'In queue' }
+  }
+
+  const formatJoinTime = (joinTime) => {
+    if (!joinTime) return '—'
+    const now = new Date()
+    const join = new Date(joinTime)
+    const diffInMinutes = Math.floor((now - join) / (1000 * 60))
+    if (diffInMinutes < 60) return `${diffInMinutes} min ago`
+    if (diffInMinutes < 1440) {
+      const hours = Math.floor(diffInMinutes / 60)
+      return `${hours} hr${hours > 1 ? 's' : ''} ago`
+    }
+    const days = Math.floor(diffInMinutes / 1440)
+    return `${days} day${days > 1 ? 's' : ''} ago`
+  }
 
   return (
     <div className="min-h-screen dark:bg-gray-900 dark:text-gray-100">
@@ -444,46 +471,121 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Popular Queues */}
+        {/* Your Queues */}
         <section className="py-4 sm:py-8 bg-gray-50 dark:bg-gray-900">
           <div className="container mx-auto px-4">
-            <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-4">Popular Queues</h3>
-            <div className="overflow-x-auto custom-scrollbar mb-4">
-              <div className="flex gap-3 sm:gap-4 pb-2 sm:pb-4" style={{ width: 'max-content' }}>
-                {isLoading ? (
-  // Skeleton loading state
-  Array(6).fill().map((_, index) => (
-    <div key={index} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden" style={{ width: '250px', maxWidth: '100%' }}>
-      <Skeleton className="w-full h-32 sm:h-40" />
-      <div className="p-2 sm:p-4">
-        <Skeleton className="w-3/4 h-4 sm:h-6 mb-1 sm:mb-2" />
-        <Skeleton className="w-1/2 h-3 sm:h-4 mb-1" />
-        <Skeleton className="w-2/3 h-3 sm:h-4 mb-2 sm:mb-3" />
-        <Skeleton className="w-full h-8 sm:h-10 rounded-md" />
-      </div>
-    </div>
-  ))
-) : searchResults.length > 0 ? (
-  searchResults.map((queue) => (
-    <QueueItem key={queue.queue_id} queue={queue} />
-  ))
-) : (
-  popularQueues.map((queue) => (
-    <QueueItem key={queue.queue_id} queue={queue} />
-  ))
-)}
+            <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-4">Your Queues</h3>
+            {isCurrentLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Array(3).fill().map((_, index) => (
+                  <Card key={index} className="bg-white dark:bg-gray-800 shadow-sm">
+                    <CardBody className="p-6">
+                      <div className="space-y-4">
+                        <Skeleton className="h-6 w-3/4" />
+                        <div className="grid grid-cols-2 gap-4">
+                          <Skeleton className="h-4 w-full" />
+                          <Skeleton className="h-4 w-full" />
+                          <Skeleton className="h-4 w-full" />
+                          <Skeleton className="h-4 w-full" />
+                        </div>
+                        <Skeleton className="h-2 w-full" />
+                        <div className="flex gap-2">
+                          <Skeleton className="h-8 w-20" />
+                          <Skeleton className="h-8 w-20" />
+                        </div>
+                      </div>
+                    </CardBody>
+                  </Card>
+                ))}
               </div>
-            </div>
-            {/* Centered View All Button */}
-            <div className="flex justify-center">
-              <Link 
-                href="/user/queues" 
-                className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-orange-100 text-orange-600 hover:bg-orange-200 dark:bg-orange-700 dark:text-orange-50 dark:hover:bg-orange-600 transition-colors duration-200 ease-in-out"
-              >
-                View all queues
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Link>
-            </div>
+            ) : currentQueues && currentQueues.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {currentQueues.map((queue) => {
+                  const waitTimeStatus = getWaitTimeStatus(queue.estimatedWaitTime)
+                  const positionStatus = getPositionStatus(queue.position)
+                  return (
+                    <Card key={queue.id} className="bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-200">
+                      <CardBody className="p-6">
+                        <div className="flex items-start justify-between w-full mb-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="text-lg font-semibold truncate">{queue.name}</h4>
+                              {queue.service_type === 'advanced' && (
+                                <Chip size="sm" variant="flat" color="secondary" className="text-xs">PRO</Chip>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                              <MapPin className="w-3 h-3" />
+                              <span className="truncate">{queue.location || 'Location not specified'}</span>
+                            </div>
+                          </div>
+                          <Badge color={positionStatus.color} variant="flat" className="text-xs font-medium">
+                            #{queue.position}
+                          </Badge>
+                        </div>
+
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-gray-600 dark:text-gray-300">Queue Progress</span>
+                            <span className="text-xs text-gray-500">{positionStatus.text}</span>
+                          </div>
+                          <Progress value={Math.max(0, 100 - (queue.position * 10))} color={positionStatus.color} className="h-2" />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                          <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/60 rounded-lg">
+                            <div className="text-lg font-bold text-orange-600 dark:text-orange-400">{queue.estimatedWaitTime || 0}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">Est. Wait (min)</div>
+                          </div>
+                          <div className="text-center p-3 bg-gray-50 dark:bg-gray-800/60 rounded-lg">
+                            <div className="text-lg font-bold text-sky-600 dark:text-sky-400">#{queue.position}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">Your Position</div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2 mb-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-3 h-3 text-gray-400" />
+                              <span className="text-xs text-gray-600 dark:text-gray-300">Joined</span>
+                            </div>
+                            <span className="text-xs text-gray-500">{formatJoinTime(queue.join_time)}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-3 h-3 text-gray-400" />
+                              <span className="text-xs text-gray-600 dark:text-gray-300">Wait Status</span>
+                            </div>
+                            <Chip size="sm" variant="flat" color={waitTimeStatus.color} className="text-xs">{waitTimeStatus.text}</Chip>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Link href={`/user/queue/${queue.id}`} className="flex-1">
+                            <Button className="w-full" color="primary" variant="flat" size="sm">
+                              View Details
+                              <ChevronRight className="w-4 h-4 ml-1" />
+                            </Button>
+                          </Link>
+                          <Button size="sm" variant="bordered" className="text-xs">Leave Queue</Button>
+                        </div>
+                      </CardBody>
+                    </Card>
+                  )
+                })}
+              </div>
+            ) : (
+              <Card className="dark:bg-gray-800 border-none shadow-lg">
+                <CardBody className="p-8 text-center">
+                  <div className="space-y-2">
+                    <p className="text-base sm:text-lg">You're not currently in any queues.</p>
+                    <Link href="/user/queues">
+                      <Button className="mt-2" color="primary">Find Queues</Button>
+                    </Link>
+                  </div>
+                </CardBody>
+              </Card>
+            )}
           </div>
         </section>
       </main>
