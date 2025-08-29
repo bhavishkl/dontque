@@ -480,6 +480,7 @@ export default function QueueOwnerDashboard() {
                   </div>
                   
                   <div className="flex gap-2">
+
                     <Button 
                       color="primary" 
                       variant="flat" 
@@ -490,6 +491,7 @@ export default function QueueOwnerDashboard() {
                     >
                       Manage
                     </Button>
+
                     <Button 
                       size="sm" 
                       variant="bordered"
