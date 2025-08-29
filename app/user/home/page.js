@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Button, useDisclosure, Card, CardBody, Skeleton, Chip, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Spinner } from "@nextui-org/react"
+import { Button, useDisclosure, Card, CardBody, Skeleton, Chip, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Spinner, Badge, Progress } from "@nextui-org/react"
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { categories } from '../../utils/category'
-import { Clock, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, MapPin, Star, Pencil } from 'lucide-react'
+import { Clock, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, MapPin, Star, Pencil, Calendar } from 'lucide-react'
 import { toast } from 'sonner'
 import { useApi } from '../../hooks/useApi'
 import debounce from 'lodash/debounce'
@@ -16,6 +16,7 @@ import { useLocation } from '../../hooks/useLocation';
 import SearchBar from '@/app/components/SearchBar';
 import dynamic from 'next/dynamic';
 import { cityCoordinates } from '../../utils/cities';
+import UserQueueCard from '@/app/components/UserQueueCard'
 
 const SaveButton = dynamic(() => import('@/app/components/UniComp/SaveButton'))
 const UpdateNameModal = dynamic(() => import('@/app/components/UpdateNameModal'))
@@ -173,6 +174,7 @@ export default function Home() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { data: savedQueues, isLoading: isSavedLoading } = useApi('/api/user/saved-queues')
   const { location: userLocation, isLoading: isLocationLoading, refreshLocation, requestLocation } = useLocation();
+  const { data: currentQueues, isLoading: isCurrentLoading, isError: isCurrentError } = useApi('/api/user/current-queues')
   const [showNameModal, setShowNameModal] = useState(false)
   const { data: userData, isLoading: isUserLoading } = useApi(
     session?.user?.id ? `/api/user?userId=${session.user.id}` : null
@@ -277,6 +279,8 @@ export default function Home() {
       toast.error('Failed to detect location');
     }
   };
+
+  // Card helpers moved to UserQueueCard
 
   return (
     <div className="min-h-screen dark:bg-gray-900 dark:text-gray-100">
@@ -444,46 +448,57 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Popular Queues */}
+        {/* Your Queues */}
         <section className="py-4 sm:py-8 bg-gray-50 dark:bg-gray-900">
           <div className="container mx-auto px-4">
-            <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-4">Popular Queues</h3>
-            <div className="overflow-x-auto custom-scrollbar mb-4">
-              <div className="flex gap-3 sm:gap-4 pb-2 sm:pb-4" style={{ width: 'max-content' }}>
-                {isLoading ? (
-  // Skeleton loading state
-  Array(6).fill().map((_, index) => (
-    <div key={index} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden" style={{ width: '250px', maxWidth: '100%' }}>
-      <Skeleton className="w-full h-32 sm:h-40" />
-      <div className="p-2 sm:p-4">
-        <Skeleton className="w-3/4 h-4 sm:h-6 mb-1 sm:mb-2" />
-        <Skeleton className="w-1/2 h-3 sm:h-4 mb-1" />
-        <Skeleton className="w-2/3 h-3 sm:h-4 mb-2 sm:mb-3" />
-        <Skeleton className="w-full h-8 sm:h-10 rounded-md" />
-      </div>
-    </div>
-  ))
-) : searchResults.length > 0 ? (
-  searchResults.map((queue) => (
-    <QueueItem key={queue.queue_id} queue={queue} />
-  ))
-) : (
-  popularQueues.map((queue) => (
-    <QueueItem key={queue.queue_id} queue={queue} />
-  ))
-)}
+            <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-4">Your Queues</h3>
+            {isCurrentLoading ? (
+              <div className="overflow-x-auto custom-scrollbar">
+                <div className="flex gap-4 pb-2" style={{ width: 'max-content' }}>
+                  {Array(3).fill().map((_, index) => (
+                    <Card key={index} className="bg-white dark:bg-gray-800 shadow-sm" style={{ width: '320px', minWidth: '320px' }}>
+                      <CardBody className="p-6">
+                        <div className="space-y-4">
+                          <Skeleton className="h-6 w-3/4" />
+                          <div className="grid grid-cols-2 gap-4">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                          </div>
+                          <Skeleton className="h-2 w-full" />
+                          <div className="flex gap-2">
+                            <Skeleton className="h-8 w-20" />
+                            <Skeleton className="h-8 w-20" />
+                          </div>
+                        </div>
+                      </CardBody>
+                    </Card>
+                  ))}
+                </div>
               </div>
-            </div>
-            {/* Centered View All Button */}
-            <div className="flex justify-center">
-              <Link 
-                href="/user/queues" 
-                className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-orange-100 text-orange-600 hover:bg-orange-200 dark:bg-orange-700 dark:text-orange-50 dark:hover:bg-orange-600 transition-colors duration-200 ease-in-out"
-              >
-                View all queues
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Link>
-            </div>
+            ) : currentQueues && currentQueues.length > 0 ? (
+              <div className="overflow-x-auto custom-scrollbar">
+                <div className="flex gap-4 pb-2" style={{ width: 'max-content' }}>
+                  {currentQueues.map((queue) => (
+                    <div key={queue.id} style={{ width: '320px', minWidth: '320px' }}>
+                      <UserQueueCard queue={queue} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <Card className="dark:bg-gray-800 border-none shadow-lg">
+                <CardBody className="p-8 text-center">
+                  <div className="space-y-2">
+                    <p className="text-base sm:text-lg">You're not currently in any queues.</p>
+                    <Link href="/user/queues">
+                      <Button className="mt-2" color="primary">Find Queues</Button>
+                    </Link>
+                  </div>
+                </CardBody>
+              </Card>
+            )}
           </div>
         </section>
       </main>
