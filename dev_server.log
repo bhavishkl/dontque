@@ -1,0 +1,143 @@
+
+> dontq@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.23
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+ ✓ Ready in 1529ms
+ ○ Compiling /new/home ...
+Browserslist: browsers data (caniuse-lite) is 11 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ✓ Compiled /new/home in 24.8s (4747 modules)
+[next-auth][warn][NEXTAUTH_URL]
+https://next-auth.js.org/warnings#nextauth_url
+[next-auth][warn][NO_SECRET]
+https://next-auth.js.org/warnings#no_secret
+[Next UI] [useButton]: onClick is deprecated, please use onPress instead. See: https://github.com/nextui-org/nextui/issues/4292 []
+If you do not provide a visible label, you must specify an aria-label or aria-labelledby attribute for accessibility
+ GET /new/home 200 in 26503ms
+ ✓ Compiled in 2.4s (2245 modules)
+ ○ Compiling /new/queues ...
+ ✓ Compiled /new/queues in 1355ms (4725 modules)
+[next-auth][warn][NEXTAUTH_URL]
+https://next-auth.js.org/warnings#nextauth_url
+[next-auth][warn][NO_SECRET]
+https://next-auth.js.org/warnings#no_secret
+[Next UI] [useButton]: onClick is deprecated, please use onPress instead. See: https://github.com/nextui-org/nextui/issues/4292 []
+ GET /new/queues 200 in 1712ms
+ ○ Compiling /signin ...
+ ✓ Compiled /signin in 2.6s (2601 modules)
+ ✓ Compiled in 788ms (2239 modules)
+ ⨯ Error: supabaseUrl is required.
+    at new SupabaseClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/SupabaseClient.js:53:19)
+    at createClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/index.js:59:12)
+    at eval (webpack-internal:///(rsc)/./app/lib/supabase-server.js:11:91)
+    at (rsc)/./app/lib/supabase-server.js (/app/.next/server/app/api/supabase/route.js:172:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(rsc)/./app/api/supabase/route.js:6:82)
+    at (rsc)/./app/api/supabase/route.js (/app/.next/server/app/api/supabase/route.js:162:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fsupabase%2Froute&page=%2Fapi%2Fsupabase%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fsupabase%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D!:15:88)
+    at (rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fsupabase%2Froute&page=%2Fapi%2Fsupabase%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fsupabase%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D! (/app/.next/server/app/api/supabase/route.js:152:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at __webpack_exec__ (/app/.next/server/app/api/supabase/route.js:182:39)
+    at /app/.next/server/app/api/supabase/route.js:183:192
+    at __webpack_require__.X (/app/.next/server/webpack-runtime.js:168:21)
+    at /app/.next/server/app/api/supabase/route.js:183:47
+    at Object.<anonymous> (/app/.next/server/app/api/supabase/route.js:186:3)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1463:12)
+    at mod.require (/app/node_modules/next/dist/server/require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (/app/node_modules/next/dist/server/require.js:109:84)
+    at /app/node_modules/next/dist/server/load-components.js:103:84
+    at async loadComponentsImpl (/app/node_modules/next/dist/server/load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (/app/node_modules/next/dist/server/next-server.js:714:36)
+    at async DevServer.findPageComponents (/app/node_modules/next/dist/server/dev/next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (/app/node_modules/next/dist/server/base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (/app/node_modules/next/dist/server/base-server.js:1962:32)
+    at async DevServer.pipeImpl (/app/node_modules/next/dist/server/base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/app/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/app/node_modules/next/dist/server/base-server.js:818:17)
+    at async /app/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/app/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/app/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/app/node_modules/next/dist/server/lib/router-server.js:173:21)
+    at async handleRequest (/app/node_modules/next/dist/server/lib/router-server.js:350:24)
+    at async requestHandlerImpl (/app/node_modules/next/dist/server/lib/router-server.js:374:13)
+    at async Server.requestListener (/app/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  page: '/api/supabase'
+}
+ ○ Compiling /_error ...
+[next-auth][warn][NEXTAUTH_URL]
+https://next-auth.js.org/warnings#nextauth_url
+[next-auth][warn][NO_SECRET]
+https://next-auth.js.org/warnings#no_secret
+ GET /api/auth/session 200 in 4525ms
+ ✓ Compiled /_error in 2.4s (5072 modules)
+ POST /api/supabase 500 in 6992ms
+[next-auth][warn][NEXTAUTH_URL]
+https://next-auth.js.org/warnings#nextauth_url
+[next-auth][warn][NO_SECRET]
+https://next-auth.js.org/warnings#no_secret
+ GET /signin?_rsc=16c5p 200 in 1406ms
+ GET /signin?_rsc=16c5p 200 in 32ms
+ ⨯ Error: supabaseUrl is required.
+    at new SupabaseClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/SupabaseClient.js:53:19)
+    at createClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/index.js:59:12)
+    at eval (webpack-internal:///(rsc)/./app/lib/supabase-server.js:11:91)
+    at (rsc)/./app/lib/supabase-server.js (/app/.next/server/app/api/supabase/route.js:172:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(rsc)/./app/api/supabase/route.js:6:82)
+    at (rsc)/./app/api/supabase/route.js (/app/.next/server/app/api/supabase/route.js:162:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fsupabase%2Froute&page=%2Fapi%2Fsupabase%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fsupabase%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D!:15:88)
+    at (rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fsupabase%2Froute&page=%2Fapi%2Fsupabase%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fsupabase%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D! (/app/.next/server/app/api/supabase/route.js:152:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at __webpack_exec__ (/app/.next/server/app/api/supabase/route.js:182:39)
+    at /app/.next/server/app/api/supabase/route.js:183:192
+    at __webpack_require__.X (/app/.next/server/webpack-runtime.js:168:21)
+    at /app/.next/server/app/api/supabase/route.js:183:47
+    at Object.<anonymous> (/app/.next/server/app/api/supabase/route.js:186:3)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1463:12)
+    at mod.require (/app/node_modules/next/dist/server/require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (/app/node_modules/next/dist/server/require.js:109:84)
+    at /app/node_modules/next/dist/server/load-components.js:103:84
+    at async loadComponentsImpl (/app/node_modules/next/dist/server/load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (/app/node_modules/next/dist/server/next-server.js:714:36)
+    at async DevServer.findPageComponents (/app/node_modules/next/dist/server/dev/next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (/app/node_modules/next/dist/server/base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (/app/node_modules/next/dist/server/base-server.js:1962:32)
+    at async DevServer.pipeImpl (/app/node_modules/next/dist/server/base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/app/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/app/node_modules/next/dist/server/base-server.js:818:17)
+    at async /app/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/app/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/app/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/app/node_modules/next/dist/server/lib/router-server.js:173:21)
+    at async handleRequest (/app/node_modules/next/dist/server/lib/router-server.js:350:24)
+    at async requestHandlerImpl (/app/node_modules/next/dist/server/lib/router-server.js:374:13)
+    at async Server.requestListener (/app/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  page: '/api/supabase'
+}
+ POST /api/supabase 500 in 75ms
