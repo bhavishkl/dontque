@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { supabase } from '@/app/lib/supabase';
-import { cookies } from 'next/headers';
-import { SignJWT } from 'jose';
 
 export async function GET(request) {
   try {
@@ -35,37 +33,12 @@ export async function GET(request) {
       );
     }
 
-    // Create/update the user data cookie
-    const cookieStore = cookies();
-    const userData = {
-      userId: data.user_id,
-      name: data.name,
-      email: session.user.email,
-      role: data.role,
-      lastUpdated: new Date().toISOString()
-    };
-    
-    // Create a signed cookie value
-    const secret = new TextEncoder().encode(process.env.COOKIE_SECRET);
-    const signedValue = await new SignJWT(userData)
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime('30d')
-      .sign(secret);
-
-    // Set the cookie with the signed JWT
-    cookieStore.set('user_data', signedValue, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 30 * 24 * 60 * 60, // 30 days
-      path: '/',
-    });
+    // We no longer set the 'user_data' cookie here as we rely on NextAuth session
 
     return NextResponse.json(
       { success: true, data },
       {
         headers: {
-          'Set-Cookie': cookieStore.toString(),
           'Cache-Control': 'public, max-age=60', 
         },
       }
@@ -115,39 +88,8 @@ export async function PATCH(request) {
       );
     }
 
-    // Update the user data cookie
-    const cookieStore = cookies();
-    const userData = {
-      userId: session.user.id,
-      name: name.trim(),
-      email: session.user.email,
-      role: data.role,
-      lastUpdated: new Date().toISOString()
-    };
-    
-    // Create a signed cookie value
-    const secret = new TextEncoder().encode(process.env.COOKIE_SECRET);
-    const signedValue = await new SignJWT(userData)
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime('30d')
-      .sign(secret);
-
-    // Set the cookie with the signed JWT
-    cookieStore.set('user_data', signedValue, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 30 * 24 * 60 * 60, // 30 days
-      path: '/',
-    });
-
     return NextResponse.json(
-      { success: true, data },
-      {
-        headers: {
-          'Set-Cookie': cookieStore.toString(),
-        },
-      }
+      { success: true, data }
     );
   } catch (err) {
     console.error('Unexpected error during update:', err);
@@ -156,4 +98,4 @@ export async function PATCH(request) {
       { status: 500 }
     );
   }
-} 
+}
