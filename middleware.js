@@ -1,38 +1,26 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
+import { getToken } from 'next-auth/jwt';
 
 export async function middleware(request) {
-  const cookieStore = cookies();
-  const userDataCookie = cookieStore.get('user_data');
+  // Verify the NextAuth session token
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
   
-  if (userDataCookie) {
-    try {
-      // Ensure COOKIE_SECRET is defined
-      if (!process.env.COOKIE_SECRET) {
-        throw new Error('COOKIE_SECRET is not defined. Please check your .env.local file and ensure it is loaded correctly.');
-      }
+  if (token) {
+    const { role } = token;
 
-      // Verify the JWT
-      const secret = new TextEncoder().encode(process.env.COOKIE_SECRET);
-      const { payload } = await jwtVerify(userDataCookie.value, secret);
-
-      if (payload.role === 'business' && !request.nextUrl.pathname.startsWith('/dashboard')) {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      } else if (payload.role === 'user' && !request.nextUrl.pathname.startsWith('/user/home')) {
-        return NextResponse.redirect(new URL('/user/home', request.url));
-      }
-    } catch (error) {
-      console.error('JWT verification error:', error.message);
-      
-      // Clear invalid cookie
-      const response = NextResponse.redirect(new URL('/', request.url));
-      response.cookies.delete('user_data', {
-        path: '/',
-      });
-      
-      return response;
+    if (role === 'business' && !request.nextUrl.pathname.startsWith('/dashboard')) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    } else if (role === 'user' && !request.nextUrl.pathname.startsWith('/user/home')) {
+      return NextResponse.redirect(new URL('/user/home', request.url));
     }
+  } else {
+      // If no token and trying to access protected routes, redirect to home or signin
+      // (This logic depends on what pages are protected. The previous middleware only checked for the cookie if it existed)
+      // If the intention is to protect dashboard/user routes:
+      const path = request.nextUrl.pathname;
+      if (path.startsWith('/dashboard') || path.startsWith('/user')) {
+           return NextResponse.redirect(new URL('/signin', request.url));
+      }
   }
 
   return NextResponse.next();
@@ -40,5 +28,5 @@ export async function middleware(request) {
 
 // Apply middleware to specific paths
 export const config = {
-  matcher: '/', // Only run middleware on the landing page
-}; 
+  matcher: ['/', '/dashboard/:path*', '/user/:path*'], // Added protected routes to matcher
+};
