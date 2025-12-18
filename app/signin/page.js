@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Script from 'next/script'
-import { signIn, useSession } from 'next-auth/react'
+import { signIn, useSession } from '@/lib/mock-auth'
 import { toast } from 'sonner'
 import Header from '../components/LandingPageCompo/Header'
 import { Spinner } from '@nextui-org/react'

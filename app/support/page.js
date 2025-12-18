@@ -1,6 +1,6 @@
 'use client';
 import { Button, Input, Textarea, Accordion, AccordionItem } from '@nextui-org/react';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/mock-auth';
 import { useRouter } from 'next/navigation';
 import { useState, useRef } from 'react';
 import { toast } from 'sonner';

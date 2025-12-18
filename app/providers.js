@@ -1,7 +1,7 @@
 'use client'
 
 import { NextUIProvider } from '@nextui-org/react'
-import { SessionProvider } from "next-auth/react"
+import { SessionProvider } from "@/lib/mock-auth"
 
 export function Providers({ children, session }) {
   return (

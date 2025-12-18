@@ -1,5 +1,5 @@
 import { Providers } from "./providers";
-import { getServerSession } from "next-auth/next";
+import { getServerSession } from "@/lib/mock-auth";
 import { authOptions } from "./api/auth/[...nextauth]/route";
 import localFont from "next/font/local";
 import "./globals.css";

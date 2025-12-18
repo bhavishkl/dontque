@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useSession } from "next-auth/react"
+import { useSession } from "@/lib/mock-auth"
 import { useRouter } from 'next/navigation'
 import { Clock, Users, MapPin, Calendar, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react'
 import { Button, Card, CardBody, CardHeader, Badge, Skeleton, Progress, Chip } from "@nextui-org/react"

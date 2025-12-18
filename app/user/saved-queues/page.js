@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Card, CardBody, Skeleton } from "@nextui-org/react"
 import { useApi } from '@/app/hooks/useApi'
-import { useSession } from 'next-auth/react'
+import { useSession } from '@/lib/mock-auth'
 import { Bookmark } from 'lucide-react'
 import QueueItem from '@/app/components/UniComp/QueueItem'
 

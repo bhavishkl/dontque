@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession, signOut } from "next-auth/react"
+import { useSession, signOut } from "@/lib/mock-auth"
 import { useRouter } from 'next/navigation'
 import { Settings, Phone, LogOut } from 'lucide-react'
 import { Button, Card, CardBody, Avatar } from "@nextui-org/react"

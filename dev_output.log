@@ -1,0 +1,627 @@
+
+> dontq@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.23
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+ ✓ Ready in 1502ms
+ ○ Compiling /dashboard ...
+Browserslist: browsers data (caniuse-lite) is 11 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ✓ Compiled /dashboard in 23.1s (4639 modules)
+ ⨯ app/layout.js (65:42) @ authOptions
+ ⨯ TypeError: (0 , _lib_mock_auth__WEBPACK_IMPORTED_MODULE_2__.getServerSession) is not a function
+    at RootLayout (./app/layout.js:77:91)
+    at stringify (<anonymous>)
+digest: "2232515661"
+[0m [90m 63 |[39m[0m
+[0m [90m 64 |[39m [36mexport[39m [36mdefault[39m [36masync[39m [36mfunction[39m [33mRootLayout[39m({ children }) {[0m
+[0m[31m[1m>[22m[39m[90m 65 |[39m   [36mconst[39m session [33m=[39m [36mawait[39m getServerSession(authOptions)[33m;[39m[0m
+[0m [90m    |[39m                                          [31m[1m^[22m[39m[0m
+[0m [90m 66 |[39m[0m
+[0m [90m 67 |[39m   [36mreturn[39m ([0m
+[0m [90m 68 |[39m     [33m<[39m[33mhtml[39m lang[33m=[39m[32m"en"[39m suppressHydrationWarning[33m>[39m[0m
+ ⨯ app/layout.js (65:42) @ authOptions
+ ⨯ TypeError: (0 , _lib_mock_auth__WEBPACK_IMPORTED_MODULE_2__.getServerSession) is not a function
+    at RootLayout (./app/layout.js:77:91)
+    at stringify (<anonymous>)
+digest: "2232515661"
+[0m [90m 63 |[39m[0m
+[0m [90m 64 |[39m [36mexport[39m [36mdefault[39m [36masync[39m [36mfunction[39m [33mRootLayout[39m({ children }) {[0m
+[0m[31m[1m>[22m[39m[90m 65 |[39m   [36mconst[39m session [33m=[39m [36mawait[39m getServerSession(authOptions)[33m;[39m[0m
+[0m [90m    |[39m                                          [31m[1m^[22m[39m[0m
+[0m [90m 66 |[39m[0m
+[0m [90m 67 |[39m   [36mreturn[39m ([0m
+[0m [90m 68 |[39m     [33m<[39m[33mhtml[39m lang[33m=[39m[32m"en"[39m suppressHydrationWarning[33m>[39m[0m
+ GET /dashboard 500 in 24664ms
+ ✓ Compiled in 1834ms (2191 modules)
+ ⨯ app/layout.js (65:42) @ authOptions
+ ⨯ TypeError: (0 , _lib_mock_auth__WEBPACK_IMPORTED_MODULE_2__.getServerSession) is not a function
+    at RootLayout (./app/layout.js:77:91)
+    at stringify (<anonymous>)
+digest: "2232515661"
+[0m [90m 63 |[39m[0m
+[0m [90m 64 |[39m [36mexport[39m [36mdefault[39m [36masync[39m [36mfunction[39m [33mRootLayout[39m({ children }) {[0m
+[0m[31m[1m>[22m[39m[90m 65 |[39m   [36mconst[39m session [33m=[39m [36mawait[39m getServerSession(authOptions)[33m;[39m[0m
+[0m [90m    |[39m                                          [31m[1m^[22m[39m[0m
+[0m [90m 66 |[39m[0m
+[0m [90m 67 |[39m   [36mreturn[39m ([0m
+[0m [90m 68 |[39m     [33m<[39m[33mhtml[39m lang[33m=[39m[32m"en"[39m suppressHydrationWarning[33m>[39m[0m
+ ⨯ app/layout.js (65:42) @ authOptions
+ ⨯ TypeError: (0 , _lib_mock_auth__WEBPACK_IMPORTED_MODULE_2__.getServerSession) is not a function
+    at RootLayout (./app/layout.js:77:91)
+    at stringify (<anonymous>)
+digest: "2232515661"
+[0m [90m 63 |[39m[0m
+[0m [90m 64 |[39m [36mexport[39m [36mdefault[39m [36masync[39m [36mfunction[39m [33mRootLayout[39m({ children }) {[0m
+[0m[31m[1m>[22m[39m[90m 65 |[39m   [36mconst[39m session [33m=[39m [36mawait[39m getServerSession(authOptions)[33m;[39m[0m
+[0m [90m    |[39m                                          [31m[1m^[22m[39m[0m
+[0m [90m 66 |[39m[0m
+[0m [90m 67 |[39m   [36mreturn[39m ([0m
+[0m [90m 68 |[39m     [33m<[39m[33mhtml[39m lang[33m=[39m[32m"en"[39m suppressHydrationWarning[33m>[39m[0m
+ GET /dashboard 500 in 232ms
+ ⨯ app/layout.js (65:42) @ authOptions
+ ⨯ TypeError: (0 , _lib_mock_auth__WEBPACK_IMPORTED_MODULE_2__.getServerSession) is not a function
+    at RootLayout (./app/layout.js:77:91)
+    at stringify (<anonymous>)
+digest: "2232515661"
+[0m [90m 63 |[39m[0m
+[0m [90m 64 |[39m [36mexport[39m [36mdefault[39m [36masync[39m [36mfunction[39m [33mRootLayout[39m({ children }) {[0m
+[0m[31m[1m>[22m[39m[90m 65 |[39m   [36mconst[39m session [33m=[39m [36mawait[39m getServerSession(authOptions)[33m;[39m[0m
+[0m [90m    |[39m                                          [31m[1m^[22m[39m[0m
+[0m [90m 66 |[39m[0m
+[0m [90m 67 |[39m   [36mreturn[39m ([0m
+[0m [90m 68 |[39m     [33m<[39m[33mhtml[39m lang[33m=[39m[32m"en"[39m suppressHydrationWarning[33m>[39m[0m
+ ⨯ app/layout.js (65:42) @ authOptions
+ ⨯ TypeError: (0 , _lib_mock_auth__WEBPACK_IMPORTED_MODULE_2__.getServerSession) is not a function
+    at RootLayout (./app/layout.js:77:91)
+    at stringify (<anonymous>)
+digest: "2232515661"
+[0m [90m 63 |[39m[0m
+[0m [90m 64 |[39m [36mexport[39m [36mdefault[39m [36masync[39m [36mfunction[39m [33mRootLayout[39m({ children }) {[0m
+[0m[31m[1m>[22m[39m[90m 65 |[39m   [36mconst[39m session [33m=[39m [36mawait[39m getServerSession(authOptions)[33m;[39m[0m
+[0m [90m    |[39m                                          [31m[1m^[22m[39m[0m
+[0m [90m 66 |[39m[0m
+[0m [90m 67 |[39m   [36mreturn[39m ([0m
+[0m [90m 68 |[39m     [33m<[39m[33mhtml[39m lang[33m=[39m[32m"en"[39m suppressHydrationWarning[33m>[39m[0m
+ GET /dashboard 500 in 57ms
+ ⨯ ./app/lib/mock-auth.js
+Error: Failed to read source code from /app/app/lib/mock-auth.js
+
+Caused by:
+    No such file or directory (os error 2)
+
+Import trace for requested module:
+./app/lib/mock-auth.js
+ ✓ Compiled in 29ms
+ ✓ Compiled in 1025ms (2191 modules)
+ ○ Compiling /dashboard ...
+ ⨯ ./app/lib/mock-auth.js
+Error:
+  [31mx[0m You're importing a component that needs createContext. It only works in a Client Component but none of its parents are marked with "use client", so they're Server Components by default.
+  [31m|[0m Learn more: https://nextjs.org/docs/getting-started/react-essentials
+  [31m|[0m
+  [31m|[0m
+   ,-[[36;1;4m/app/app/lib/mock-auth.js[0m:1:1]
+ [2m1[0m |
+ [2m2[0m | import React, { createContext, useContext, useState } from 'react'
+   : [31;1m                ^^^^^^^^^^^^^[0m
+ [2m3[0m |
+ [2m4[0m | // Constants
+ [2m5[0m | export const mockSession = {
+   `----
+
+  [31mx[0m You're importing a component that needs useState. It only works in a Client Component but none of its parents are marked with "use client", so they're Server Components by default.
+  [31m|[0m Learn more: https://nextjs.org/docs/getting-started/react-essentials
+  [31m|[0m
+  [31m|[0m
+   ,-[[36;1;4m/app/app/lib/mock-auth.js[0m:1:1]
+ [2m1[0m |
+ [2m2[0m | import React, { createContext, useContext, useState } from 'react'
+   : [31;1m                                           ^^^^^^^^[0m
+ [2m3[0m |
+ [2m4[0m | // Constants
+ [2m5[0m | export const mockSession = {
+   `----
+
+Import trace for requested module:
+./app/lib/mock-auth.js
+./app/layout.js
+ ⨯ ./app/lib/mock-auth.js
+Error:
+  [31mx[0m You're importing a component that needs createContext. It only works in a Client Component but none of its parents are marked with "use client", so they're Server Components by default.
+  [31m|[0m Learn more: https://nextjs.org/docs/getting-started/react-essentials
+  [31m|[0m
+  [31m|[0m
+   ,-[[36;1;4m/app/app/lib/mock-auth.js[0m:1:1]
+ [2m1[0m |
+ [2m2[0m | import React, { createContext, useContext, useState } from 'react'
+   : [31;1m                ^^^^^^^^^^^^^[0m
+ [2m3[0m |
+ [2m4[0m | // Constants
+ [2m5[0m | export const mockSession = {
+   `----
+
+  [31mx[0m You're importing a component that needs useState. It only works in a Client Component but none of its parents are marked with "use client", so they're Server Components by default.
+  [31m|[0m Learn more: https://nextjs.org/docs/getting-started/react-essentials
+  [31m|[0m
+  [31m|[0m
+   ,-[[36;1;4m/app/app/lib/mock-auth.js[0m:1:1]
+ [2m1[0m |
+ [2m2[0m | import React, { createContext, useContext, useState } from 'react'
+   : [31;1m                                           ^^^^^^^^[0m
+ [2m3[0m |
+ [2m4[0m | // Constants
+ [2m5[0m | export const mockSession = {
+   `----
+
+Import trace for requested module:
+./app/lib/mock-auth.js
+./app/layout.js
+ ⨯ ./app/lib/mock-auth.js
+Error:
+  [31mx[0m You're importing a component that needs createContext. It only works in a Client Component but none of its parents are marked with "use client", so they're Server Components by default.
+  [31m|[0m Learn more: https://nextjs.org/docs/getting-started/react-essentials
+  [31m|[0m
+  [31m|[0m
+   ,-[[36;1;4m/app/app/lib/mock-auth.js[0m:1:1]
+ [2m1[0m |
+ [2m2[0m | import React, { createContext, useContext, useState } from 'react'
+   : [31;1m                ^^^^^^^^^^^^^[0m
+ [2m3[0m |
+ [2m4[0m | // Constants
+ [2m5[0m | export const mockSession = {
+   `----
+
+  [31mx[0m You're importing a component that needs useState. It only works in a Client Component but none of its parents are marked with "use client", so they're Server Components by default.
+  [31m|[0m Learn more: https://nextjs.org/docs/getting-started/react-essentials
+  [31m|[0m
+  [31m|[0m
+   ,-[[36;1;4m/app/app/lib/mock-auth.js[0m:1:1]
+ [2m1[0m |
+ [2m2[0m | import React, { createContext, useContext, useState } from 'react'
+   : [31;1m                                           ^^^^^^^^[0m
+ [2m3[0m |
+ [2m4[0m | // Constants
+ [2m5[0m | export const mockSession = {
+   `----
+
+Import trace for requested module:
+./app/lib/mock-auth.js
+./app/layout.js
+ GET /dashboard 500 in 7546ms
+ ✓ Compiled /_error in 1802ms (2424 modules)
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 4.8s (4831 modules)
+ ⨯ app/layout.js (65:42) @ authOptions
+ ⨯ TypeError: (0 , _lib_mock_auth__WEBPACK_IMPORTED_MODULE_2__.getServerSession) is not a function
+    at RootLayout (./app/layout.js:77:91)
+    at stringify (<anonymous>)
+digest: "2232515661"
+[0m [90m 63 |[39m[0m
+[0m [90m 64 |[39m [36mexport[39m [36mdefault[39m [36masync[39m [36mfunction[39m [33mRootLayout[39m({ children }) {[0m
+[0m[31m[1m>[22m[39m[90m 65 |[39m   [36mconst[39m session [33m=[39m [36mawait[39m getServerSession(authOptions)[33m;[39m[0m
+[0m [90m    |[39m                                          [31m[1m^[22m[39m[0m
+[0m [90m 66 |[39m[0m
+[0m [90m 67 |[39m   [36mreturn[39m ([0m
+[0m [90m 68 |[39m     [33m<[39m[33mhtml[39m lang[33m=[39m[32m"en"[39m suppressHydrationWarning[33m>[39m[0m
+ ⨯ app/layout.js (65:42) @ authOptions
+ ⨯ TypeError: (0 , _lib_mock_auth__WEBPACK_IMPORTED_MODULE_2__.getServerSession) is not a function
+    at RootLayout (./app/layout.js:77:91)
+    at stringify (<anonymous>)
+digest: "2232515661"
+[0m [90m 63 |[39m[0m
+[0m [90m 64 |[39m [36mexport[39m [36mdefault[39m [36masync[39m [36mfunction[39m [33mRootLayout[39m({ children }) {[0m
+[0m[31m[1m>[22m[39m[90m 65 |[39m   [36mconst[39m session [33m=[39m [36mawait[39m getServerSession(authOptions)[33m;[39m[0m
+[0m [90m    |[39m                                          [31m[1m^[22m[39m[0m
+[0m [90m 66 |[39m[0m
+[0m [90m 67 |[39m   [36mreturn[39m ([0m
+[0m [90m 68 |[39m     [33m<[39m[33mhtml[39m lang[33m=[39m[32m"en"[39m suppressHydrationWarning[33m>[39m[0m
+ GET /dashboard 500 in 5166ms
+ ⨯ app/layout.js (65:42) @ authOptions
+ ⨯ TypeError: (0 , _lib_mock_auth__WEBPACK_IMPORTED_MODULE_2__.getServerSession) is not a function
+    at RootLayout (./app/layout.js:77:91)
+    at stringify (<anonymous>)
+digest: "2232515661"
+[0m [90m 63 |[39m[0m
+[0m [90m 64 |[39m [36mexport[39m [36mdefault[39m [36masync[39m [36mfunction[39m [33mRootLayout[39m({ children }) {[0m
+[0m[31m[1m>[22m[39m[90m 65 |[39m   [36mconst[39m session [33m=[39m [36mawait[39m getServerSession(authOptions)[33m;[39m[0m
+[0m [90m    |[39m                                          [31m[1m^[22m[39m[0m
+[0m [90m 66 |[39m[0m
+[0m [90m 67 |[39m   [36mreturn[39m ([0m
+[0m [90m 68 |[39m     [33m<[39m[33mhtml[39m lang[33m=[39m[32m"en"[39m suppressHydrationWarning[33m>[39m[0m
+ ⨯ app/layout.js (65:42) @ authOptions
+ ⨯ TypeError: (0 , _lib_mock_auth__WEBPACK_IMPORTED_MODULE_2__.getServerSession) is not a function
+    at RootLayout (./app/layout.js:77:91)
+    at stringify (<anonymous>)
+digest: "2232515661"
+[0m [90m 63 |[39m[0m
+[0m [90m 64 |[39m [36mexport[39m [36mdefault[39m [36masync[39m [36mfunction[39m [33mRootLayout[39m({ children }) {[0m
+[0m[31m[1m>[22m[39m[90m 65 |[39m   [36mconst[39m session [33m=[39m [36mawait[39m getServerSession(authOptions)[33m;[39m[0m
+[0m [90m    |[39m                                          [31m[1m^[22m[39m[0m
+[0m [90m 66 |[39m[0m
+[0m [90m 67 |[39m   [36mreturn[39m ([0m
+[0m [90m 68 |[39m     [33m<[39m[33mhtml[39m lang[33m=[39m[32m"en"[39m suppressHydrationWarning[33m>[39m[0m
+ GET /dashboard 500 in 75ms
+ ✓ Compiled in 1887ms (2376 modules)
+ ✓ Compiled in 1345ms (2425 modules)
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 778ms (4834 modules)
+ GET /dashboard 200 in 1216ms
+ GET /dashboard 200 in 123ms
+ GET /dashboard 200 in 70ms
+ GET /dashboard 200 in 80ms
+ ○ Compiling /api/supabase ...
+ ✓ Compiled /api/queues/owner in 3.5s (2666 modules)
+ ✓ Compiled (2672 modules)
+ ⨯ Error: supabaseUrl is required.
+    at new SupabaseClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/SupabaseClient.js:53:19)
+    at createClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/index.js:59:12)
+    at eval (webpack-internal:///(rsc)/./app/lib/supabase-server.js:11:91)
+    at (rsc)/./app/lib/supabase-server.js (/app/.next/server/app/api/supabase/route.js:172:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(rsc)/./app/api/supabase/route.js:6:82)
+    at (rsc)/./app/api/supabase/route.js (/app/.next/server/app/api/supabase/route.js:162:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fsupabase%2Froute&page=%2Fapi%2Fsupabase%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fsupabase%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D!:15:88)
+    at (rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fsupabase%2Froute&page=%2Fapi%2Fsupabase%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fsupabase%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D! (/app/.next/server/app/api/supabase/route.js:152:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at __webpack_exec__ (/app/.next/server/app/api/supabase/route.js:182:39)
+    at /app/.next/server/app/api/supabase/route.js:183:192
+    at __webpack_require__.X (/app/.next/server/webpack-runtime.js:168:21)
+    at /app/.next/server/app/api/supabase/route.js:183:47
+    at Object.<anonymous> (/app/.next/server/app/api/supabase/route.js:186:3)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1463:12)
+    at mod.require (/app/node_modules/next/dist/server/require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (/app/node_modules/next/dist/server/require.js:109:84)
+    at /app/node_modules/next/dist/server/load-components.js:103:84
+    at async loadComponentsImpl (/app/node_modules/next/dist/server/load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (/app/node_modules/next/dist/server/next-server.js:714:36)
+    at async DevServer.findPageComponents (/app/node_modules/next/dist/server/dev/next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (/app/node_modules/next/dist/server/base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (/app/node_modules/next/dist/server/base-server.js:1962:32)
+    at async DevServer.pipeImpl (/app/node_modules/next/dist/server/base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/app/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/app/node_modules/next/dist/server/base-server.js:818:17)
+    at async /app/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/app/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/app/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/app/node_modules/next/dist/server/lib/router-server.js:173:21)
+    at async handleRequest (/app/node_modules/next/dist/server/lib/router-server.js:350:24)
+    at async requestHandlerImpl (/app/node_modules/next/dist/server/lib/router-server.js:374:13)
+    at async Server.requestListener (/app/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  page: '/api/supabase'
+}
+ ⨯ Error: supabaseUrl is required.
+    at new SupabaseClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/SupabaseClient.js:53:19)
+    at createClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/index.js:59:12)
+    at eval (webpack-internal:///(rsc)/./app/lib/supabase.js:9:85)
+    at (rsc)/./app/lib/supabase.js (/app/.next/server/app/api/queues/owner/route.js:282:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(rsc)/./app/api/queues/owner/route.js:9:71)
+    at (rsc)/./app/api/queues/owner/route.js (/app/.next/server/app/api/queues/owner/route.js:232:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fqueues%2Fowner%2Froute&page=%2Fapi%2Fqueues%2Fowner%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fqueues%2Fowner%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D!:15:92)
+    at (rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fqueues%2Fowner%2Froute&page=%2Fapi%2Fqueues%2Fowner%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fqueues%2Fowner%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D! (/app/.next/server/app/api/queues/owner/route.js:212:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at __webpack_exec__ (/app/.next/server/app/api/queues/owner/route.js:302:39)
+    at /app/.next/server/app/api/queues/owner/route.js:303:533
+    at __webpack_require__.X (/app/.next/server/webpack-runtime.js:168:21)
+    at /app/.next/server/app/api/queues/owner/route.js:303:47
+    at Object.<anonymous> (/app/.next/server/app/api/queues/owner/route.js:306:3)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1463:12)
+    at mod.require (/app/node_modules/next/dist/server/require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (/app/node_modules/next/dist/server/require.js:109:84)
+    at /app/node_modules/next/dist/server/load-components.js:103:84
+    at async loadComponentsImpl (/app/node_modules/next/dist/server/load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (/app/node_modules/next/dist/server/next-server.js:714:36)
+    at async DevServer.findPageComponents (/app/node_modules/next/dist/server/dev/next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (/app/node_modules/next/dist/server/base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (/app/node_modules/next/dist/server/base-server.js:1962:32)
+    at async DevServer.pipeImpl (/app/node_modules/next/dist/server/base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/app/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/app/node_modules/next/dist/server/base-server.js:818:17)
+    at async /app/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/app/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/app/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/app/node_modules/next/dist/server/lib/router-server.js:173:21)
+    at async handleRequest (/app/node_modules/next/dist/server/lib/router-server.js:350:24)
+    at async requestHandlerImpl (/app/node_modules/next/dist/server/lib/router-server.js:374:13)
+    at async Server.requestListener (/app/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  page: '/api/queues/owner'
+}
+ ⨯ Error: supabaseUrl is required.
+    at new SupabaseClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/SupabaseClient.js:53:19)
+    at createClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/index.js:59:12)
+    at eval (webpack-internal:///(rsc)/./app/lib/supabase.js:9:85)
+    at (rsc)/./app/lib/supabase.js (/app/.next/server/app/api/user/route.js:282:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(rsc)/./app/api/user/route.js:9:75)
+    at (rsc)/./app/api/user/route.js (/app/.next/server/app/api/user/route.js:232:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fuser%2Froute&page=%2Fapi%2Fuser%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fuser%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D!:15:84)
+    at (rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fuser%2Froute&page=%2Fapi%2Fuser%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fuser%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D! (/app/.next/server/app/api/user/route.js:212:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at __webpack_exec__ (/app/.next/server/app/api/user/route.js:292:39)
+    at /app/.next/server/app/api/user/route.js:293:533
+    at __webpack_require__.X (/app/.next/server/webpack-runtime.js:168:21)
+    at /app/.next/server/app/api/user/route.js:293:47
+    at Object.<anonymous> (/app/.next/server/app/api/user/route.js:296:3)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1463:12)
+    at mod.require (/app/node_modules/next/dist/server/require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (/app/node_modules/next/dist/server/require.js:109:84)
+    at /app/node_modules/next/dist/server/load-components.js:103:84
+    at async loadComponentsImpl (/app/node_modules/next/dist/server/load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (/app/node_modules/next/dist/server/next-server.js:714:36)
+    at async DevServer.findPageComponents (/app/node_modules/next/dist/server/dev/next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (/app/node_modules/next/dist/server/base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (/app/node_modules/next/dist/server/base-server.js:1962:32)
+    at async DevServer.pipeImpl (/app/node_modules/next/dist/server/base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/app/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/app/node_modules/next/dist/server/base-server.js:818:17)
+    at async /app/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/app/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/app/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/app/node_modules/next/dist/server/lib/router-server.js:173:21)
+    at async handleRequest (/app/node_modules/next/dist/server/lib/router-server.js:350:24)
+    at async requestHandlerImpl (/app/node_modules/next/dist/server/lib/router-server.js:374:13)
+    at async Server.requestListener (/app/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  page: '/api/user'
+}
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 1303ms (5037 modules)
+ ○ Compiling /user/home ...
+ ✓ Compiled /user/home in 7.8s (5095 modules)
+[Next UI] [useButton]: onClick is deprecated, please use onPress instead. See: https://github.com/nextui-org/nextui/issues/4292 []
+ GET /user/home 200 in 9300ms
+ GET /api/user?userId=mock-user-id 200 in 459ms
+ ○ Compiling /api/supabase ...
+ ✓ Compiled /api/supabase in 1432ms (2692 modules)
+ ✓ Compiled (2699 modules)
+ ⨯ Error: supabaseUrl is required.
+    at new SupabaseClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/SupabaseClient.js:53:19)
+    at createClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/index.js:59:12)
+    at eval (webpack-internal:///(rsc)/./app/lib/supabase.js:9:85)
+    at (rsc)/./app/lib/supabase.js (/app/.next/server/app/api/user/route.js:282:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(rsc)/./app/api/user/route.js:9:75)
+    at (rsc)/./app/api/user/route.js (/app/.next/server/app/api/user/route.js:232:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fuser%2Froute&page=%2Fapi%2Fuser%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fuser%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D!:15:84)
+    at (rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fuser%2Froute&page=%2Fapi%2Fuser%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fuser%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D! (/app/.next/server/app/api/user/route.js:212:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at __webpack_exec__ (/app/.next/server/app/api/user/route.js:292:39)
+    at /app/.next/server/app/api/user/route.js:293:533
+    at __webpack_require__.X (/app/.next/server/webpack-runtime.js:168:21)
+    at /app/.next/server/app/api/user/route.js:293:47
+    at Object.<anonymous> (/app/.next/server/app/api/user/route.js:296:3)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1463:12)
+    at mod.require (/app/node_modules/next/dist/server/require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (/app/node_modules/next/dist/server/require.js:109:84)
+    at /app/node_modules/next/dist/server/load-components.js:103:84
+    at async loadComponentsImpl (/app/node_modules/next/dist/server/load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (/app/node_modules/next/dist/server/next-server.js:714:36)
+    at async DevServer.findPageComponents (/app/node_modules/next/dist/server/dev/next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (/app/node_modules/next/dist/server/base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (/app/node_modules/next/dist/server/base-server.js:1962:32)
+    at async DevServer.pipeImpl (/app/node_modules/next/dist/server/base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/app/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/app/node_modules/next/dist/server/base-server.js:818:17)
+    at async /app/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/app/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/app/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/app/node_modules/next/dist/server/lib/router-server.js:173:21)
+    at async handleRequest (/app/node_modules/next/dist/server/lib/router-server.js:350:24)
+    at async requestHandlerImpl (/app/node_modules/next/dist/server/lib/router-server.js:374:13)
+    at async Server.requestListener (/app/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  page: '/api/user'
+}
+ ⨯ Error: supabaseUrl is required.
+    at new SupabaseClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/SupabaseClient.js:53:19)
+    at createClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/index.js:59:12)
+    at eval (webpack-internal:///(rsc)/./app/api/queues/route.js:16:85)
+    at (rsc)/./app/api/queues/route.js (/app/.next/server/app/api/queues/route.js:232:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fqueues%2Froute&page=%2Fapi%2Fqueues%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fqueues%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D!:15:86)
+    at (rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fqueues%2Froute&page=%2Fapi%2Fqueues%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fqueues%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D! (/app/.next/server/app/api/queues/route.js:212:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at __webpack_exec__ (/app/.next/server/app/api/queues/route.js:292:39)
+    at /app/.next/server/app/api/queues/route.js:293:533
+    at __webpack_require__.X (/app/.next/server/webpack-runtime.js:168:21)
+    at /app/.next/server/app/api/queues/route.js:293:47
+    at Object.<anonymous> (/app/.next/server/app/api/queues/route.js:296:3)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1463:12)
+    at mod.require (/app/node_modules/next/dist/server/require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (/app/node_modules/next/dist/server/require.js:109:84)
+    at /app/node_modules/next/dist/server/load-components.js:103:84
+    at async loadComponentsImpl (/app/node_modules/next/dist/server/load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (/app/node_modules/next/dist/server/next-server.js:714:36)
+    at async DevServer.findPageComponents (/app/node_modules/next/dist/server/dev/next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (/app/node_modules/next/dist/server/base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (/app/node_modules/next/dist/server/base-server.js:1962:32)
+    at async DevServer.pipeImpl (/app/node_modules/next/dist/server/base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/app/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/app/node_modules/next/dist/server/base-server.js:818:17)
+    at async /app/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/app/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/app/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/app/node_modules/next/dist/server/lib/router-server.js:173:21)
+    at async handleRequest (/app/node_modules/next/dist/server/lib/router-server.js:350:24)
+    at async requestHandlerImpl (/app/node_modules/next/dist/server/lib/router-server.js:374:13)
+    at async Server.requestListener (/app/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  page: '/api/queues'
+}
+ ⨯ Error: supabaseUrl is required.
+    at new SupabaseClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/SupabaseClient.js:53:19)
+    at createClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/index.js:59:12)
+    at eval (webpack-internal:///(rsc)/./app/api/user/saved-queues/route.js:13:85)
+    at (rsc)/./app/api/user/saved-queues/route.js (/app/.next/server/app/api/user/saved-queues/route.js:232:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fuser%2Fsaved-queues%2Froute&page=%2Fapi%2Fuser%2Fsaved-queues%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fuser%2Fsaved-queues%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D!:15:97)
+    at (rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fuser%2Fsaved-queues%2Froute&page=%2Fapi%2Fuser%2Fsaved-queues%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fuser%2Fsaved-queues%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D! (/app/.next/server/app/api/user/saved-queues/route.js:212:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at __webpack_exec__ (/app/.next/server/app/api/user/saved-queues/route.js:282:39)
+    at /app/.next/server/app/api/user/saved-queues/route.js:283:533
+    at __webpack_require__.X (/app/.next/server/webpack-runtime.js:168:21)
+    at /app/.next/server/app/api/user/saved-queues/route.js:283:47
+    at Object.<anonymous> (/app/.next/server/app/api/user/saved-queues/route.js:286:3)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1463:12)
+    at mod.require (/app/node_modules/next/dist/server/require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (/app/node_modules/next/dist/server/require.js:109:84)
+    at /app/node_modules/next/dist/server/load-components.js:103:84
+    at async loadComponentsImpl (/app/node_modules/next/dist/server/load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (/app/node_modules/next/dist/server/next-server.js:714:36)
+    at async DevServer.findPageComponents (/app/node_modules/next/dist/server/dev/next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (/app/node_modules/next/dist/server/base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (/app/node_modules/next/dist/server/base-server.js:1962:32)
+    at async DevServer.pipeImpl (/app/node_modules/next/dist/server/base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/app/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/app/node_modules/next/dist/server/base-server.js:818:17)
+    at async /app/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/app/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/app/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/app/node_modules/next/dist/server/lib/router-server.js:173:21)
+    at async handleRequest (/app/node_modules/next/dist/server/lib/router-server.js:350:24)
+    at async requestHandlerImpl (/app/node_modules/next/dist/server/lib/router-server.js:374:13)
+    at async Server.requestListener (/app/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  page: '/api/user/saved-queues'
+}
+ ⨯ Error: supabaseUrl is required.
+    at new SupabaseClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/SupabaseClient.js:53:19)
+    at createClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/index.js:59:12)
+    at eval (webpack-internal:///(rsc)/./app/api/user/current-queues/route.js:13:85)
+    at (rsc)/./app/api/user/current-queues/route.js (/app/.next/server/app/api/user/current-queues/route.js:232:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fuser%2Fcurrent-queues%2Froute&page=%2Fapi%2Fuser%2Fcurrent-queues%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fuser%2Fcurrent-queues%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D!:15:99)
+    at (rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fuser%2Fcurrent-queues%2Froute&page=%2Fapi%2Fuser%2Fcurrent-queues%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fuser%2Fcurrent-queues%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D! (/app/.next/server/app/api/user/current-queues/route.js:212:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at __webpack_exec__ (/app/.next/server/app/api/user/current-queues/route.js:282:39)
+    at /app/.next/server/app/api/user/current-queues/route.js:283:533
+    at __webpack_require__.X (/app/.next/server/webpack-runtime.js:168:21)
+    at /app/.next/server/app/api/user/current-queues/route.js:283:47
+    at Object.<anonymous> (/app/.next/server/app/api/user/current-queues/route.js:286:3)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1463:12)
+    at mod.require (/app/node_modules/next/dist/server/require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (/app/node_modules/next/dist/server/require.js:109:84)
+    at /app/node_modules/next/dist/server/load-components.js:103:84
+    at async loadComponentsImpl (/app/node_modules/next/dist/server/load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (/app/node_modules/next/dist/server/next-server.js:714:36)
+    at async DevServer.findPageComponents (/app/node_modules/next/dist/server/dev/next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (/app/node_modules/next/dist/server/base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (/app/node_modules/next/dist/server/base-server.js:1962:32)
+    at async DevServer.pipeImpl (/app/node_modules/next/dist/server/base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/app/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/app/node_modules/next/dist/server/base-server.js:818:17)
+    at async /app/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/app/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/app/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/app/node_modules/next/dist/server/lib/router-server.js:173:21)
+    at async handleRequest (/app/node_modules/next/dist/server/lib/router-server.js:350:24)
+    at async requestHandlerImpl (/app/node_modules/next/dist/server/lib/router-server.js:374:13)
+    at async Server.requestListener (/app/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  page: '/api/user/current-queues'
+}
+ ⨯ Error: supabaseUrl is required.
+    at new SupabaseClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/SupabaseClient.js:53:19)
+    at createClient (webpack-internal:///(rsc)/./node_modules/@supabase/supabase-js/dist/module/index.js:59:12)
+    at eval (webpack-internal:///(rsc)/./app/lib/supabase-server.js:11:91)
+    at (rsc)/./app/lib/supabase-server.js (/app/.next/server/app/api/supabase/route.js:172:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(rsc)/./app/api/supabase/route.js:6:82)
+    at (rsc)/./app/api/supabase/route.js (/app/.next/server/app/api/supabase/route.js:162:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at eval (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fsupabase%2Froute&page=%2Fapi%2Fsupabase%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fsupabase%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D!:15:88)
+    at (rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader.js?name=app%2Fapi%2Fsupabase%2Froute&page=%2Fapi%2Fsupabase%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fsupabase%2Froute.js&appDir=%2Fapp%2Fapp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=%2Fapp&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D! (/app/.next/server/app/api/supabase/route.js:152:1)
+    at __webpack_require__ (/app/.next/server/webpack-runtime.js:33:43)
+    at __webpack_exec__ (/app/.next/server/app/api/supabase/route.js:182:39)
+    at /app/.next/server/app/api/supabase/route.js:183:192
+    at __webpack_require__.X (/app/.next/server/webpack-runtime.js:168:21)
+    at /app/.next/server/app/api/supabase/route.js:183:47
+    at Object.<anonymous> (/app/.next/server/app/api/supabase/route.js:186:3)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1463:12)
+    at mod.require (/app/node_modules/next/dist/server/require-hook.js:65:28)
+    at require (node:internal/modules/helpers:147:16)
+    at requirePage (/app/node_modules/next/dist/server/require.js:109:84)
+    at /app/node_modules/next/dist/server/load-components.js:103:84
+    at async loadComponentsImpl (/app/node_modules/next/dist/server/load-components.js:103:26)
+    at async DevServer.findPageComponentsImpl (/app/node_modules/next/dist/server/next-server.js:714:36)
+    at async DevServer.findPageComponents (/app/node_modules/next/dist/server/dev/next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (/app/node_modules/next/dist/server/base-server.js:1910:24)
+    at async DevServer.renderToResponseImpl (/app/node_modules/next/dist/server/base-server.js:1962:32)
+    at async DevServer.pipeImpl (/app/node_modules/next/dist/server/base-server.js:922:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/app/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/app/node_modules/next/dist/server/base-server.js:818:17)
+    at async /app/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/app/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/app/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/app/node_modules/next/dist/server/lib/router-server.js:173:21)
+    at async handleRequest (/app/node_modules/next/dist/server/lib/router-server.js:350:24)
+    at async requestHandlerImpl (/app/node_modules/next/dist/server/lib/router-server.js:374:13)
+    at async Server.requestListener (/app/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  page: '/api/supabase'
+}
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 1670ms (5099 modules)
