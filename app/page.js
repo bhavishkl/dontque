@@ -6,7 +6,7 @@ import Hero from './components/LandingPageCompo/hero/Hero'
 import Header from './components/LandingPageCompo/Header'
 import { Card } from "@nextui-org/card"
 import { Skeleton } from "@nextui-org/skeleton"
-import { useSession } from 'next-auth/react'
+import { useSession } from '@/lib/mock-auth'
 import { useRouter, redirect } from 'next/navigation'
 
 // Loading components with proper skeletons

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUserInfo } from '../../hooks/useUserName';
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/mock-auth";
 import { NavigationIcons } from '../../utils/navigationIcons';
 
 const BottomBar = () => {

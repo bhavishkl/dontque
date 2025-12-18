@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useSession } from '@/lib/mock-auth'
 import { useSupabase } from './useSupabase'
 import { useEffect, useRef } from 'react'
 

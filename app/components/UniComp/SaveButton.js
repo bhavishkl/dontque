@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from "@nextui-org/react";
 import { Bookmark } from 'lucide-react';
 import { toast } from 'sonner';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/mock-auth';
 import useSWR from 'swr';
 
 // Define fetcher function

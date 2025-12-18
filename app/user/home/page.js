@@ -5,7 +5,7 @@ import { Button, useDisclosure, Card, CardBody, Skeleton, Chip, Select, SelectIt
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
+import { useSession } from '@/lib/mock-auth'
 import { categories } from '../../utils/category'
 import { Clock, Users, ChevronRight, Coffee, BookOpen, Dumbbell, Share2, MapPin, Star, Pencil, Calendar } from 'lucide-react'
 import { toast } from 'sonner'

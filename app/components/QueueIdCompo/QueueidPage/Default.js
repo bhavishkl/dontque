@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, Clock, Users, ChevronDown, ChevronUp, Bell, AlertCircle, Timer, Share2, Star, Calendar, LogOut, User } from 'lucide-react'
 import { Button, Card, CardBody, CardHeader, Progress, Skeleton, Tooltip, Badge } from "@nextui-org/react"
 import { toast } from 'sonner'
-import { useSession } from 'next-auth/react'
+import { useSession } from '@/lib/mock-auth'
 import { createClient } from '@supabase/supabase-js'
 import { useApi } from '@/app/hooks/useApi'
 

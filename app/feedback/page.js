@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Card, CardBody, Textarea, Button, Avatar, Progress, Chip } from '@nextui-org/react';
 import { Star } from 'lucide-react';
 import { toast } from 'sonner';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/mock-auth';
 import { useUserInfo } from '@/app/hooks/useUserName';
 import { useApi } from '@/app/hooks/useApi';
 

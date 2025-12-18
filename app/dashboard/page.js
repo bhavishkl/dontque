@@ -7,7 +7,7 @@ import { Users, Clock, Settings, Plus, PieChart, DollarSign, Trash2, Search, Mor
 import { Button } from "@nextui-org/button"
 import { Card, CardBody, CardHeader } from "@nextui-org/card"
 import { Skeleton } from "@nextui-org/skeleton"
-import { useSession } from "next-auth/react"
+import { useSession } from "@/lib/mock-auth"
 import { useRouter } from 'next/navigation'
 import { useApi } from '../hooks/useApi'
 import { useUserInfo } from '../hooks/useUserName'

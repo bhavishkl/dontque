@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
+import { getServerSession } from '@/lib/mock-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { createClient } from '@supabase/supabase-js';
 

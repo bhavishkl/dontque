@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/mock-auth';
 import { Spinner, Card, CardBody } from "@nextui-org/react";
 import { toast } from 'sonner';
 import { useApi } from '@/app/hooks/useApi';
