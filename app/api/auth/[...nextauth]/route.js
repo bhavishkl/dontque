@@ -7,13 +7,13 @@ export const authOptions = {
       name: "Credentials",
       credentials: {
         userId: { label: "User ID", type: "text" },
-        idToken: { label: "ID Token", type: "text" },
+        phoneNumber: { label: "Phone Number", type: "text" },
       },
       async authorize(credentials) {
-        if (credentials.userId && credentials.idToken) {
+        if (credentials.userId && credentials.phoneNumber) {
           return {
             id: credentials.userId,
-            idToken: credentials.idToken,
+            phoneNumber: credentials.phoneNumber,
           };
         }
         return null;
@@ -24,14 +24,14 @@ export const authOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.idToken = user.idToken;
+        token.phoneNumber = user.phoneNumber;
       }
       return token;
     },
     async session({ session, token }) {
       session.user = {
         id: token.id,
-        idToken: token.idToken,
+        phoneNumber: token.phoneNumber,
         name: token.name,
         image: token.image,
         role: token.role || null
