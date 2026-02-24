@@ -104,8 +104,6 @@ export default function UserDashboard() {
         method: 'POST',
       });
       
-      // Then sign out with NextAuth
-      await signOut({ redirect: true, callbackUrl: '/' });
     } catch (error) {
       console.error('Error during logout:', error);
       toast.error('Failed to logout. Please try again.');

@@ -1,7 +1,7 @@
 'use client'
 
-import { Input, Select, SelectItem, Switch, Tabs, Tab, Card, CardBody, Button, Chip } from "@nextui-org/react";
-import { Clock, Users, Timer, Building2, Utensils, Plus, X, Edit2, DollarSign, UserPlus } from "lucide-react";
+import { Input, Select, SelectItem, Switch, Card, CardBody, Button, Chip } from "@nextui-org/react";
+import { Clock, Users, Plus, X, Edit2, DollarSign, UserPlus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from 'uuid';
 import { cityCoordinates } from "@/app/utils/cities";
@@ -18,12 +18,8 @@ export default function CreateQueuePage() {
     category: '',
     location: '',
     address: '',
-    serviceType: '', // Changed from queueType to serviceType
     openingTime: '',
     closingTime: '',
-    maxCapacity: '',
-    serviceStartTime: '',
-    estTimeToServe: '',
     counters: [],
     services: [],
     staff: []
@@ -257,25 +253,6 @@ export default function CreateQueuePage() {
         </div>
       </div>
 
-      {/* Service Type Selection */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Queue Type</h3>
-        <Select
-          label="Service Type"
-          placeholder="Select service type"
-          selectedKeys={data.serviceType ? new Set([data.serviceType]) : new Set([])}
-          onSelectionChange={(keys) => handleChange('serviceType', Array.from(keys)[0])}
-          isRequired
-        >
-          <SelectItem key="standard" value="standard">
-            Standard Queue
-          </SelectItem>
-          <SelectItem key="advanced" value="advanced">
-            Advanced Queue with Multiple Services
-          </SelectItem>
-        </Select>
-      </div>
-
       {/* Operating Hours */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Operating Hours</h3>
@@ -296,35 +273,6 @@ export default function CreateQueuePage() {
           />
         </div>
       </div>
-    </div>
-  );
-
-  // Standard queue specific fields
-  const renderStandardFields = () => (
-    <div className="space-y-4">
-      <Input
-        type="number"
-        label="Maximum Capacity"
-        placeholder="Enter maximum queue capacity"
-        startContent={<Users className="w-4 h-4 text-gray-400" />}
-        value={data.maxCapacity || ''}
-        onChange={(e) => handleChange('maxCapacity', e.target.value)}
-        isRequired
-      />
-      <Input
-        type="time"
-        label="Service Start Time"
-        value={data.serviceStartTime || ''}
-        onChange={(e) => handleChange('serviceStartTime', e.target.value)}
-      />
-      <Input
-        type="number"
-        label="Estimated Time to Serve (minutes)"
-        placeholder="Average time per customer"
-        startContent={<Timer className="w-4 h-4 text-gray-400" />}
-        value={data.estTimeToServe || ''}
-        onChange={(e) => handleChange('estTimeToServe', e.target.value)}
-      />
     </div>
   );
 
@@ -560,8 +508,7 @@ export default function CreateQueuePage() {
       </div>
 
       {/* Staff Management Section */}
-      {data.serviceType === 'advanced' && (
-        <div className="space-y-4">
+      <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Staff Management</h3>
             <Switch 
@@ -720,7 +667,6 @@ export default function CreateQueuePage() {
             </>
           )}
         </div>
-      )}
     </div>
   );
 
@@ -737,15 +683,11 @@ export default function CreateQueuePage() {
         {/* Common fields */}
         {renderCommonFields()}
 
-        {/* Type specific fields */}
-        {data.serviceType && (
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-4">
-              {data.serviceType === 'standard' ? 'Standard Queue Settings' : 'Advanced Queue Settings'}
-            </h3>
-            {data.serviceType === 'standard' ? renderStandardFields() : renderAdvancedFields()}
-          </div>
-        )}
+        {/* Advanced queue settings */}
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold mb-4">Advanced Queue Settings</h3>
+          {renderAdvancedFields()}
+        </div>
 
         {/* Submit Button */}
         <div className="flex justify-end gap-4">

@@ -17,11 +17,17 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch both queue data and entries in parallel
-    const [queueResponse, entriesResponse] = await Promise.all([
+    // Fetch queue stats, queue metadata, and entries in parallel
+    const [queueResponse, queueMetaResponse, entriesResponse] = await Promise.all([
       supabase
         .from('queue_stats_extended')
         .select('*')
+        .eq('queue_id', queueid)
+        .single(),
+
+      supabase
+        .from('queues')
+        .select('address, opening_time, closing_time')
         .eq('queue_id', queueid)
         .single(),
       
@@ -44,6 +50,15 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: entriesResponse.error.message }, { status: 500 });
     }
 
+    if (queueMetaResponse.error) {
+      console.error('Error fetching queue metadata:', queueMetaResponse.error);
+      return NextResponse.json({ error: queueMetaResponse.error.message }, { status: 500 });
+    }
+
+    const openingTime = queueMetaResponse.data?.opening_time || null;
+    const closingTime = queueMetaResponse.data?.closing_time || null;
+    const operatingHours = openingTime && closingTime ? `${openingTime} - ${closingTime}` : null;
+
     // Find user's position
     const userPosition = entriesResponse.data.findIndex(entry => entry.user_id === session.user.id) + 1;
     const userEntry = userPosition > 0 ? entriesResponse.data[userPosition - 1] : null;
@@ -51,11 +66,15 @@ export async function GET(request, { params }) {
 
     const responseData = {
       ...queueResponse.data,
+      address: queueMetaResponse.data?.address || null,
+      opening_time: openingTime,
+      closing_time: closingTime,
+      operating_hours: queueResponse.data?.operating_hours || operatingHours,
       queueEntries: entriesResponse.data,
       userQueueEntry: userEntry ? {
         ...userEntry,
         position: userPosition,
-        estimated_wait_time: queueResponse.data.est_time_to_serve * userPosition
+        estimated_wait_time: (queueResponse.data.est_time_to_serve || 0) * userPosition
       } : null,
     };
 

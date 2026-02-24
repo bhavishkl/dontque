@@ -25,6 +25,8 @@ export default function SignIn() {
     }
   }, [session, router, callbackUrl])
 
+  const fullPhoneNumber = `+91${phoneNumber}`
+
   const sendOtp = async () => {
     if (!phoneNumber.trim()) {
       toast.error('Please enter your phone number.')
@@ -36,7 +38,7 @@ export default function SignIn() {
       const res = await fetch('/api/auth/otpless', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'send_otp', phoneNumber })
+        body: JSON.stringify({ action: 'send_otp', phoneNumber: fullPhoneNumber })
       })
 
       const result = await res.json()
@@ -65,7 +67,7 @@ export default function SignIn() {
       const res = await fetch('/api/auth/otpless', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'verify_otp', phoneNumber, otp })
+        body: JSON.stringify({ action: 'verify_otp', phoneNumber: fullPhoneNumber, otp })
       })
 
       const result = await res.json()
@@ -109,15 +111,18 @@ export default function SignIn() {
               <label htmlFor="phone" className="mb-1 block text-sm font-medium text-gray-700">
                 Phone number
               </label>
-              <input
-                id="phone"
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="+15551234567"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none transition focus:border-black"
-                disabled={isLoading || otpSent}
-              />
+              <div className="flex items-center overflow-hidden rounded-lg border border-gray-300 focus-within:border-black">
+                <span className="border-r border-gray-300 bg-gray-100 px-3 py-2 text-gray-700">+91</span>
+                <input
+                  id="phone"
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  placeholder="9876543210"
+                  className="w-full px-3 py-2 outline-none"
+                  disabled={isLoading || otpSent}
+                />
+              </div>
             </div>
 
             {otpSent && (
