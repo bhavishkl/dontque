@@ -1,12 +1,10 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import Image from 'next/image'
-import { Search, Clock, Users, MapPin, Star, Bookmark, Share2, ChevronRight } from 'lucide-react'
+import { Search, Clock, MapPin, Share2, ChevronRight, Star } from 'lucide-react'
 import { Input, Select, SelectItem, Card, CardBody, Button, Chip, Progress, Skeleton } from "@nextui-org/react"
-import debounce from 'lodash/debounce'
 import { useApi } from '../../hooks/useApi'
 import SaveButton from '@/app/components/UniComp/SaveButton'
 import { useLocation } from '../../hooks/useLocation'
@@ -30,7 +28,7 @@ export default function QueueListPage() {
   const [debouncedSearchValue, setDebouncedSearchValue] = useState('')
   const { location: userLocation, refreshLocation } = useLocation()
   const router = useRouter()
-  const [forceAllCities, setForceAllCities] = useState(false)
+  const [forceAllCities] = useState(false)
 
   useEffect(() => {
     refreshLocation();
@@ -45,7 +43,7 @@ export default function QueueListPage() {
     return () => clearTimeout(timer);
   }, [searchValue]);
 
-  const { data: queues, isLoading, isError, mutate } = useApi(
+  const { data: queues, isLoading, mutate } = useApi(
     `/api/queues?category=${selectedCategory}&search=${debouncedSearchValue}&sortBy=${sortBy}${
       !forceAllCities && userLocation?.city ? `&city=${userLocation.city}` : ''
     }&limit=20`
@@ -211,126 +209,94 @@ export default function QueueListPage() {
             ))
           ) : filteredQueues.length > 0 ? (
             filteredQueues.map((queue) => (
-              <div 
+              <Card
                 key={queue.queue_id}
-                className="group bg-white dark:bg-gray-800 rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-orange-100/50 dark:hover:shadow-orange-900/10 border border-gray-100 dark:border-gray-700"
+                className="bg-background/70 shadow-sm hover:shadow-md transition-all duration-200 border border-divider/60"
               >
-                <div className="flex flex-col lg:flex-row">
-                  {/* Image Container */}
-                  <div className="relative h-48 lg:h-[250px] lg:w-[300px] shrink-0">
-                    <Image
-                      src={queue.image_url || '/default.jpg'}
-                      alt={queue.name}
-                      width={400}
-                      height={200}
-                      className="w-full h-full object-cover"
-                      style={{ filter: 'brightness(0.95)' }}
+                <CardBody className="p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-lg font-semibold text-default-900 dark:text-default-100 truncate">
+                        {queue.name}
+                      </h3>
+                      <div className="mt-1 flex items-center gap-1.5 text-xs text-default-500">
+                        <MapPin className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{queue.location || 'Location not specified'}</span>
+                      </div>
+                    </div>
+                    <Chip size="sm" variant="flat" color="secondary" className="text-xs">
+                      {queue.category || 'General'}
+                    </Chip>
+                  </div>
+
+                  <div className="mt-4">
+                    <div className="mb-2 flex items-center justify-between text-xs">
+                      <span className="text-default-600">Capacity usage</span>
+                      <span className="text-default-500">{Math.max(0, Math.round(queue.capacity_percentage || 0))}%</span>
+                    </div>
+                    <Progress
+                      value={Math.max(0, Math.min(100, queue.capacity_percentage || 0))}
+                      color="warning"
+                      className="h-2"
                     />
-                    
-                    {/* Top Info Bar */}
-                    <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
-                      <Chip
-                        variant="flat"
-                        size="sm"
-                        className="backdrop-blur-md bg-black/30 text-white font-medium border border-white/20"
-                        startContent={<span className="text-base">🏢</span>}
-                      >
-                        {queue.category || 'General'}
-                      </Chip>
+                  </div>
 
-                      <div className="flex items-center gap-2 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full dark:bg-gray-900/95 shadow-sm">
-                        <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                        <span className="text-sm font-medium text-gray-700 dark:text-white">
-                          {queue.avg_rating ? queue.avg_rating.toFixed(1) : 'New'}
-                        </span>
-                      </div>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className="rounded-lg bg-default-50 p-3 text-center">
+                      <div className="text-lg font-bold text-primary">{queue.current_queue_count || 0}</div>
+                      <div className="text-xs text-default-500">People in queue</div>
                     </div>
-
-                    {/* Quick Actions Overlay (Map and Share buttons only) */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
-                      <div className="absolute bottom-4 right-4 flex gap-2 items-center">
-                        <Button
-                          isIconOnly
-                          className="bg-white/25 hover:bg-white/40 backdrop-blur-md text-white rounded-full p-2.5 shadow-lg transition-all duration-200"
-                          onClick={() => window.open(`https://maps.app.goo.gl/uYAVo2VP4Gz3B9FK6?q`, '_blank')}
-                        >
-                          <MapPin className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          isIconOnly
-                          className="bg-white/25 hover:bg-white/40 backdrop-blur-md text-white rounded-full p-2.5 shadow-lg transition-all duration-200"
-                          onClick={() => handleShare(queue)}
-                        >
-                          <Share2 className="h-4 w-4" />
-                        </Button>
+                    <div className="rounded-lg bg-default-50 p-3 text-center">
+                      <div className="text-lg font-bold text-secondary">
+                        {Math.max(0, Math.round(queue.total_estimated_wait_time || 0))}
                       </div>
+                      <div className="text-xs text-default-500">Est. wait (min)</div>
                     </div>
                   </div>
 
-                  {/* Content */}
-                  <div className="p-5 lg:flex-1 lg:flex lg:flex-col lg:justify-center">
-                    <div className="space-y-4">
-                      {/* Queue Info */}
-                      <div>
-                        <h3 className="text-xl font-semibold mb-1 line-clamp-1 text-gray-900 dark:text-gray-100">
-                          {queue.name}
-                        </h3>
-                        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                          <Clock className="h-3.5 w-3.5 shrink-0" />
-                          <span className="truncate opacity-75">{queue.operating_hours || 'Hours not available'}</span>
-                        </div>
+                  <div className="mt-4 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5 text-default-600">
+                        <Clock className="h-3.5 w-3.5 text-default-400" />
+                        <span>Operating hours</span>
                       </div>
-
-                      {/* Stats Grid */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="flex items-center gap-2 border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-xl">
-                          <Users className="h-4 w-4 text-orange-500 dark:text-orange-400" />
-                          <div>
-                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{queue.current_queue_count || 0}</span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">in queue</span>
-                          </div>
-                        </div>
-
-                        {queue.total_estimated_wait_time > 0 && (
-                          <div className="flex items-center gap-2 border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-xl">
-                            <Clock className="h-4 w-4 text-orange-500 dark:text-orange-400" />
-                            <div>
-                              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{Math.round(queue.total_estimated_wait_time)}m</span>
-                              <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">wait</span>
-                            </div>
-                          </div>
-                        )}
+                      <span className="text-default-500 truncate max-w-[60%] text-right">
+                        {queue.operating_hours || 'Not available'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5 text-default-600">
+                        <Star className="h-3.5 w-3.5 text-default-400" />
+                        <span>Rating</span>
                       </div>
-
-                      {/* High Demand Badge */}
-                      {queue.capacity_percentage > 80 && (
-                        <div className="inline-flex items-center gap-1.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-3 py-1 rounded-full text-sm">
-                          <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                          </span>
-                          High Demand
-                        </div>
-                      )}
-
-                      {/* Action Buttons (View Details and SaveButton) */}
-                      <div className="flex gap-2 mt-2">
-                        <Button
-                          className="flex-grow bg-gray-900 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-medium py-2.5 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
-                          onClick={() => handleViewQueue(queue.queue_id)}
-                        >
-                          View Details
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                        <SaveButton 
-                          queueId={queue.queue_id}
-                          className="bg-white/25 hover:bg-white/40 backdrop-blur-md text-white rounded-full p-2.5 shadow-lg transition-all duration-200"
-                        />
-                      </div>
+                      <span className="text-default-500">
+                        {queue.avg_rating ? Number(queue.avg_rating).toFixed(1) : 'N/A'}
+                      </span>
                     </div>
                   </div>
-                </div>
-              </div>
+
+                  <div className="mt-4 flex gap-2">
+                    <Button
+                      color="primary"
+                      variant="flat"
+                      className="flex-1"
+                      endContent={<ChevronRight className="h-3.5 w-3.5" />}
+                      onClick={() => handleViewQueue(queue.queue_id)}
+                    >
+                      View Details
+                    </Button>
+                    <Button
+                      isIconOnly
+                      variant="bordered"
+                      onClick={() => handleShare(queue)}
+                      aria-label="Share queue"
+                    >
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                    <SaveButton queueId={queue.queue_id} />
+                  </div>
+                </CardBody>
+              </Card>
             ))
           ) : (
             <Card className="col-span-full">

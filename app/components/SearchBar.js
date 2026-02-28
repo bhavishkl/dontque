@@ -133,7 +133,7 @@ export default function SearchBar({ onSearch, onScanClick, isSearching }) {
           </Button>
           <Button
             className="flex-1 h-12 bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20 rounded-xl text-white font-medium"
-            onClick={() => router.push('/all')}
+            onClick={() => router.push('/user/queues')}
           >
             View All
           </Button>

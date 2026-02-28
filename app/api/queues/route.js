@@ -115,6 +115,59 @@ export async function POST(request) {
 
     const queueData = await request.json();
 
+    // Validate required fields
+    if (!queueData.name || !queueData.category || !queueData.location) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Name, category, and location are required' 
+      }, { status: 400 });
+    }
+
+    // Advanced queue is the default and only supported type
+    if (!queueData.counters?.length) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'At least one counter is required' 
+      }, { status: 400 });
+    }
+
+    const parsedCounters = queueData.counters.map(counter => ({
+      ...counter,
+      parsedMaxCapacity: counter.maxCapacity ? parseInt(counter.maxCapacity) : 0
+    }));
+
+    const totalCounterCapacity = parsedCounters.reduce(
+      (total, counter) => total + (Number.isFinite(counter.parsedMaxCapacity) ? counter.parsedMaxCapacity : 0),
+      0
+    );
+
+    const queueServiceStartTime =
+      parsedCounters.find(counter => counter.serviceStartTime)?.serviceStartTime || null;
+
+    let parsedServices = [];
+    if (queueData.services?.length) {
+      parsedServices = queueData.services.map(service => ({
+        ...service,
+        parsedEstimatedTime: service.estTimeToServe ? parseInt(service.estTimeToServe) : 0,
+        parsedPrice: service.price ? parseFloat(service.price) : null
+      }));
+
+      for (const service of parsedServices) {
+        if (!Number.isFinite(service.parsedEstimatedTime) || service.parsedEstimatedTime < 0) {
+          return NextResponse.json({
+            success: false,
+            message: 'Each service must have a valid estimated time'
+          }, { status: 400 });
+        }
+      }
+    }
+
+    const queueEstimatedTime = parsedServices.length
+      ? Math.round(
+          parsedServices.reduce((total, service) => total + service.parsedEstimatedTime, 0) / parsedServices.length
+        )
+      : 0;
+
     // Clean and validate numeric fields
     const cleanedQueueData = {
       queue_id: queueData.id,
@@ -124,70 +177,36 @@ export async function POST(request) {
       category: queueData.category,
       location: queueData.location,
       address: queueData.address,
-      max_capacity: queueData.maxCapacity ? parseInt(queueData.maxCapacity) : 0,
+      max_capacity: totalCounterCapacity,
       opening_time: queueData.openingTime || null,
       closing_time: queueData.closingTime || null,
-      service_start_time: queueData.serviceStartTime || null,
-      service_type: queueData.serviceType,
-      est_time_to_serve: queueData.serviceType === 'standard' 
-        ? (queueData.estTimeToServe ? parseInt(queueData.estTimeToServe) : 10)
-        : 0,
+      service_start_time: queueServiceStartTime,
+      service_type: 'advanced',
+      est_time_to_serve: queueEstimatedTime,
       status: 'active'
     };
 
-    // Validate required fields
-    if (!cleanedQueueData.name || !cleanedQueueData.category || 
-        !cleanedQueueData.location || !cleanedQueueData.service_type) {
-      return NextResponse.json({ 
-        success: false, 
-        message: 'Name, category, location, and service type are required' 
-      }, { status: 400 });
-    }
+    // Create a map of counter IDs for quick lookup
+    const counterMap = new Map(
+      queueData.counters.map(counter => [counter.id, counter])
+    );
 
-    // Validate data based on service type
-    if (queueData.serviceType === 'advanced') {
-      // For advanced type, ensure we have counters
-      if (!queueData.counters?.length) {
-        return NextResponse.json({ 
-          success: false, 
-          message: 'Advanced queues require at least one counter' 
-        }, { status: 400 });
-      }
-
-      // Create a map of counter IDs for quick lookup
-      const counterMap = new Map(
-        queueData.counters.map(counter => [counter.id, counter])
-      );
-
-      // If services exist, validate counter links
-      if (queueData.services?.length) {
-        for (const service of queueData.services) {
-          if (!service.linkedCounters?.length) {
-            return NextResponse.json({ 
-              success: false, 
-              message: 'Each service must be linked to at least one counter' 
-            }, { status: 400 });
-          }
-
-          // Validate counter references using UUIDs
-          for (const counterId of service.linkedCounters) {
-            if (!counterMap.has(counterId)) {
-              return NextResponse.json({ 
-                success: false, 
-                message: 'Invalid counter reference in service' 
-              }, { status: 400 });
-            }
-          }
+    // If services exist, validate counter links
+    if (queueData.services?.length) {
+      for (const service of queueData.services) {
+        if (!service.linkedCounters?.length) {
+          return NextResponse.json({ 
+            success: false, 
+            message: 'Each service must be linked to at least one counter' 
+          }, { status: 400 });
         }
-      }
 
-      // If staff exists, validate counter assignments
-      if (queueData.staff?.length) {
-        for (const staff of queueData.staff) {
-          if (!counterMap.has(staff.assignedCounter)) {
+        // Validate counter references using UUIDs
+        for (const counterId of service.linkedCounters) {
+          if (!counterMap.has(counterId)) {
             return NextResponse.json({ 
               success: false, 
-              message: 'Invalid counter assignment for staff member' 
+              message: 'Invalid counter reference in service' 
             }, { status: 400 });
           }
         }
@@ -203,94 +222,97 @@ export async function POST(request) {
 
     if (queueError) throw queueError;
 
-    // For advanced type, insert counters and related data
-    if (queueData.serviceType === 'advanced') {
-      // Clean counter data before insertion
-      const cleanedCounters = queueData.counters.map(counter => ({
-        counter_id: counter.id,
-        queue_id: queueData.id,
-        name: counter.name,
-        counter_type: queueData.staff?.length > 0 ? 'staff' : 'standard',
-        status: 'active',
-        service_start_time: counter.serviceStartTime || null,
-        max_capacity: counter.maxCapacity ? parseInt(counter.maxCapacity) : 0
-      }));
+    // Insert counters
+    const cleanedCounters = parsedCounters.map(counter => ({
+      counter_id: counter.id,
+      queue_id: queueData.id,
+      name: counter.name,
+      counter_type: queueData.staff?.length > 0 ? 'staff' : 'standard',
+      status: 'active',
+      service_start_time: counter.serviceStartTime || null,
+      max_capacity: Number.isFinite(counter.parsedMaxCapacity) ? counter.parsedMaxCapacity : 0
+    }));
 
-      const { data: counters, error: counterError } = await supabase
-        .from('counters')
-        .insert(cleanedCounters)
-        .select();
+    const { error: counterError } = await supabase
+      .from('counters')
+      .insert(cleanedCounters);
 
-      if (counterError) {
+    if (counterError) {
+      await supabase
+        .from('queues')
+        .delete()
+        .eq('queue_id', queueData.id);
+      throw counterError;
+    }
+
+    // Insert services if they exist
+    if (parsedServices.length) {
+      const serviceEntries = parsedServices.flatMap(service => 
+        service.linkedCounters.map(counterId => ({
+          service_id: service.id,
+          counter_id: counterId,
+          name: service.name,
+          description: service.description || null,
+          estimated_time: service.parsedEstimatedTime,
+          price: service.parsedPrice,
+          status: 'active'
+        }))
+      );
+
+      const { error: serviceError } = await supabase
+        .from('services')
+        .insert(serviceEntries);
+
+      if (serviceError) {
+        await supabase
+          .from('counters')
+          .delete()
+          .eq('queue_id', queueData.id);
         await supabase
           .from('queues')
           .delete()
           .eq('queue_id', queueData.id);
-        throw counterError;
+        throw serviceError;
       }
+    }
 
-      // Insert services if they exist
-      if (queueData.services?.length) {
-        const serviceEntries = queueData.services.flatMap(service => 
-          service.linkedCounters.map(counterId => ({
-            service_id: service.id,
-            counter_id: counterId,
-            name: service.name,
-            description: service.description || null,
-            estimated_time: service.estTimeToServe ? parseInt(service.estTimeToServe) : null,
-            price: service.price ? parseFloat(service.price) : null,
-            status: 'active'
-          }))
-        );
+    // Insert staff if they exist
+    if (queueData.staff?.length) {
+      const cleanedStaff = queueData.staff.map(staff => {
+        const counterIndex = Number.parseInt(staff.assignedCounter, 10);
+        const assignedCounterId = Number.isInteger(counterIndex)
+          ? queueData.counters?.[counterIndex]?.id
+          : null;
 
-        const { error: serviceError } = await supabase
-          .from('services')
-          .insert(serviceEntries);
-
-        if (serviceError) {
-          await supabase
-            .from('counters')
-            .delete()
-            .eq('queue_id', queueData.id);
-          await supabase
-            .from('queues')
-            .delete()
-            .eq('queue_id', queueData.id);
-          throw serviceError;
-        }
-      }
-
-      // Insert staff if they exist
-      if (queueData.staff?.length) {
-        const cleanedStaff = queueData.staff.map(staff => ({
+        return {
           staff_id: staff.id,
-          counter_id: staff.assignedCounter,
+          counter_id: assignedCounterId || null,
           name: staff.name,
           specialization: staff.role,
-          experience_years: null, // Add default values for required fields
-          rating: 4.0, // Default rating as per schema
-          review_count: 0 // Default count
-        }));
+          experience_years: null,
+          rating: 4.0,
+          review_count: 0
+        };
+      });
 
-        const { error: staffError } = await supabase
-          .from('staff_details')
-          .insert(cleanedStaff);
+      const { error: staffError } = await supabase
+        .from('staff_details')
+        .insert(cleanedStaff);
 
-        if (staffError) {
-          await supabase
-            .from('services')
-            .delete()
-            .in('counter_id', queueData.counters.map(c => c.id));
-          await supabase
-            .from('counters')
-            .delete()
-            .eq('queue_id', queueData.id);
-          await supabase
-            .from('queues')
-            .delete()
-            .eq('queue_id', queueData.id);
-          throw staffError;
-        }
+      if (staffError) {
+        await supabase
+          .from('services')
+          .delete()
+          .in('counter_id', queueData.counters.map(counter => counter.id));
+        await supabase
+          .from('counters')
+          .delete()
+          .eq('queue_id', queueData.id);
+        await supabase
+          .from('queues')
+          .delete()
+          .eq('queue_id', queueData.id);
+        throw staffError;
       }
     }
 

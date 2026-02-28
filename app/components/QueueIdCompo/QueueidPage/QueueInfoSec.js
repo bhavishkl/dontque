@@ -79,18 +79,25 @@ const QueueInfoSec = ({ queueData, isLoading, handleShare }) => {
               <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
               <span className="truncate">{queueData?.location}</span>
             </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 flex items-start mt-1">
+              <Map className="w-4 h-4 mr-1 mt-0.5 flex-shrink-0" />
+              <span className="line-clamp-2">{queueData?.address || 'Address not available'}</span>
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center mt-1">
+              <Clock className="w-4 h-4 mr-1 flex-shrink-0" />
+              <span>
+                {queueData?.opening_time || queueData?.closing_time
+                  ? `${formatTime(queueData?.opening_time)} - ${formatTime(queueData?.closing_time)}`
+                  : (queueData?.operating_hours || 'Hours not available')}
+              </span>
+            </p>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <StatsCard
               icon={<Star className="h-5 w-5 text-yellow-400" />}
-              value={queueData?.avg_rating || 'N/A'}
+              value={queueData?.avg_rating || '0'}
               label={`${queueData?.total_reviews || '0'} reviews`}
-            />
-            <StatsCard
-              icon={<Clock className="h-5 w-5 text-green-500" />}
-              value={`${queueData?.est_time_to_serve || '0'}`}
-              label="min/person"
             />
             <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl">
               <div className="flex items-center justify-between">
@@ -111,119 +118,6 @@ const QueueInfoSec = ({ queueData, isLoading, handleShare }) => {
               <p className="text-xs text-gray-500 dark:text-gray-400">Queue ID</p>
             </div>
           </div>
-
-          <div className="flex border-b border-gray-200 dark:border-gray-700">
-            <Button 
-              variant="light" 
-              className={`rounded-none border-b-2 px-4 py-2 ${activeTab === 'details' ? 'border-primary text-primary' : 'border-transparent'}`}
-              onClick={() => setActiveTab('details')}
-            >
-              Details
-            </Button>
-            <Button 
-              variant="light" 
-              className={`rounded-none border-b-2 px-4 py-2 ${activeTab === 'about' ? 'border-primary text-primary' : 'border-transparent'}`}
-              onClick={() => setActiveTab('about')}
-            >
-              About
-            </Button>
-            <Button 
-              variant="light" 
-              className={`rounded-none border-b-2 px-4 py-2 ${activeTab === 'location' ? 'border-primary text-primary' : 'border-transparent'}`}
-              onClick={() => {setActiveTab('location'); setShowMap(true);}}
-            >
-              Location
-            </Button>
-          </div>
-
-          {activeTab === 'details' && (
-            <div className="space-y-4 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl">
-              <div className="grid gap-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-300">Service Start</span>
-                  <span className="font-medium">{formatTime(queueData?.service_start_time)}</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-300">Operating Hours</span>
-                  <span className="font-medium">
-                    {queueData?.operating_hours || 'Hours not specified'}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-300">Service Time</span>
-                  <span className="font-medium">{queueData?.est_time_to_serve || '0'} min/person</span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-300">Max Capacity</span>
-                  <span className="font-medium">{queueData?.max_capacity || 'Unlimited'}</span>
-                </div>
-              </div>
-
-              {queueData?.features?.length > 0 && (
-                <div className="pt-3 border-t border-gray-200 dark:border-gray-600 mt-3">
-                  <h3 className="font-semibold mb-2">Features</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {queueData?.features?.map((feature, index) => (
-                      <Chip key={index} variant="flat" size="sm">
-                        {feature}
-                      </Chip>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'about' && (
-            <div className="space-y-3">
-              <p className={`text-gray-600 dark:text-gray-300 ${!showFullDescription && 'line-clamp-4'}`}>
-                {queueData?.description || 'No description available.'}
-              </p>
-              {queueData?.description?.length > 150 && (
-                <Button
-                  variant="light"
-                  size="sm"
-                  onClick={() => setShowFullDescription(!showFullDescription)}
-                  className="text-primary"
-                >
-                  {showFullDescription ? 'Show Less' : 'Read More'}
-                </Button>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'location' && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 mb-2">
-                <MapPin className="h-5 w-5 text-primary" />
-                <p className="text-gray-600 dark:text-gray-300">{queueData?.location || 'Location not specified'}</p>
-              </div>
-              
-              {showMap ? (
-                <div className="h-56 rounded-lg overflow-hidden">
-                  <iframe
-                    width="100%"
-                    height="100%"
-                    frameBorder="0"
-                    src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY}&q=${encodeURIComponent(queueData?.location)}`}
-                    allowFullScreen
-                  />
-                </div>
-              ) : (
-                <Button
-                  variant="bordered"
-                  className="w-full"
-                  onClick={() => setShowMap(true)}
-                  startContent={<Map className="h-4 w-4" />}
-                >
-                  Load Map
-                </Button>
-              )}
-            </div>
-          )}
         </CardBody>
       </Skeleton>
     </Card>

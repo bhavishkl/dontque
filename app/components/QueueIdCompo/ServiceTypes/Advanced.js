@@ -72,6 +72,15 @@ const calculatePersonalizedServeTime = (nextServeAt, position, totalWaitTime, se
   return baseTime;
 };
 
+const formatCounterStartTime = (timeStr) => {
+  if (!timeStr) return 'Not specified';
+  const [hours, minutes] = timeStr.split(':');
+  const hour = parseInt(hours, 10);
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const formattedHour = hour % 12 || 12;
+  return `${formattedHour}${minutes !== '00' ? ':' + minutes : ''} ${period}`;
+};
+
 export default function Advanced({ params, queueData }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedCounter, setSelectedCounter] = useState("1")
@@ -648,21 +657,35 @@ export default function Advanced({ params, queueData }) {
                     <span className="text-medium">{counter.name}</span>
                   </div>
                 }
-              >
-                <div className="mt-4 space-y-6">
-                  {/* Queue Status Section */}
-                  <div className="space-y-6">
-                    {/* Queue Capacity */}
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-gray-600 dark:text-gray-400">Queue Capacity</span>
-                        <span className="font-semibold">{counter.current_queue_size || 0} / {counter.max_capacity || 20}</span>
-                      </div>
-                      <Progress 
-                        value={((counter.current_queue_size || 0) / (counter.max_capacity || 20)) * 100} 
-                        className="h-2"
-                        classNames={{
-                          indicator: "bg-orange-500 dark:bg-orange-400",
+	          >
+	                <div className="mt-4 space-y-6">
+	                  {/* Queue Status Section */}
+	                  <div className="space-y-6">
+	                    {/* Queue Capacity */}
+	                    <div>
+                        {counter.service_start_time && (
+                          <div className="flex items-center gap-2 mb-2">
+                            <Clock className="h-4 w-4 text-orange-500 dark:text-orange-400" />
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              Service starts at {formatCounterStartTime(counter.service_start_time)}
+                            </span>
+                          </div>
+                        )}
+	                      <div className="flex justify-between text-sm mb-2">
+	                        <span className="text-gray-600 dark:text-gray-400">Queue Capacity</span>
+	                        <span className="font-semibold">
+                            {counter.current_queue_size || 0} / {counter.max_capacity || 'Unlimited'}
+                          </span>
+	                      </div>
+	                      <Progress 
+	                        value={
+                            counter.max_capacity && counter.max_capacity > 0
+                              ? ((counter.current_queue_size || 0) / counter.max_capacity) * 100
+                              : 0
+                          }
+	                        className="h-2"
+	                        classNames={{
+	                          indicator: "bg-orange-500 dark:bg-orange-400",
                           track: "bg-orange-200/50 dark:bg-orange-900/20",
                         }}
                       />
@@ -843,5 +866,4 @@ export default function Advanced({ params, queueData }) {
     </div>
   )
 }
-
 

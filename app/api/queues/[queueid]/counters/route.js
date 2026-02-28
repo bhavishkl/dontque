@@ -18,6 +18,8 @@ export async function GET(request, { params }) {
         name,
         counter_type,
         status,
+        service_start_time,
+        max_capacity,
         services (
           service_id,
           name,
@@ -44,12 +46,32 @@ export async function GET(request, { params }) {
       throw counterError
     }
 
+    const { data: waitingEntries, error: waitingEntriesError } = await supabase
+      .from('queue_entries')
+      .select('counter_id')
+      .eq('queue_id', queueid)
+      .eq('status', 'waiting')
+
+    if (waitingEntriesError) {
+      throw waitingEntriesError
+    }
+
+    const counterQueueSizeMap = (waitingEntries || []).reduce((acc, entry) => {
+      if (!entry.counter_id) return acc
+      const key = entry.counter_id
+      acc[key] = (acc[key] || 0) + 1
+      return acc
+    }, {})
+
     // Format the response
     const formattedCounters = counters.map(counter => ({
       id: counter.counter_id,
       name: counter.name,
       type: counter.counter_type,
       status: counter.status,
+      service_start_time: counter.service_start_time,
+      max_capacity: counter.max_capacity,
+      current_queue_size: counterQueueSizeMap[counter.counter_id] || 0,
       services: (counter.services || []).map(service => ({
         id: service.service_id,
         name: service.name,
