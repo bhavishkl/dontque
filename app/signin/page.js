@@ -10,7 +10,7 @@ import { Spinner } from '@nextui-org/react'
 export default function SignIn() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
 
   const [phoneNumber, setPhoneNumber] = useState('')
   const [otp, setOtp] = useState('')
@@ -18,12 +18,19 @@ export default function SignIn() {
   const [otpSent, setOtpSent] = useState(false)
 
   const callbackUrl = searchParams.get('callbackUrl') || '/user/home'
+  const loggedOut = searchParams.get('loggedOut')
 
   useEffect(() => {
-    if (session) {
+    if (status === 'authenticated' && session) {
       router.push(callbackUrl)
     }
-  }, [session, router, callbackUrl])
+  }, [status, session, router, callbackUrl])
+
+  useEffect(() => {
+    if (loggedOut === '1') {
+      toast.success('Logged out successfully.')
+    }
+  }, [loggedOut])
 
   const fullPhoneNumber = `+91${phoneNumber}`
 

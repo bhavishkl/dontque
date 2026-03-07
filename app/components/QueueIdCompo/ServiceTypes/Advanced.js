@@ -47,10 +47,13 @@ const LeaveQueueConfirmationModal = dynamic(
 )
 
 const calculatePersonalizedServeTime = (nextServeAt, position, totalWaitTime, serviceStartTime) => {
-  if (!nextServeAt) return null;
-  
   const now = new Date();
-  let baseTime = new Date(nextServeAt);
+  let baseTime = nextServeAt ? new Date(nextServeAt) : new Date(now);
+
+  // Guard against invalid date parsing from upstream values.
+  if (Number.isNaN(baseTime.getTime())) {
+    baseTime = new Date(now);
+  }
   
   // Parse service start time
   if (serviceStartTime) {
@@ -64,8 +67,8 @@ const calculatePersonalizedServeTime = (nextServeAt, position, totalWaitTime, se
     }
   }
   
-  // Add only the wait time for users ahead in the queue
-  if (totalWaitTime) {
+  // Add wait time for users ahead in the queue when available.
+  if (typeof totalWaitTime === 'number' && totalWaitTime > 0) {
     return new Date(baseTime.getTime() + (totalWaitTime * 60000));
   }
   
@@ -327,14 +330,9 @@ export default function Advanced({ params, queueData }) {
       );
     }
 
-    // Use the total estimated time from all selected services
-    const totalEstimatedTime = userQueueEntry.queue_entry_services?.reduce((total, entry) => {
-      return total + (entry.services?.estimated_time || 0)
-    }, 0) || 15;
-
     // Calculate personalized serve time with total estimated time
     const expectedServeTime = calculatePersonalizedServeTime(
-      userQueueEntry.expectedServeTime,
+      userQueueEntry.expectedServeTime || userQueueEntry.counters?.next_serve_at,
       userQueueEntry.position,
       userQueueEntry.totalEstimatedTime,
       userQueueEntry.counters?.service_start_time
@@ -444,50 +442,6 @@ export default function Advanced({ params, queueData }) {
               </Badge>
             </div>
 
-            {/* Compact Selected Counter and Services Section */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-4">
-              {/* Counter Section */}
-              <div className="flex-1 flex items-center gap-3 p-3 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
-                <div className="p-1.5 bg-white/20 rounded-full">
-                  <User className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs text-white/80">Selected Counter</p>
-                  <p className="text-sm font-medium text-white">
-                    {counter?.name || 'Counter Unavailable'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Services Section */}
-              <div className="flex-1 p-3 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-white/20 rounded-full">
-                    <Check className="h-4 w-4 text-white" />
-                  </div>
-                  <p className="text-xs text-white/80">Selected Services</p>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {Array.from(selectedServices).map(serviceId => {
-                    const service = counter?.services?.find(s => s.id === serviceId) || {
-                      name: 'Service Unavailable',
-                      id: serviceId
-                    };
-                    return (
-                      <Chip
-                        key={serviceId}
-                        variant="flat"
-                        className="bg-white/20 text-white text-xs"
-                        size="sm"
-                      >
-                        {service.name}
-                      </Chip>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
             <div className="space-y-3">
               <div className="flex justify-between items-center gap-4">
                 <div className="flex-1">
@@ -535,7 +489,72 @@ export default function Advanced({ params, queueData }) {
         <Card className="dark:bg-gray-800">
           <CardBody className="p-6">
             <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-4">Time Until Your Turn</h3>
+              <h3 className="text-lg font-semibold mb-4">Turn Timing & Selection</h3>
+              <div className="relative mb-5 overflow-hidden rounded-2xl border border-orange-200/70 dark:border-orange-800/60 bg-gradient-to-br from-orange-50 via-white to-amber-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-900">
+                <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-orange-300/30 blur-2xl dark:bg-orange-500/20" />
+                <div className="pointer-events-none absolute -left-10 bottom-0 h-24 w-24 rounded-full bg-amber-300/30 blur-2xl dark:bg-amber-500/20" />
+
+                <div className="relative p-4 sm:p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                        Selected Counter
+                      </p>
+                      <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
+                        {counter?.name || 'Counter Unavailable'}
+                      </p>
+                    </div>
+                    <Chip
+                      variant="flat"
+                      className="bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
+                      size="sm"
+                      startContent={<User className="h-3.5 w-3.5" />}
+                    >
+                      Active Counter
+                    </Chip>
+                  </div>
+
+                  <div className="mt-4 space-y-2">
+                    <p className="text-[11px] uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                      Selected Services
+                    </p>
+                    {Array.from(selectedServices).length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-orange-200 dark:border-gray-700 px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                        No services selected yet
+                      </div>
+                    ) : (
+                      Array.from(selectedServices).map((serviceId, index) => {
+                        const service = counter?.services?.find(s => s.id === serviceId) || {
+                          name: 'Service Unavailable',
+                          id: serviceId
+                        };
+
+                        return (
+                          <div
+                            key={serviceId}
+                            className="flex items-center justify-between rounded-xl border border-orange-100 dark:border-gray-700 bg-white/85 dark:bg-gray-800/70 px-3 py-2"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-orange-500 text-xs font-semibold text-white">
+                                {index + 1}
+                              </span>
+                              <div>
+                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                  {service.name}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {service.estimatedTime ? `${service.estimatedTime} min` : 'No time estimate'}
+                                </p>
+                              </div>
+                            </div>
+                            <CheckCircle2 className="h-4 w-4 text-orange-500 dark:text-orange-400" />
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </div>
               {renderCountdown()}
             </div>
 
@@ -866,4 +885,3 @@ export default function Advanced({ params, queueData }) {
     </div>
   )
 }
-

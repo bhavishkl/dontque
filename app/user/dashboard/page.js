@@ -22,6 +22,7 @@ const EditProfileModal = dynamic(
 export default function UserDashboard() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editedUserData, setEditedUserData] = useState(null)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const { data: userData, isLoading: isUserLoading, isError: isUserError, mutate: mutateUser } = useApi('/api/user/profile')
   const { data: session, update: updateSession } = useSession()
   const router = useRouter()
@@ -98,15 +99,23 @@ export default function UserDashboard() {
   }
 
   const handleLogout = async () => {
+    setIsLoggingOut(true)
     try {
-      // Call the logout API to clear cookies
+      // Clear custom app cookies
       await fetch('/api/auth/logout', {
         method: 'POST',
-      });
-      
+      })
+
+      // Clear NextAuth session cookie without hard reload
+      await signOut({ redirect: false })
+
+      router.replace('/signin?loggedOut=1')
+      router.refresh()
     } catch (error) {
-      console.error('Error during logout:', error);
-      toast.error('Failed to logout. Please try again.');
+      console.error('Error during logout:', error)
+      toast.error('Failed to logout. Please try again.')
+    } finally {
+      setIsLoggingOut(false)
     }
   }
 
@@ -167,8 +176,9 @@ export default function UserDashboard() {
                       className="bg-danger text-white hover:opacity-90 transition-opacity"
                       startContent={<LogOut className="h-4 w-4" />}
                       onClick={handleLogout}
+                      isDisabled={isLoggingOut}
                     >
-                      Logout
+                      {isLoggingOut ? 'Logging out...' : 'Logout'}
                     </Button>
                   </>
                 )}
