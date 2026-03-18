@@ -103,7 +103,7 @@ export default function UserDashboard() {
       await fetch('/api/auth/logout', {
         method: 'POST',
       });
-      
+      await signOut({ callbackUrl: '/signin' });
     } catch (error) {
       console.error('Error during logout:', error);
       toast.error('Failed to logout. Please try again.');
