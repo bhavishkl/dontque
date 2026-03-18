@@ -22,6 +22,7 @@ const EditProfileModal = dynamic(
 export default function UserDashboard() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editedUserData, setEditedUserData] = useState(null)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const { data: userData, isLoading: isUserLoading, isError: isUserError, mutate: mutateUser } = useApi('/api/user/profile')
   const { data: session, update: updateSession } = useSession()
   const router = useRouter()
@@ -99,83 +100,96 @@ export default function UserDashboard() {
 
   const handleLogout = async () => {
     try {
+      setIsLoggingOut(true)
+
       // Call the logout API to clear cookies
       await fetch('/api/auth/logout', {
         method: 'POST',
       });
       
+      // Call NextAuth signOut
+      await signOut({ redirect: false })
+      
+      toast.success('Logged out successfully')
+      router.push('/signin')
     } catch (error) {
       console.error('Error during logout:', error);
       toast.error('Failed to logout. Please try again.');
+    } finally {
+      setIsLoggingOut(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-900 transition-colors duration-300">
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
-        <Card className="dark:bg-gray-800 border-none shadow-lg">
-          <CardBody>
-            <div className="flex flex-col sm:flex-row items-center sm:items-center justify-between gap-4 sm:gap-6 p-2 sm:p-4">
-              <div className="flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6 w-full sm:w-auto">
-                {isUserLoading ? (
-                  <>
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 animate-pulse" />
-                    <div className="space-y-3 text-center sm:text-left">
-                      <div className="h-6 w-32 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded animate-pulse" />
-                      <div className="h-5 w-40 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded animate-pulse" />
-                    </div>
-                  </>
-                ) : (
-                  <>
+        <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-[2rem] border border-white/50 dark:border-gray-700/50 shadow-[12px_12px_24px_rgba(0,0,0,0.05),-12px_-12px_24px_rgba(255,255,255,0.8),inset_2px_2px_4px_rgba(255,255,255,1),inset_-2px_-2px_4px_rgba(0,0,0,0.02)] dark:shadow-[12px_12px_24px_rgba(0,0,0,0.3),-12px_-12px_24px_rgba(255,255,255,0.05),inset_2px_2px_4px_rgba(255,255,255,0.1),inset_-2px_-2px_4px_rgba(0,0,0,0.2)] p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-8">
+            <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8 w-full sm:w-auto">
+              {isUserLoading ? (
+                <>
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-[1.5rem] bg-gray-200/80 dark:bg-gray-700/80 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),inset_-4px_-4px_8px_rgba(255,255,255,1)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.3),inset_-4px_-4px_8px_rgba(255,255,255,0.1)] animate-pulse" />
+                  <div className="space-y-4 text-center sm:text-left">
+                    <div className="h-8 w-40 bg-gray-200/80 dark:bg-gray-700/80 rounded-full animate-pulse" />
+                    <div className="h-6 w-48 bg-gray-200/80 dark:bg-gray-700/80 rounded-full animate-pulse" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-[1.5rem] overflow-hidden shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),inset_-4px_-4px_8px_rgba(255,255,255,1)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.4),inset_-4px_-4px_8px_rgba(255,255,255,0.1)] p-1.5 bg-white/50 dark:bg-gray-700/50">
                     <Avatar 
                       src={userData?.image || `https://ui-avatars.com/api/?name=${userData?.name}&background=random`} 
                       name={userData?.name} 
-                      className="h-20 w-20 sm:h-24 sm:w-24 text-large"
+                      className="w-full h-full text-large rounded-[1.2rem]"
                       showFallback
                       fallback={
-                        <div className="bg-primary text-white font-semibold text-xl">
+                        <div className="bg-amber-500 text-white font-semibold text-2xl w-full h-full flex items-center justify-center rounded-[1.2rem]">
                           {userData?.name?.charAt(0)?.toUpperCase()}
                         </div>
                       }
                     />
-                    <div className="space-y-2 text-center sm:text-left">
-                      <h1 className="text-xl sm:text-2xl font-bold dark:text-white">{userData?.name}</h1>
-                      <p className="text-gray-600 dark:text-gray-300 flex items-center justify-center sm:justify-start gap-2">
-                        <Phone className="h-4 w-4" />
+                  </div>
+                  <div className="space-y-3 text-center sm:text-left">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">{userData?.name}</h1>
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100/80 dark:bg-gray-800/80 shadow-[inset_2px_2px_5px_rgba(0,0,0,0.05),inset_-2px_-2px_5px_rgba(255,255,255,0.5)] dark:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.2),inset_-2px_-2px_5px_rgba(255,255,255,0.05)]">
+                      <Phone className="h-4 w-4 text-amber-500 dark:text-amber-400" />
+                      <span className="text-gray-700 dark:text-gray-300 font-medium tracking-wide">
                         {userData?.phone_number}
-                      </p>
+                      </span>
                     </div>
-                  </>
-                )}
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
-                {isUserLoading ? (
-                  <>
-                    <div className="h-10 w-28 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded animate-pulse" />
-                    <div className="h-10 w-28 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded animate-pulse" />
-                  </>
-                ) : (
-                  <>
-                    <Button 
-                      className="bg-primary text-white dark:bg-primary-dark hover:opacity-90 transition-opacity"
-                      startContent={<Settings className="h-4 w-4" />}
-                      onClick={handleEditProfile}
-                    >
-                      Edit Profile
-                    </Button>
-                    <Button 
-                      className="bg-danger text-white hover:opacity-90 transition-opacity"
-                      startContent={<LogOut className="h-4 w-4" />}
-                      onClick={handleLogout}
-                    >
-                      Logout
-                    </Button>
-                  </>
-                )}
-              </div>
+                  </div>
+                </>
+              )}
             </div>
-          </CardBody>
-        </Card>
+            
+            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+              {isUserLoading ? (
+                <>
+                  <div className="h-12 w-32 bg-gray-200/80 dark:bg-gray-700/80 rounded-[1rem] animate-pulse" />
+                  <div className="h-12 w-32 bg-gray-200/80 dark:bg-gray-700/80 rounded-[1rem] animate-pulse" />
+                </>
+              ) : (
+                <>
+                  <Button 
+                    className="h-12 px-6 bg-amber-500 text-white rounded-[1rem] font-semibold shadow-[6px_6px_12px_rgba(0,0,0,0.1),-6px_-6px_12px_rgba(255,255,255,0.8),inset_2px_2px_4px_rgba(255,255,255,0.4),inset_-2px_-2px_4px_rgba(0,0,0,0.1)] hover:bg-amber-400 active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.2),inset_-4px_-4px_8px_rgba(255,255,255,0.2)] transition-all dark:bg-amber-600 dark:shadow-[6px_6px_12px_rgba(0,0,0,0.3),-6px_-6px_12px_rgba(255,255,255,0.05),inset_2px_2px_4px_rgba(255,255,255,0.1),inset_-2px_-2px_4px_rgba(0,0,0,0.2)]"
+                    startContent={<Settings className="h-4 w-4" />}
+                    onClick={handleEditProfile}
+                  >
+                    Edit Profile
+                  </Button>
+                  <Button 
+                    className="h-12 px-6 bg-red-500 text-white rounded-[1rem] font-semibold shadow-[6px_6px_12px_rgba(0,0,0,0.1),-6px_-6px_12px_rgba(255,255,255,0.8),inset_2px_2px_4px_rgba(255,255,255,0.4),inset_-2px_-2px_4px_rgba(0,0,0,0.1)] hover:bg-red-400 active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.2),inset_-4px_-4px_8px_rgba(255,255,255,0.2)] transition-all dark:bg-red-600 dark:shadow-[6px_6px_12px_rgba(0,0,0,0.3),-6px_-6px_12px_rgba(255,255,255,0.05),inset_2px_2px_4px_rgba(255,255,255,0.1),inset_-2px_-2px_4px_rgba(0,0,0,0.2)]"
+                    startContent={!isLoggingOut && <LogOut className="h-4 w-4" />}
+                    onClick={handleLogout}
+                    isLoading={isLoggingOut}
+                  >
+                    {isLoggingOut ? 'Logging out...' : 'Logout'}
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Edit Profile Modal */}
         <EditProfileModal 

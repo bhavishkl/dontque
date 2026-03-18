@@ -67,17 +67,17 @@ const Header = () => {
       <Tooltip content={children} placement="right" delay={300}>
         <Link 
           href={href}
-          className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 group
+          className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-[1rem] transition-all duration-200 group
             ${isActive 
-              ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300' 
-              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+              ? 'bg-amber-500 text-white shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2),inset_-2px_-2px_4px_rgba(255,255,255,0.2)] dark:bg-amber-600 dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.4),inset_-2px_-2px_4px_rgba(255,255,255,0.1)]' 
+              : 'text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50 hover:shadow-[4px_4px_8px_rgba(0,0,0,0.05),-4px_-4px_8px_rgba(255,255,255,0.5)] dark:hover:shadow-[4px_4px_8px_rgba(0,0,0,0.2),-4px_-4px_8px_rgba(255,255,255,0.05)]'
             }`}
           onClick={toggleSidebar}
         >
-          <Icon className={`w-5 h-5 ${isActive ? 'text-amber-600 dark:text-amber-400' : 'group-hover:text-amber-500 transition-colors'}`} />
+          <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'group-hover:text-amber-500 transition-colors'}`} />
           <span>{children}</span>
           {isActive && (
-            <div className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400" />
+            <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_4px_rgba(255,255,255,0.8)]" />
           )}
         </Link>
       </Tooltip>
@@ -191,67 +191,79 @@ const Header = () => {
         >
           <div
             ref={sidebarRef}
-            className={`absolute right-0 top-0 h-screen w-72 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col ${
-              sidebarOpen ? 'translate-x-0' : 'translate-x-full'
+            className={`absolute right-4 top-4 bottom-4 w-72 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-[2rem] shadow-[12px_12px_24px_rgba(0,0,0,0.1),-12px_-12px_24px_rgba(255,255,255,0.4),inset_2px_2px_4px_rgba(255,255,255,1),inset_-2px_-2px_4px_rgba(0,0,0,0.05)] border border-white/50 dark:border-gray-700/50 dark:shadow-[12px_12px_24px_rgba(0,0,0,0.4),-12px_-12px_24px_rgba(255,255,255,0.05),inset_2px_2px_4px_rgba(255,255,255,0.1),inset_-2px_-2px_4px_rgba(0,0,0,0.2)] transform transition-transform duration-300 ease-in-out flex flex-col ${
+              sidebarOpen ? 'translate-x-0' : 'translate-x-[calc(100%+2rem)]'
             }`}
           >
+            {/* Close Button */}
+            <button 
+              onClick={toggleSidebar}
+              className="absolute top-4 right-4 p-2 bg-white/50 dark:bg-gray-700/50 hover:bg-white/80 dark:hover:bg-gray-600/80 rounded-full shadow-[4px_4px_8px_rgba(0,0,0,0.1),-4px_-4px_8px_rgba(255,255,255,0.4)] dark:shadow-[4px_4px_8px_rgba(0,0,0,0.3),-4px_-4px_8px_rgba(255,255,255,0.05)] transition-all z-10"
+            >
+              <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            </button>
+
             {/* Profile Section */}
-            <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
-              <div className="flex items-center gap-4">
-                <div className="relative w-12 h-12 rounded-lg overflow-hidden ring-2 ring-amber-200 dark:ring-amber-800">
+            <div className="p-6 border-b border-gray-200/50 dark:border-gray-700/50 flex-shrink-0 mt-4">
+              <div className="flex flex-col items-center text-center gap-4">
+                <div className="relative w-20 h-20 rounded-[1.5rem] overflow-hidden shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),inset_-4px_-4px_8px_rgba(255,255,255,1)] dark:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.4),inset_-4px_-4px_8px_rgba(255,255,255,0.1)] p-1 bg-white/50 dark:bg-gray-700/50">
                   {userLoading ? (
-                    <div className="w-full h-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                    <div className="w-full h-full rounded-[1.2rem] bg-gray-200 dark:bg-gray-700 animate-pulse" />
                   ) : userImage ? (
                     <img
                       src={userImage}
                       alt={userName || 'User avatar'}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover rounded-[1.2rem]"
                     />
                   ) : (
-                    <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                      <User className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+                    <div className="w-full h-full rounded-[1.2rem] bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                      <User className="w-8 h-8 text-gray-500 dark:text-gray-400" />
                     </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h2 className="font-semibold text-gray-900 dark:text-white">
+                  <h2 className="font-bold text-xl text-gray-900 dark:text-white mb-1">
                     {userLoading ? 'Loading...' : (userName || session.user?.name || 'Guest')}
                   </h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <div className="inline-block px-3 py-1 bg-amber-100/50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full shadow-[inset_2px_2px_4px_rgba(0,0,0,0.05),inset_-2px_-2px_4px_rgba(255,255,255,0.5)] dark:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.2),inset_-2px_-2px_4px_rgba(255,255,255,0.05)] mb-3">
                     {userLoading ? '...' : (role || 'User')}
-                  </p>
+                  </div>
                   {!userLoading && shortid && (
-                    <div className="flex items-center gap-2 mt-2 overflow-x-auto">
-                      <code className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono whitespace-nowrap">
-                        ID: {shortid}
-                      </code>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(shortid)
-                          toast.success('Shortid copied to clipboard')
-                        }}
-                        className="flex-shrink-0 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
-                        title="Copy ID"
-                      >
-                        <Copy className="w-4 h-4 text-gray-500" />
-                      </button>
-                      <button
-                        onClick={async () => {
-                          try {
-                            await navigator.share({
-                              title: 'My Queue Shortid',
-                              text: `My DontQue id: ${shortid}`,
-                            })
-                          } catch (err) {
-                            navigator.clipboard.writeText(shortid)
-                            toast.success('Shortid copied to clipboard')
-                          }
-                        }}
-                        className="flex-shrink-0 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
-                        title="Share ID"
-                      >
-                        <Share2 className="w-4 h-4 text-gray-500" />
-                      </button>
+                    <div className="flex items-center justify-center gap-2 mt-2">
+                      <div className="flex items-center bg-gray-100/80 dark:bg-gray-800/80 shadow-[inset_2px_2px_5px_rgba(0,0,0,0.1),inset_-2px_-2px_5px_rgba(255,255,255,0.5)] dark:shadow-[inset_2px_2px_5px_rgba(0,0,0,0.3),inset_-2px_-2px_5px_rgba(255,255,255,0.05)] rounded-full px-4 py-1.5">
+                        <code className="text-xs font-mono font-medium text-gray-700 dark:text-gray-300 mr-2">
+                          ID: {shortid}
+                        </code>
+                        <div className="flex gap-1 border-l border-gray-300 dark:border-gray-600 pl-2">
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(shortid)
+                              toast.success('Shortid copied to clipboard')
+                            }}
+                            className="p-1 hover:text-amber-500 transition-colors"
+                            title="Copy ID"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await navigator.share({
+                                  title: 'My Queue Shortid',
+                                  text: `My DontQue id: ${shortid}`,
+                                })
+                              } catch (err) {
+                                navigator.clipboard.writeText(shortid)
+                                toast.success('Shortid copied to clipboard')
+                              }
+                            }}
+                            className="p-1 hover:text-amber-500 transition-colors"
+                            title="Share ID"
+                          >
+                            <Share2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -259,7 +271,7 @@ const Header = () => {
             </div>
 
             {/* Navigation Links */}
-            <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
+            <nav className="flex-1 p-4 space-y-6 overflow-y-auto clay-scrollbar">
               {!userLoading && role === 'admin' && (
                 <>
                   <NavGroup title="Business">

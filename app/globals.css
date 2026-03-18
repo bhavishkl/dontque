@@ -67,3 +67,28 @@ body {
   --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
   box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
 }
+.clay-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.clay-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 10px;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.1);
+}
+.dark .clay-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.3);
+}
+.clay-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(251, 146, 60, 0.5); /* Amber-500 with opacity */
+  border-radius: 10px;
+  box-shadow: 1px 1px 2px rgba(255, 255, 255, 0.3), inset -1px -1px 2px rgba(0, 0, 0, 0.1);
+}
+.dark .clay-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(217, 119, 6, 0.5); /* Amber-600 with opacity */
+  box-shadow: 1px 1px 2px rgba(255, 255, 255, 0.1), inset -1px -1px 2px rgba(0, 0, 0, 0.3);
+}
+.clay-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(251, 146, 60, 0.8);
+}
+

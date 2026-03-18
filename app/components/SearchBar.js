@@ -73,16 +73,16 @@ export default function SearchBar({ onSearch, onScanClick, isSearching }) {
         e.preventDefault();
         onSearch(searchQuery);
         setShowSuggestions(false);
-      }} className="flex flex-col gap-3">
+      }} className="flex flex-col gap-4">
         {/* Search Bar */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <div className="relative flex-1">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-4">
-              <Search className="h-5 w-5 text-gray-400" />
+            <div className="absolute inset-y-0 left-0 flex items-center pl-5 z-10">
+              <Search className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             </div>
             <input
               type="search"
-              className="w-full h-12 pl-12 pr-4 rounded-xl text-gray-900 bg-white/95 backdrop-blur-md border border-white/20 focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all"
+              className="w-full h-14 pl-12 pr-4 rounded-[2rem] text-gray-900 bg-white/90 backdrop-blur-xl border border-white/40 transition-all shadow-[8px_8px_16px_rgba(0,0,0,0.1),-8px_-8px_16px_rgba(255,255,255,0.2),inset_2px_2px_6px_rgba(255,255,255,1),inset_-2px_-2px_6px_rgba(0,0,0,0.05)] focus:outline-none focus:ring-2 focus:ring-white/50 dark:bg-gray-800/90 dark:text-white dark:border-gray-700/50 dark:shadow-[8px_8px_16px_rgba(0,0,0,0.3),-8px_-8px_16px_rgba(255,255,255,0.05),inset_2px_2px_6px_rgba(255,255,255,0.1),inset_-2px_-2px_6px_rgba(0,0,0,0.2)]"
               placeholder="Search queues or enter 6-digit code..."
               value={searchQuery}
               onChange={handleInputChange}
@@ -91,17 +91,17 @@ export default function SearchBar({ onSearch, onScanClick, isSearching }) {
             
             {/* Suggestions Dropdown */}
             {showSuggestions && suggestions?.length > 0 && (
-              <div className="absolute w-full mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50 max-h-60 overflow-y-auto">
+              <div className="absolute w-full mt-2 bg-white/95 backdrop-blur-xl dark:bg-gray-800/95 rounded-[1.5rem] shadow-[8px_8px_20px_rgba(0,0,0,0.15),-8px_-8px_20px_rgba(255,255,255,0.1)] border border-white/50 dark:border-gray-700/50 z-50 max-h-60 overflow-y-auto">
                 {suggestions.map((suggestion, index) => (
                   <button
                     key={index}
-                    className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors first:rounded-t-xl last:rounded-b-xl"
+                    className="w-full px-5 py-3 text-left hover:bg-gray-100/80 dark:hover:bg-gray-700/80 transition-colors first:rounded-t-[1.5rem] last:rounded-b-[1.5rem]"
                     onClick={() => handleSuggestionClick(suggestion.name)}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <Search className="h-4 w-4 text-gray-400" />
                       <div className="flex flex-col">
-                        <span className="font-medium text-gray-900 dark:text-gray-100">{suggestion.name}</span>
+                        <span className="font-semibold text-gray-900 dark:text-gray-100">{suggestion.name}</span>
                         <span className="text-xs text-gray-600 dark:text-gray-400">
                           {suggestion.category} • {suggestion.location}
                         </span>
@@ -115,7 +115,7 @@ export default function SearchBar({ onSearch, onScanClick, isSearching }) {
           <Button
             type="submit"
             isIconOnly
-            className="h-12 w-12 bg-white text-orange-500 hover:bg-orange-50 rounded-xl font-medium"
+            className="h-14 w-14 bg-white/90 text-orange-500 rounded-[1.5rem] font-bold shadow-[6px_6px_12px_rgba(0,0,0,0.1),-6px_-6px_12px_rgba(255,255,255,0.2),inset_2px_2px_4px_rgba(255,255,255,1),inset_-2px_-2px_4px_rgba(0,0,0,0.05)] hover:bg-white active:shadow-[inset_4px_4px_8px_rgba(0,0,0,0.1),inset_-4px_-4px_8px_rgba(255,255,255,1)] transition-all dark:bg-gray-800/90 dark:text-orange-400 dark:shadow-[6px_6px_12px_rgba(0,0,0,0.3),-6px_-6px_12px_rgba(255,255,255,0.05),inset_2px_2px_4px_rgba(255,255,255,0.1),inset_-2px_-2px_4px_rgba(0,0,0,0.2)]"
             disabled={isSearching}
           >
             {isSearching ? <div className="animate-spin">⌛</div> : <Search className="h-5 w-5" />}
@@ -123,16 +123,16 @@ export default function SearchBar({ onSearch, onScanClick, isSearching }) {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Button
-            className="flex-1 h-12 bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20 rounded-xl text-white font-medium"
+            className="flex-1 h-12 bg-white/20 backdrop-blur-md border border-white/30 rounded-[1.5rem] text-white font-semibold shadow-[4px_4px_10px_rgba(0,0,0,0.1),-4px_-4px_10px_rgba(255,255,255,0.1),inset_2px_2px_4px_rgba(255,255,255,0.3),inset_-2px_-2px_4px_rgba(0,0,0,0.05)] hover:bg-white/30 active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all dark:bg-gray-800/40 dark:border-gray-700/50"
             onClick={() => router.push('/scan')}
           >
             <Scan className="text-white h-5 w-5 mr-2" />
             Scan QR
           </Button>
           <Button
-            className="flex-1 h-12 bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20 rounded-xl text-white font-medium"
+            className="flex-1 h-12 bg-white/20 backdrop-blur-md border border-white/30 rounded-[1.5rem] text-white font-semibold shadow-[4px_4px_10px_rgba(0,0,0,0.1),-4px_-4px_10px_rgba(255,255,255,0.1),inset_2px_2px_4px_rgba(255,255,255,0.3),inset_-2px_-2px_4px_rgba(0,0,0,0.05)] hover:bg-white/30 active:shadow-[inset_2px_2px_4px_rgba(0,0,0,0.1),inset_-2px_-2px_4px_rgba(255,255,255,0.1)] transition-all dark:bg-gray-800/40 dark:border-gray-700/50"
             onClick={() => router.push('/user/queues')}
           >
             View All
