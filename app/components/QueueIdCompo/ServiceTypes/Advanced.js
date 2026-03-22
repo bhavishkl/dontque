@@ -720,7 +720,23 @@ export default function Advanced({ params, queueData }) {
                             <div>
                               <p className="text-sm text-gray-600 dark:text-gray-400">Est. Wait Time</p>
                               <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
-                                {(counter.current_queue_size || 0) * (counter.services.find(s => s.id.toString() === Array.from(selectedServices)[0])?.estimatedTime || 15)} mins
+                                {(() => {
+                                  let baseWaitMins = (counter.current_queue_size || 0) * (counter.services.find(s => s.id.toString() === Array.from(selectedServices)[0])?.estimatedTime || 15);
+                                  if (counter.service_start_time) {
+                                    const [hours, minutes] = counter.service_start_time.split(':').map(Number);
+                                    const serviceStart = new Date(currentTime);
+                                    serviceStart.setHours(hours, minutes, 0, 0);
+                                    if (currentTime < serviceStart) {
+                                      baseWaitMins += Math.ceil((serviceStart.getTime() - currentTime.getTime()) / 60000);
+                                    }
+                                  }
+                                  if (baseWaitMins >= 60) {
+                                    const h = Math.floor(baseWaitMins / 60).toString().padStart(2, '0');
+                                    const m = (baseWaitMins % 60).toString().padStart(2, '0');
+                                    return `${h}:${m} hrs`;
+                                  }
+                                  return `${baseWaitMins} mins`;
+                                })()}
                               </p>
                             </div>
                           </div>
@@ -795,7 +811,7 @@ export default function Advanced({ params, queueData }) {
                           key={service.id}
                           isPressable
                           onPress={() => handleServiceSelect(service.id)}
-                          className={`border-2 ${selectedServices.has(service.id) ? 'border-orange-500' : 'border-transparent'}`}
+                          className={`border-2 Rs{selectedServices.has(service.id) ? 'border-orange-500' : 'border-transparent'}`}
                         >
                           <CardBody className="p-3">
                             <div className="flex items-center justify-between">

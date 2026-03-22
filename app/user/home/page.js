@@ -286,7 +286,7 @@ export default function Home() {
     <div className="min-h-screen dark:bg-gray-900 dark:text-gray-100">
       <main>
         {/* Hero Section with Search */}
-        <section className="bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 dark:from-gray-800 dark:via-gray-900 dark:to-black text-white py-8 sm:py-12 rounded-b-[2.5rem] shadow-lg">
+        <section className="bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 dark:from-gray-800 dark:via-gray-900 dark:to-black text-white py-8 sm:py-12 rounded-b-[2.5rem] shadow-[8px_8px_16px_rgba(0,0,0,0.15),-8px_-8px_16px_rgba(255,255,255,0.1),inset_4px_4px_8px_rgba(255,255,255,0.2),inset_-4px_-4px_8px_rgba(0,0,0,0.15)]">
           <div className="container mx-auto px-4 max-w-6xl">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="md:w-1/2 space-y-3">
