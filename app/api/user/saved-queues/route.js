@@ -23,7 +23,10 @@ export async function GET(req) {
           description,
           current_queue,
           estimated_wait_time,
-          short_id
+          short_id,
+          category,
+          opening_time,
+          closing_time
         )
       `)
       .eq('user_id', session.user.id)
@@ -33,6 +36,9 @@ export async function GET(req) {
 
     const formattedData = savedQueues.map(item => ({
       ...item.queue,
+      operating_hours: item.queue.opening_time && item.queue.closing_time
+        ? `${item.queue.opening_time} - ${item.queue.closing_time}`
+        : null,
       isSaved: true
     }))
 

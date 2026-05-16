@@ -24,22 +24,27 @@ export async function GET(req) {
 
     // Fetch queue names separately
     const queueIds = [...new Set(archiveEntries.map(entry => entry.queue_id))]
-    const { data: queueNames, error: queueError } = await supabase
+    const { data: queuesData, error: queueError } = await supabase
       .from('queues')
-      .select('queue_id, name')
+      .select('queue_id, name, category, opening_time, closing_time')
       .in('queue_id', queueIds)
 
     if (queueError) throw queueError
 
-    const queueNameMap = Object.fromEntries(queueNames.map(q => [q.queue_id, q.name]))
+    const queueMap = Object.fromEntries(queuesData.map(q => [q.queue_id, q]))
 
-    const formattedData = archiveEntries.map(entry => ({
-      id: entry.queue_id,
-      name: queueNameMap[entry.queue_id] || 'Unknown Queue',
-      date: new Date(entry.join_time).toLocaleDateString(),
-      waitTime: entry.actual_wait_time || entry.wait_time,
-      rating: entry.rating || 0
-    }))
+    const formattedData = archiveEntries.map(entry => {
+      const q = queueMap[entry.queue_id] || {};
+      return {
+        id: entry.queue_id,
+        name: q.name || 'Unknown Queue',
+        category: q.category,
+        operating_hours: q.opening_time && q.closing_time ? `${q.opening_time} - ${q.closing_time}` : null,
+        date: new Date(entry.join_time).toLocaleDateString(),
+        waitTime: entry.actual_wait_time || entry.wait_time,
+        rating: entry.rating || 0
+      };
+    })
 
     return NextResponse.json(formattedData)
   } catch (error) {

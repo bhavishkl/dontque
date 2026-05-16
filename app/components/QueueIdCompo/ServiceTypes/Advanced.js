@@ -309,305 +309,64 @@ export default function Advanced({ params, queueData }) {
     }
   }
 
-  const renderQueueStatus = (counter) => {
-    if (!userQueueEntry) return null;
+  const expectedServeTime = userQueueEntry ? calculatePersonalizedServeTime(
+    userQueueEntry.expectedServeTime,
+    userQueueEntry.position,
+    userQueueEntry.totalEstimatedTime,
+    userQueueEntry.counters?.service_start_time
+  ) : null;
 
-    // Add safety check for counter
-    if (!counter || !counter.services) {
-      console.warn('Counter or services data is missing');
+  const timeDifferenceInMinutes = expectedServeTime ? 
+    (expectedServeTime.getTime() - currentTime.getTime()) / (1000 * 60) : 0;
+
+  const renderCountdown = () => {
+    if (!expectedServeTime) {
+      return <p className="text-center text-gray-600">Time not available</p>;
+    }
+
+    if (timeDifferenceInMinutes < 15) {
       return (
-        <Card className="bg-gradient-to-br from-orange-500 to-orange-700 text-white">
-          <CardBody className="p-4">
-            <div className="text-center">
-              <AlertCircle className="h-8 w-8 mx-auto mb-2" />
-              <p>Counter information unavailable</p>
-            </div>
-          </CardBody>
-        </Card>
+        <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 text-center">
+          <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+            It's almost your turn!
+          </div>
+          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Please stay nearby and be ready
+          </div>
+        </div>
       );
     }
 
-    // Use the total estimated time from all selected services
-    const totalEstimatedTime = userQueueEntry.queue_entry_services?.reduce((total, entry) => {
-      return total + (entry.services?.estimated_time || 0)
-    }, 0) || 15;
-
-    // Calculate personalized serve time with total estimated time
-    const expectedServeTime = calculatePersonalizedServeTime(
-      userQueueEntry.expectedServeTime,
-      userQueueEntry.position,
-      userQueueEntry.totalEstimatedTime,
-      userQueueEntry.counters?.service_start_time
-    );
-
-    // Calculate time difference in minutes
-    const timeDifferenceInMinutes = expectedServeTime ? 
-      (expectedServeTime.getTime() - currentTime.getTime()) / (1000 * 60) : 0;
-
-    // Time display logic
-    const renderTimeDisplay = () => {
-      if (!expectedServeTime) {
-        return <span className="text-lg sm:text-xl text-white/80">Not available</span>;
-      }
-
-      return (
-        <div className="flex flex-col">
-          <span className="text-2xl sm:text-3xl font-bold text-white">
-            {expectedServeTime.toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
-          </span>
-          <span className="text-xs sm:text-sm text-white/80 mt-1">
-            {expectedServeTime.toLocaleDateString([], {
-              weekday: 'long',
-              month: 'short',
-              day: 'numeric'
-            })}
-          </span>
-        </div>
-      );
-    };
-
-    // Countdown display logic
-    const renderCountdown = () => {
-      if (!expectedServeTime) {
-        return <p className="text-center text-gray-600">Time not available</p>;
-      }
-
-      if (timeDifferenceInMinutes < 15) {
-        return (
-          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-              It's almost your turn!
-            </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Please stay nearby and be ready
-            </div>
-          </div>
-        );
-      }
-
-      const hours = Math.max(0, Math.floor(timeDifferenceInMinutes / 60));
-      const minutes = Math.max(0, Math.floor(timeDifferenceInMinutes % 60));
-      const seconds = Math.max(0, Math.floor((timeDifferenceInMinutes * 60) % 60));
-
-      return (
-        <div className="flex justify-center gap-4">
-          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 flex-1 text-center">
-            <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
-              {hours}
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              hours
-            </div>
-          </div>
-          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 flex-1 text-center">
-            <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
-              {minutes}
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              minutes
-            </div>
-          </div>
-          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 flex-1 text-center">
-            <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
-              {seconds}
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              seconds
-            </div>
-          </div>
-        </div>
-      );
-    };
+    const hours = Math.max(0, Math.floor(timeDifferenceInMinutes / 60));
+    const minutes = Math.max(0, Math.floor(timeDifferenceInMinutes % 60));
+    const seconds = Math.max(0, Math.floor((timeDifferenceInMinutes * 60) % 60));
 
     return (
-      <div className="space-y-6">
-        {/* Queue Status Card with ref */}
-        <Card 
-          ref={queueStatusRef}
-          className="bg-gradient-to-br from-orange-500 to-orange-700 text-white overflow-hidden"
-        >
-          <CardBody className="p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-bold">Your Queue Status</h2>
-                <p className="text-xs sm:text-sm opacity-80">
-                  Joined at {new Date(userQueueEntry.join_time).toLocaleTimeString()}
-                </p>
-              </div>
-              <Badge content={userQueueEntry?.position || '...'} color="warning">
-                <div className="p-1.5 sm:p-2 bg-white/20 rounded-full">
-                  <AlertCircle className="h-5 w-5" />
-                </div>
-              </Badge>
-            </div>
-
-            {/* Compact Selected Counter and Services Section */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-4">
-              {/* Counter Section */}
-              <div className="flex-1 flex items-center gap-3 p-3 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
-                <div className="p-1.5 bg-white/20 rounded-full">
-                  <User className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs text-white/80">Selected Counter</p>
-                  <p className="text-sm font-medium text-white">
-                    {counter?.name || 'Counter Unavailable'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Services Section */}
-              <div className="flex-1 p-3 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-white/20 rounded-full">
-                    <Check className="h-4 w-4 text-white" />
-                  </div>
-                  <p className="text-xs text-white/80">Selected Services</p>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {Array.from(selectedServices).map(serviceId => {
-                    const service = counter?.services?.find(s => s.id === serviceId) || {
-                      name: 'Service Unavailable',
-                      id: serviceId
-                    };
-                    return (
-                      <Chip
-                        key={serviceId}
-                        variant="flat"
-                        className="bg-white/20 text-white text-xs"
-                        size="sm"
-                      >
-                        {service.name}
-                      </Chip>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between items-center gap-4">
-                <div className="flex-1">
-                  <div className="relative flex justify-center">
-                    <div className="w-32 h-32 sm:w-40 sm:h-40 relative">
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="absolute inset-0 bg-white rounded-xl sm:rounded-2xl shadow-[0_0_15px_rgba(255,255,255,0.7)]"></div>
-                        <div className="relative w-full h-28 sm:h-32 backdrop-blur-lg bg-white/40 p-3 sm:p-4 border border-white/20 rounded-xl sm:rounded-2xl shadow-[inset_0_0_15px_rgba(255,255,255,0.9)]">
-                          <div className="flex flex-col items-center justify-center h-full">
-                            <span className="text-xs sm:text-sm text-orange-600 mb-1">Your Position</span>
-                            <div className="flex items-baseline">
-                              <span className="text-4xl sm:text-5xl font-bold text-orange-600 drop-shadow-sm">#</span>
-                              <span className="text-5xl sm:text-6xl font-bold text-orange-600 drop-shadow-sm">
-                                {userQueueEntry?.position || '...'}
-                              </span>
-                            </div>
-                            <span className="text-xs sm:text-sm text-orange-600 mt-1">in queue</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Expected Time Display */}
-                <div className="flex-1">
-                  <div className="bg-white/30 backdrop-blur-sm rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/40 shadow-lg h-32 sm:h-40 flex flex-col justify-center">
-                    <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
-                      <div className="p-1.5 sm:p-2 bg-white/20 rounded-full">
-                        <Calendar className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
-                      </div>
-                      <h3 className="text-base sm:text-lg font-semibold text-white">Expected Service Time</h3>
-                    </div>
-                    <div className="text-center">
-                      {renderTimeDisplay()}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* Countdown and Actions Card */}
-        <Card className="dark:bg-gray-800">
-          <CardBody className="p-6">
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-4">Time Until Your Turn</h3>
-              {renderCountdown()}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                <Button
-                  className="flex-1"
-                  variant="flat"
-                  startContent={<Bell className="h-4 w-4" />}
-                  onClick={() => setIsPreferencesModalOpen(true)}
-                >
-                  Notification Preferences
-                </Button>
-
-                <Suspense fallback={
-                  <Button className="flex-1" color="success" variant="flat" disabled>
-                    Loading...
-                  </Button>
-                }>
-                  <AddKnownUserModal 
-                    queueId={params.queueid} 
-                    onSuccess={mutateQueueEntry}
-                    isAdvanced={true}
-                    selectedServices={selectedServices}
-                    counterId={selectedCounter}
-                  />
-                </Suspense>
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  className="flex-1"
-                  color="warning"
-                  variant="flat"
-                  startContent={<Timer className="h-4 w-4" />}
-                >
-                  Request More Time
-                </Button>
-
-                <Button
-                  className="flex-1"
-                  color="secondary"
-                  variant="flat"
-                  startContent={<Share2 className="h-4 w-4" />}
-                  onClick={handleShareStatus}
-                  isLoading={isSharing}
-                >
-                  {isSharing ? 'Sharing...' : 'Share Status'}
-                </Button>
-
-                <Button
-                  className="flex-1"
-                  color="danger"
-                  variant="flat"
-                  startContent={<LogOut className="h-4 w-4" />}
-                  onClick={openLeaveConfirmation}
-                >
-                  Leave Queue
-                </Button>
-              </div>
-
-              <Suspense fallback={null}>
-                <NotificationPreferencesModal 
-                  isOpen={isPreferencesModalOpen}
-                  onClose={() => setIsPreferencesModalOpen(false)}
-                  onSave={handlePreferencesSaved}
-                />
-              </Suspense>
-            </div>
-          </CardBody>
-        </Card>
+      <div className="flex justify-center gap-4">
+        <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 flex-1 text-center">
+          <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+            {hours}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            hours
+          </div>
+        </div>
+        <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 flex-1 text-center">
+          <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+            {minutes}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            minutes
+          </div>
+        </div>
+        <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 flex-1 text-center">
+          <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+            {seconds}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            seconds
+          </div>
+        </div>
       </div>
     );
   };
@@ -627,20 +386,17 @@ export default function Advanced({ params, queueData }) {
         handleShare={handleShare}
       />
       
-      <div className="w-full space-y-8">
+      <div className="w-full space-y-8" ref={queueStatusRef}>
         {isInitialLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-8 w-3/4" />
             <Skeleton className="h-32 w-full" />
           </div>
-        ) : userQueueEntry && userQueueEntry.entry_id ? (
-          // Show queue status when user is in queue and has valid entry_id
-          renderQueueStatus(counters.find(c => c.id.toString() === userQueueEntry.counter_id))
         ) : counters.length > 0 ? (
-          // Show counter selection and join UI when not in queue and counters are available
           <Tabs 
-            selectedKey={selectedCounter} 
-            onSelectionChange={handleTabChange}
+            selectedKey={userQueueEntry?.entry_id ? userQueueEntry.counter_id?.toString() : selectedCounter} 
+            onSelectionChange={userQueueEntry?.entry_id ? undefined : handleTabChange}
+            disabledKeys={userQueueEntry?.entry_id ? counters.map(c => c.id.toString()).filter(id => id !== userQueueEntry.counter_id?.toString()) : []}
             variant="underlined"
             classNames={{
               tabList: "gap-6 w-full relative rounded-none p-0 border-b border-divider",
@@ -809,9 +565,9 @@ export default function Advanced({ params, queueData }) {
                       {counter.services.map((service) => (
                         <Card
                           key={service.id}
-                          isPressable
-                          onPress={() => handleServiceSelect(service.id)}
-                          className={`border-2 Rs{selectedServices.has(service.id) ? 'border-orange-500' : 'border-transparent'}`}
+                          isPressable={!userQueueEntry?.entry_id}
+                          onPress={() => !userQueueEntry?.entry_id && handleServiceSelect(service.id)}
+                          className={`border-2 ${selectedServices.has(service.id) ? 'border-orange-500' : 'border-transparent'} ${userQueueEntry?.entry_id && !selectedServices.has(service.id) ? 'opacity-50' : ''}`}
                         >
                           <CardBody className="p-3">
                             <div className="flex items-center justify-between">
@@ -836,21 +592,110 @@ export default function Advanced({ params, queueData }) {
                     </div>
                   </div>
 
-                  {/* Join Queue Button */}
-                  <Button
-                    size="lg"
-                    color="primary"
-                    className="w-full"
-                    onClick={handleJoinQueue}
-                    isLoading={isSubmitting}
-                    startContent={!isSubmitting && <ArrowRight className="h-5 w-5" />}
-                    isDisabled={!selectedServices.size || counter.status !== 'active'}
-                  >
-                    {counter.status === 'active' 
-                      ? 'Join Queue' 
-                      : 'Counter Currently Unavailable'
-                    }
-                  </Button>
+                  {/* Join Queue Button or Active Queue Status */}
+                  {userQueueEntry?.entry_id ? (
+                    <Card className="dark:bg-gray-800 border-2 border-orange-500 mt-6">
+                      <CardBody className="p-6">
+                        <div className="flex justify-between items-center mb-6">
+                          <div>
+                            <span className="text-sm font-medium text-gray-500 block mb-1">Your Position</span>
+                            <div className="flex items-baseline">
+                              <span className="text-3xl font-bold text-orange-600">#</span>
+                              <span className="text-4xl font-bold text-orange-600">{userQueueEntry.position || '...'}</span>
+                            </div>
+                          </div>
+                          {expectedServeTime && (
+                            <div className="text-right">
+                              <span className="text-sm font-medium text-gray-500 block mb-1">Expected Service Time</span>
+                              <div className="text-xl font-bold">
+                                {expectedServeTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="mb-6">
+                          <h3 className="text-lg font-semibold mb-4 text-center">Time Until Your Turn</h3>
+                          {renderCountdown()}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="space-y-3">
+                          <div className="flex gap-2">
+                            <Button
+                              className="flex-1"
+                              variant="flat"
+                              startContent={<Bell className="h-4 w-4" />}
+                              onClick={() => setIsPreferencesModalOpen(true)}
+                            >
+                              Notification Preferences
+                            </Button>
+
+                            <Suspense fallback={
+                              <Button className="flex-1" color="success" variant="flat" disabled>
+                                Loading...
+                              </Button>
+                            }>
+                              <AddKnownUserModal 
+                                queueId={params.queueid} 
+                                onSuccess={mutateQueueEntry}
+                                isAdvanced={true}
+                                selectedServices={selectedServices}
+                                counterId={selectedCounter}
+                              />
+                            </Suspense>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <Button
+                              className="flex-1"
+                              color="warning"
+                              variant="flat"
+                              startContent={<Timer className="h-4 w-4" />}
+                            >
+                              Request More Time
+                            </Button>
+
+                            <Button
+                              className="flex-1"
+                              color="secondary"
+                              variant="flat"
+                              startContent={<Share2 className="h-4 w-4" />}
+                              onClick={handleShareStatus}
+                              isLoading={isSharing}
+                            >
+                              {isSharing ? 'Sharing...' : 'Share Status'}
+                            </Button>
+
+                            <Button
+                              className="flex-1"
+                              color="danger"
+                              variant="flat"
+                              startContent={<LogOut className="h-4 w-4" />}
+                              onClick={openLeaveConfirmation}
+                            >
+                              Leave Queue
+                            </Button>
+                          </div>
+                        </div>
+                      </CardBody>
+                    </Card>
+                  ) : (
+                    <Button
+                      size="lg"
+                      color="primary"
+                      className="w-full"
+                      onClick={handleJoinQueue}
+                      isLoading={isSubmitting}
+                      startContent={!isSubmitting && <ArrowRight className="h-5 w-5" />}
+                      isDisabled={!selectedServices.size || counter.status !== 'active'}
+                    >
+                      {counter.status === 'active' 
+                        ? 'Join Queue' 
+                        : 'Counter Currently Unavailable'
+                      }
+                    </Button>
+                  )}
                 </div>
               </Tab>
             ))}

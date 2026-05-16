@@ -1,22 +1,7 @@
 import React from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Card, CardBody, CardHeader, Badge, Progress, Chip, Button } from '@nextui-org/react'
+import { Card, CardBody, CardHeader, Chip, Button } from '@nextui-org/react'
 import { MapPin, Calendar, Clock, ChevronRight } from 'lucide-react'
-
-function getWaitTimeStatus(estimatedWaitTime) {
-	const wait = estimatedWaitTime || 0
-	if (wait <= 5) return { color: 'success', text: 'Almost there!' }
-	if (wait <= 15) return { color: 'warning', text: 'Getting closer' }
-	return { color: 'default', text: 'Please be patient' }
-}
-
-function getPositionStatus(position) {
-	const pos = position || 0
-	if (pos <= 3) return { color: 'success', text: 'Next up!' }
-	if (pos <= 10) return { color: 'warning', text: 'Getting close' }
-	return { color: 'default', text: 'In queue' }
-}
 
 function formatJoinTime(joinTime) {
 	if (!joinTime) return '—'
@@ -34,8 +19,6 @@ function formatJoinTime(joinTime) {
 
 export default function UserQueueCard({ queue }) {
 	const router = useRouter()
-	const waitTimeStatus = getWaitTimeStatus(queue.estimatedWaitTime)
-	const positionStatus = getPositionStatus(queue.position)
 
 	const handleViewDetails = () => {
 		router.push(`/user/queue/${queue.id}`)
@@ -52,9 +35,9 @@ export default function UserQueueCard({ queue }) {
 							<h3 className="text-lg font-semibold text-default-900 truncate">
 								{queue.name}
 							</h3>
-							{queue.service_type === 'advanced' && (
+							{queue.category && (
 								<Chip size="sm" variant="flat" color="secondary" className="text-xs">
-									PRO
+									{queue.category}
 								</Chip>
 							)}
 						</div>
@@ -63,30 +46,11 @@ export default function UserQueueCard({ queue }) {
 							<span className="truncate">{queue.location || 'Location not specified'}</span>
 						</div>
 					</div>
-					<Badge 
-						color={positionStatus.color} 
-						variant="flat" 
-						className="text-xs font-medium"
-					>
-						#{queue.position}
-					</Badge>
 				</div>
 			</CardHeader>
 			
 			<CardBody className="pt-0">
-				<div className="mb-4">
-					<div className="flex items-center justify-between mb-2">
-						<span className="text-sm text-default-600">Queue Progress</span>
-						<span className="text-xs text-default-500">{positionStatus.text}</span>
-					</div>
-					<Progress 
-						value={Math.max(0, 100 - ((queue.position || 0) * 10))} 
-						color={positionStatus.color}
-						className="h-2"
-					/>
-				</div>
-
-				<div className="grid grid-cols-2 gap-3 mb-4">
+				<div className="grid grid-cols-2 gap-3 mb-4 mt-2">
 					<div className="text-center p-3 bg-default-50 rounded-lg">
 						<div className="text-lg font-bold text-primary">
 							{queue.estimatedWaitTime || 0}
@@ -104,26 +68,21 @@ export default function UserQueueCard({ queue }) {
 				<div className="space-y-2 mb-4">
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-2">
+							<Clock className="w-3 h-3 text-default-400" />
+							<span className="text-xs text-default-600">Operating Hours</span>
+						</div>
+						<span className="text-xs text-default-500">
+							{queue.operating_hours || 'Not available'}
+						</span>
+					</div>
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-2">
 							<Calendar className="w-3 h-3 text-default-400" />
 							<span className="text-xs text-default-600">Joined</span>
 						</div>
 						<span className="text-xs text-default-500">
 							{formatJoinTime(queue.join_time)}
 						</span>
-					</div>
-					<div className="flex items-center justify-between">
-						<div className="flex items-center gap-2">
-							<Clock className="w-3 h-3 text-default-400" />
-							<span className="text-xs text-default-600">Wait Status</span>
-						</div>
-						<Chip 
-							size="sm" 
-							variant="flat" 
-							color={waitTimeStatus.color}
-							className="text-xs"
-						>
-							{waitTimeStatus.text}
-						</Chip>
 					</div>
 				</div>
 

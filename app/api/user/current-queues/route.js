@@ -21,7 +21,9 @@ export async function GET(req) {
           queue_id,
           name,
           location,
-          service_type,
+          category,
+          opening_time,
+          closing_time,
           current_queue,
           status
         )
@@ -39,7 +41,10 @@ export async function GET(req) {
       estimatedWaitTime: entry.estimated_wait_time,
       join_time: entry.join_time,
       location: entry.queue.location,
-      service_type: entry.queue.service_type,
+      category: entry.queue.category,
+      operating_hours: entry.queue.opening_time && entry.queue.closing_time 
+        ? `${entry.queue.opening_time} - ${entry.queue.closing_time}`
+        : null,
       current_queue: entry.queue.current_queue,
       queue_status: entry.queue.status
     }))
