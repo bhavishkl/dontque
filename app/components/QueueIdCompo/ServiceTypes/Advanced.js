@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef, Suspense } from 'react'
-import { Card, CardBody, Button, Spinner, Tabs, Tab, Chip, Badge, ScrollShadow, Avatar, Progress, Skeleton } from "@nextui-org/react"
-import { Clock, Star, ArrowRight, CheckCircle2, AlertCircle, User, Calendar, Bell, Timer, Share2, LogOut, Check, Circle } from 'lucide-react'
+import { Card, CardBody, Button, Spinner, Tabs, Tab, Chip, Badge, ScrollShadow, Avatar, Progress, Skeleton, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@nextui-org/react"
+import { Clock, Star, ArrowRight, CheckCircle2, AlertCircle, User, Calendar, Bell, Timer, Share2, LogOut, Check, Circle, MoreVertical } from 'lucide-react'
 import QueueInfoSec from '../QueueidPage/QueueInfoSec'
 import { toast } from 'sonner'
 import dynamic from 'next/dynamic'
@@ -379,14 +379,16 @@ export default function Advanced({ params, queueData }) {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-      <QueueInfoSec
-        queueData={queueData}
-        isLoading={isInitialLoading}
-        handleShare={handleShare}
-      />
+    <div className="max-w-7xl mx-auto px-2 py-4 space-y-4 sm:px-4 sm:space-y-6">
+      {!userQueueEntry?.entry_id && (
+        <QueueInfoSec
+          queueData={queueData}
+          isLoading={isInitialLoading}
+          handleShare={handleShare}
+        />
+      )}
       
-      <div className="w-full space-y-8" ref={queueStatusRef}>
+      <div className="w-full space-y-4 sm:space-y-6" ref={queueStatusRef}>
         {isInitialLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-8 w-3/4" />
@@ -401,7 +403,8 @@ export default function Advanced({ params, queueData }) {
             classNames={{
               tabList: "gap-6 w-full relative rounded-none p-0 border-b border-divider",
               cursor: "w-full bg-orange-500",
-              tab: "max-w-fit px-0 h-12",
+              tab: "max-w-fit px-0 h-10",
+              panel: "pt-3 pb-0 px-0",
               tabContent: "group-data-[selected=true]:text-orange-500"
             }}
           >
@@ -414,9 +417,9 @@ export default function Advanced({ params, queueData }) {
                   </div>
                 }
 	          >
-	                <div className="mt-4 space-y-6">
+	                <div className="space-y-4">
 	                  {/* Queue Status Section */}
-	                  <div className="space-y-6">
+	                  <div className="space-y-4">
 	                    {/* Queue Capacity */}
 	                    <div>
                         {counter.service_start_time && (
@@ -448,17 +451,17 @@ export default function Advanced({ params, queueData }) {
                     </div>
 
                     {/* Queue Stats */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       {/* People Ahead Card */}
                       <Card className="bg-orange-50 dark:bg-orange-900/20">
-                        <CardBody className="p-4">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-orange-100 dark:bg-orange-800/30 rounded-lg">
-                              <User className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                        <CardBody className="p-3 sm:p-4">
+                          <div className="flex flex-row items-center justify-start gap-2 sm:gap-3">
+                            <div className="p-1.5 sm:p-2 bg-orange-100 dark:bg-orange-800/30 rounded-lg shrink-0">
+                              <User className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 dark:text-orange-400" />
                             </div>
-                            <div>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">People Ahead</p>
-                              <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
+                            <div className="min-w-0">
+                              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">People Ahead</p>
+                              <p className="text-lg sm:text-xl font-bold text-orange-600 dark:text-orange-400 truncate">
                                 {counter.current_queue_size || 0}
                               </p>
                             </div>
@@ -468,14 +471,14 @@ export default function Advanced({ params, queueData }) {
 
                       {/* Wait Time Card */}
                       <Card className="bg-orange-50 dark:bg-orange-900/20">
-                        <CardBody className="p-4">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-orange-100 dark:bg-orange-800/30 rounded-lg">
-                              <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                        <CardBody className="p-3 sm:p-4">
+                          <div className="flex flex-row items-center justify-start gap-2 sm:gap-3">
+                            <div className="p-1.5 sm:p-2 bg-orange-100 dark:bg-orange-800/30 rounded-lg shrink-0">
+                              <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 dark:text-orange-400" />
                             </div>
-                            <div>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">Est. Wait Time</p>
-                              <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
+                            <div className="min-w-0">
+                              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">Est. Wait Time</p>
+                              <p className="text-lg sm:text-xl font-bold text-orange-600 dark:text-orange-400 truncate">
                                 {(() => {
                                   let baseWaitMins = (counter.current_queue_size || 0) * (counter.services.find(s => s.id.toString() === Array.from(selectedServices)[0])?.estimatedTime || 15);
                                   if (counter.service_start_time) {
@@ -504,8 +507,8 @@ export default function Advanced({ params, queueData }) {
                   {/* Staff Details */}
                   {counter.type === 'staff' && counter.staffDetails && (
                     <Card className="bg-default-50">
-                      <CardBody className="p-4">
-                        <div className="flex gap-4">
+                      <CardBody className="p-3 sm:p-4">
+                        <div className="flex gap-3 sm:gap-4">
                           <Avatar
                             src={counter.staffDetails.image || '/default-avatar.png'}
                             className="w-16 h-16"
@@ -560,9 +563,13 @@ export default function Advanced({ params, queueData }) {
 
                   {/* Service Selection Section */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Available Services</h3>
+                    <h3 className="text-lg font-semibold">
+                      {userQueueEntry?.entry_id ? 'Selected Services' : 'Available Services'}
+                    </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {counter.services.map((service) => (
+                      {counter.services
+                        .filter(service => !userQueueEntry?.entry_id || selectedServices.has(service.id))
+                        .map((service) => (
                         <Card
                           key={service.id}
                           isPressable={!userQueueEntry?.entry_id}
@@ -594,89 +601,86 @@ export default function Advanced({ params, queueData }) {
 
                   {/* Join Queue Button or Active Queue Status */}
                   {userQueueEntry?.entry_id ? (
-                    <Card className="dark:bg-gray-800 border-2 border-orange-500 mt-6">
-                      <CardBody className="p-6">
-                        <div className="flex justify-between items-center mb-6">
+                    <Card className="dark:bg-gray-800 border-2 border-orange-500 mt-4">
+                      <CardBody className="p-4 sm:p-6">
+                        <div className="flex justify-between items-center mb-4">
                           <div>
                             <span className="text-sm font-medium text-gray-500 block mb-1">Your Position</span>
                             <div className="flex items-baseline">
-                              <span className="text-3xl font-bold text-orange-600">#</span>
-                              <span className="text-4xl font-bold text-orange-600">{userQueueEntry.position || '...'}</span>
+                              <span className="text-2xl sm:text-3xl font-bold text-orange-600">#</span>
+                              <span className="text-3xl sm:text-4xl font-bold text-orange-600">{userQueueEntry.position || '...'}</span>
                             </div>
                           </div>
                           {expectedServeTime && (
                             <div className="text-right">
                               <span className="text-sm font-medium text-gray-500 block mb-1">Expected Service Time</span>
-                              <div className="text-xl font-bold">
+                              <div className="text-lg sm:text-xl font-bold">
                                 {expectedServeTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </div>
                             </div>
                           )}
                         </div>
                         
-                        <div className="mb-6">
-                          <h3 className="text-lg font-semibold mb-4 text-center">Time Until Your Turn</h3>
+                        <div className="mb-4">
+                          <h3 className="text-md sm:text-lg font-semibold mb-2 sm:mb-4 text-center">Time Until Your Turn</h3>
                           {renderCountdown()}
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="space-y-3">
-                          <div className="flex gap-2">
-                            <Button
-                              className="flex-1"
-                              variant="flat"
-                              startContent={<Bell className="h-4 w-4" />}
-                              onClick={() => setIsPreferencesModalOpen(true)}
-                            >
-                              Notification Preferences
-                            </Button>
+                        <div className="flex items-center gap-2 mt-4">
+                          <Button
+                            className="flex-1"
+                            color="primary"
+                            startContent={<LogOut className="h-4 w-4" />}
+                            onClick={openLeaveConfirmation}
+                          >
+                            Leave Queue
+                          </Button>
 
-                            <Suspense fallback={
-                              <Button className="flex-1" color="success" variant="flat" disabled>
-                                Loading...
+                          <Suspense fallback={
+                            <Button isIconOnly color="success" variant="flat" disabled>
+                              <Spinner size="sm" />
+                            </Button>
+                          }>
+                            <AddKnownUserModal 
+                              queueId={params.queueid} 
+                              onSuccess={mutateQueueEntry}
+                              isAdvanced={true}
+                              selectedServices={selectedServices}
+                              counterId={selectedCounter}
+                              isIconOnly={true}
+                            />
+                          </Suspense>
+
+                          <Dropdown>
+                            <DropdownTrigger>
+                              <Button isIconOnly variant="flat">
+                                <MoreVertical className="h-5 w-5" />
                               </Button>
-                            }>
-                              <AddKnownUserModal 
-                                queueId={params.queueid} 
-                                onSuccess={mutateQueueEntry}
-                                isAdvanced={true}
-                                selectedServices={selectedServices}
-                                counterId={selectedCounter}
-                              />
-                            </Suspense>
-                          </div>
-
-                          <div className="flex gap-2">
-                            <Button
-                              className="flex-1"
-                              color="warning"
-                              variant="flat"
-                              startContent={<Timer className="h-4 w-4" />}
-                            >
-                              Request More Time
-                            </Button>
-
-                            <Button
-                              className="flex-1"
-                              color="secondary"
-                              variant="flat"
-                              startContent={<Share2 className="h-4 w-4" />}
-                              onClick={handleShareStatus}
-                              isLoading={isSharing}
-                            >
-                              {isSharing ? 'Sharing...' : 'Share Status'}
-                            </Button>
-
-                            <Button
-                              className="flex-1"
-                              color="danger"
-                              variant="flat"
-                              startContent={<LogOut className="h-4 w-4" />}
-                              onClick={openLeaveConfirmation}
-                            >
-                              Leave Queue
-                            </Button>
-                          </div>
+                            </DropdownTrigger>
+                            <DropdownMenu aria-label="Queue Actions">
+                              <DropdownItem 
+                                key="notifications" 
+                                startContent={<Bell className="h-4 w-4" />}
+                                onClick={() => setIsPreferencesModalOpen(true)}
+                              >
+                                Notification Preferences
+                              </DropdownItem>
+                              <DropdownItem 
+                                key="request_time" 
+                                startContent={<Timer className="h-4 w-4 text-warning" />}
+                              >
+                                Request More Time
+                              </DropdownItem>
+                              <DropdownItem 
+                                key="share" 
+                                startContent={<Share2 className="h-4 w-4 text-secondary" />}
+                                onClick={handleShareStatus}
+                              >
+                                {isSharing ? 'Sharing...' : 'Share Status'}
+                              </DropdownItem>
+                            </DropdownMenu>
+                          </Dropdown>
                         </div>
                       </CardBody>
                     </Card>
@@ -709,6 +713,14 @@ export default function Advanced({ params, queueData }) {
           </div>
         )}
       </div>
+
+      {userQueueEntry?.entry_id && (
+        <QueueInfoSec
+          queueData={queueData}
+          isLoading={isInitialLoading}
+          handleShare={handleShare}
+        />
+      )}
 
       <NotificationPreferencesModal 
         isOpen={isPreferencesModalOpen}

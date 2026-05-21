@@ -3,7 +3,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input
 import { UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 
-const AddKnownUserModal = ({ queueId, onSuccess, isAdvanced, selectedServices, counterId }) => {
+const AddKnownUserModal = ({ queueId, onSuccess, isAdvanced, selectedServices, counterId, isIconOnly }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [shortId, setShortId] = useState('');
   const [isAdding, setIsAdding] = useState(false);
@@ -52,9 +52,11 @@ const AddKnownUserModal = ({ queueId, onSuccess, isAdvanced, selectedServices, c
         onClick={onOpen} 
         color="success" 
         variant="flat"
-        startContent={<UserPlus className="w-4 h-4" />}
+        isIconOnly={isIconOnly}
+        className={!isIconOnly ? "flex-1" : ""}
+        startContent={!isIconOnly && <UserPlus className="w-4 h-4" />}
       >
-        Add User 
+        {isIconOnly ? <UserPlus className="w-4 h-4" /> : 'Add User'}
       </Button>
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalContent>

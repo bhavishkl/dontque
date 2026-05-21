@@ -19,6 +19,9 @@ const ServiceComponents = {
   advanced: dynamic(() => import('@/app/components/QueueIdCompo/ServiceTypes/Advanced'), {
     loading: () => <div className="flex justify-center items-center min-h-screen"><Spinner /></div>
   }),
+  cng: dynamic(() => import('@/app/components/QueueIdCompo/ServiceTypes/Vehicle'), {
+    loading: () => <div className="flex justify-center items-center min-h-screen"><Spinner /></div>
+  }),
   default: dynamic(() => import('@/app/components/QueueIdCompo/QueueidPage/Default'), {
     loading: () => <div className="flex justify-center items-center min-h-screen"><Spinner /></div>
   })
